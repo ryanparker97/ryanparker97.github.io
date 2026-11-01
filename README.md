@@ -6,7 +6,7 @@ Personal portfolio of Ryan Parker, live at <https://ryanparker97.github.io>: Exp
 
 ## Develop
 
-Requires Node 22 and pnpm.
+Requires Node 24 (22.23.4 at minimum) and pnpm.
 
 ```sh
 pnpm install

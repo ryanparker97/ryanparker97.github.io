@@ -1076,7 +1076,7 @@ Body: optional series intro, shown on the series index page. A part counts as **
 | `lhci` | Lighthouse CI with budgets |
 | `verify` | Runs the CI gates locally: `lint && format:check && check && test && build && test:pdf && test:e2e` |
 
-Tooling: Node 22 LTS, pnpm, TypeScript strict.
+Tooling: Node 24 LTS (Astro needs ≥ 22.23.4), pnpm, TypeScript strict.
 
 ---
 
@@ -1110,7 +1110,7 @@ Tooling: Node 22 LTS, pnpm, TypeScript strict.
 lighthouserc.json               # Lighthouse CI URLs + assertions
 lychee.toml                     # link checker config
 playwright.config.ts            # e2e projects + webServer serving dist/
-.nvmrc                          # 22
+.nvmrc                          # 24
 package.json                    # "packageManager": "pnpm@<exact>", "engines": { "node": ">=22" }
 ```
 
