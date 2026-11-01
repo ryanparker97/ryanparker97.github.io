@@ -31,17 +31,31 @@ const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
     font-size: 0.9375rem;
   }
   details {
-    margin-bottom: 24px;
-    padding: 4px 20px;
-    border-radius: 16px;
+    margin-top: 16px;
+    padding: 0 20px;
+    border-radius: 18px;
     background: var(--surface-2);
   }
   summary {
     min-height: 44px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     cursor: pointer;
     font-weight: 600;
+  }
+  summary::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    margin-inline-end: 4px;
+    border-right: 2px solid currentcolor;
+    border-bottom: 2px solid currentcolor;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 200ms var(--ease);
+  }
+  details[open] > summary::after {
+    transform: translateY(2px) rotate(-135deg);
   }
   .title {
     margin-bottom: 8px;
@@ -52,17 +66,30 @@ const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
   }
   .toc-side {
     display: none;
-    grid-area: toc;
+    /* Spans the header down to the body, so it starts level with the category eyebrow. */
+    grid-column: 3;
+    grid-row: 1 / 5;
     align-self: start;
     position: sticky;
-    top: calc(var(--nav-h) + 24px);
+    top: calc(var(--sticky-h) + 24px);
   }
-  @media (min-width: 1024px) {
+  @media (min-width: 1280px) {
     .toc-narrow {
       display: none;
     }
     .toc-side {
       display: block;
+      justify-self: start;
+      width: 220px;
+      margin-inline-start: 64px;
+      margin-top: var(--section-pad-tight);
+      font-size: 0.75rem;
+      line-height: 1.3334;
+    }
+    /* Caption density: a 26px pitch (24px rows, 2px gap). */
+    .toc-side :global(a) {
+      min-height: 24px;
+      padding-block: 0;
     }
   }
 </style>

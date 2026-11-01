@@ -8,7 +8,7 @@ parts:
   - part: 2
     title: 'Ngôn ngữ: LSP, gợi ý mã, định dạng và linting'
   - part: 3
-    title: 'Kỹ thuật dữ liệu: dbt, SQL, cơ sở dữ liệu và CloudFormation'
+    title: 'Kỹ thuật dữ liệu: DBT, SQL, cơ sở dữ liệu và CloudFormation'
   - part: 4
     title: 'Java với nvim-jdtls'
   - part: 5

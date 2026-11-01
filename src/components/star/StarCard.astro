@@ -1,92 +1,119 @@
 ---
-import { Icon } from 'astro-icon/components';
 import { competencies } from '~/content/competencies';
+import Card from '~/components/tile/Card.astro';
+import Stat from '~/components/tile/Stat.astro';
+import ChevronLink from '~/components/ui/ChevronLink.astro';
 import { render, type Localized } from '~/lib/content';
-import { headlineMetric, splitStarHtml } from '~/lib/star';
+import { splitStarHtml, headlineStat } from '~/lib/star';
 import { useT, type Lang } from '~/i18n';
 import { localePath } from '~/i18n/routes';
-import StarStepper from './StarStepper.astro';
+import StarPanels from './StarPanels.astro';
 
 interface Props {
   story: Localized<'star'>;
   lang: Lang;
+  index?: number;
 }
-const { story, lang } = Astro.props;
+const { story, lang, index = 0 } = Astro.props;
 const t = useT(lang);
 const d = story.data;
 await render(story); // fills `story.rendered` (HTML)
 const { lead, sections: html } = splitStarHtml(story.rendered?.html ?? '');
-const headline = headlineMetric(d.metrics);
+const stat = headlineStat(d.metrics);
 ---
 
-<article class="card story" data-story data-competencies={d.competencies.join(' ')} data-reveal>
-  <details>
-    <summary>
-      <span class="block pr-12">
-        <span class="title">{d.title}</span>
-        <span class="question">
-          <span class="sr-only">{t('star.question')}: </span>
-          {d.question}
-        </span>
-        <span class="mt-3 flex flex-wrap gap-2">
-          {d.competencies.map((c) => (
-            <span class="chip chip-sky">{competencies[c][lang]}</span>
-          ))}
-          {headline && <span class="chip chip-mint">{headline}</span>}
-          {d.sample && <span class="chip chip-butter">{t('star.sample')}</span>}
-        </span>
-      </span>
-    </summary>
-    <div class="px-6 pb-4">
+<Card
+  tag="article"
+  class="story"
+  {index}
+  data-story
+  data-slug={story.slug}
+  data-competencies={d.competencies.join(' ')}
+>
+  <ul class="chips">
+    {d.competencies.map((c) => (
+      <li class="chip">{competencies[c][lang]}</li>
+    ))}
+    {d.sample && <li class="chip">{t('star.sample')}</li>}
+  </ul>
+  <h3 class="t-card question">
+    <span class="sr-only">{t('star.question')}: </span>
+    {d.question}
+  </h3>
+  {stat && (
+    <div class="stat-slot">
+      <Stat card above={stat.prefix} value={stat.value} below={stat.label} />
+    </div>
+  )}
+  <details class="more">
+    <summary class="plus-disc" aria-label={t('common.learnAbout', { title: d.title })}></summary>
+    <div class="more-body">
       {lead && <div class="lead" set:html={lead} />}
-      <StarStepper {html} metrics={d.metrics} {lang} />
+      <StarPanels {html} metrics={d.metrics} {lang} />
     </div>
   </details>
-  <a
-    href={localePath(`/star/${story.slug}/`, lang)}
-    class="icon-btn permalink"
-    aria-label={`${t('star.permalink')}: ${d.title}`}
-    title={t('star.permalink')}
-  >
-    <Icon name="lucide:link" size={18} />
-  </a>
-</article>
+  <div class="foot">
+    <ChevronLink
+      href={localePath(`/star/${story.slug}/`, lang)}
+      label={`${t('star.permalink')}: ${d.title}`}
+    >
+      {t('star.permalinkShort')}
+    </ChevronLink>
+  </div>
+</Card>
 
 <style>
-  .story {
+  :global(.card.story) {
     position: relative;
+    padding: 24px 24px 16px;
   }
-  summary {
-    padding: 20px 24px;
-    cursor: pointer;
+  @media (min-width: 735px) {
+    :global(.card.story) {
+      padding: 32px 32px 16px;
+    }
+  }
+  @media (min-width: 1069px) {
+    :global(.card.story) {
+      padding: 40px 40px 16px;
+    }
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
     list-style: none;
-    border-radius: var(--radius-card);
-  }
-  summary::-webkit-details-marker {
-    display: none;
-  }
-  .title {
-    display: block;
-    font-size: 1.25rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
   }
   .question {
-    display: block;
-    margin-top: 4px;
-    color: var(--text-2);
-    font-style: italic;
+    margin: 16px 0 0;
+  }
+  .stat-slot {
+    margin-top: 24px;
+  }
+  .more {
+    margin-top: 0;
+  }
+  .more summary {
+    position: absolute;
+    inset-inline-end: 16px;
+    inset-block-end: 16px;
+  }
+  .more-body {
+    margin-top: 24px;
   }
   .lead {
     margin-bottom: 12px;
     padding: 10px 14px;
     border-radius: 12px;
-    background: var(--butter-tint);
+    background: var(--surface-2);
     font-size: 0.9375rem;
   }
-  .permalink {
-    position: absolute;
-    top: 12px;
-    right: 12px;
+  .foot {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    margin-top: 24px;
+    padding-inline-end: 56px;
   }
 </style>

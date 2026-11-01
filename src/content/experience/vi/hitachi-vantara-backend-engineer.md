@@ -1,5 +1,6 @@
 ---
 company: 'Hitachi Vantara Vietnam'
+shortName: 'Hitachi Vantara'
 role: 'Backend Software Engineer'
 location: 'Thành phố Hồ Chí Minh, Việt Nam'
 start: '2019'

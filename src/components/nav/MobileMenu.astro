@@ -1,0 +1,142 @@
+---
+/** Full-screen mobile menu (spec §5.7). The panel is controlled by `scripts/nav.ts`. */
+import { localePath } from '~/i18n/routes';
+import { useT, type Lang } from '~/i18n';
+import ThemeToggle from './ThemeToggle.astro';
+import LangSwitch from './LangSwitch.astro';
+
+interface Props {
+  lang: Lang;
+  links: { href: string; label: string; current: boolean }[];
+  switchHref: string;
+}
+const { lang, links, switchHref } = Astro.props;
+const t = useT(lang);
+---
+
+<div id="mobile-menu" class="menu" hidden>
+  <nav aria-label={t('nav.primary')}>
+    <ul class="main">
+      {links.map((l, i) => (
+        <li style={`--g:0;--i:${i}`}>
+          <a href={localePath(l.href, lang)} aria-current={l.current ? 'page' : undefined}>
+            {l.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+  <p class="more-label" style="--g:1;--i:0">
+    {t('nav.more')}
+  </p>
+  <ul class="more">
+    <li style="--g:1;--i:1">
+      <ThemeToggle {lang} variant="row" />
+    </li>
+    <li style="--g:1;--i:2">
+      <LangSwitch {lang} href={switchHref} variant="row" />
+    </li>
+    <li style="--g:1;--i:3">
+      <a href={localePath('/cv.pdf', lang)} download="Ryan-Parker-CV.pdf" class="menu-row">
+        {t('nav.pdf')}
+      </a>
+    </li>
+  </ul>
+</div>
+
+<style>
+  .menu {
+    position: fixed;
+    inset: var(--nav-h) 0 auto;
+    height: calc(100vh - var(--nav-h));
+    height: calc(100dvh - var(--nav-h));
+    z-index: 55;
+    padding: 4px max(48px, env(safe-area-inset-right)) calc(32px + env(safe-area-inset-bottom))
+      max(48px, env(safe-area-inset-left));
+    background: var(--nav-solid);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .main a {
+    display: flex;
+    align-items: center;
+    min-height: 46px;
+    color: var(--menu-ink);
+    font-size: 1.75rem;
+    font-weight: 600;
+    line-height: 1.1429;
+    letter-spacing: 0.007em;
+  }
+  @media (hover: hover) {
+    .main a:hover {
+      color: var(--text);
+      text-decoration: none;
+    }
+  }
+  .more-label {
+    margin-top: 32px;
+    color: var(--text-2);
+    font-size: 1.0625rem;
+  }
+  .more {
+    margin-top: 8px;
+  }
+  .more :global(.menu-row) {
+    min-height: 48px;
+  }
+  .menu:not([hidden]) {
+    animation: menu-in 240ms var(--ease-nav) both;
+  }
+  /* Link-in: 200ms base delay, 80ms per group, 20ms per link. */
+  .menu:not([hidden]) li,
+  .menu:not([hidden]) .more-label {
+    animation: item-in 320ms var(--ease-nav) both;
+    animation-delay: calc(200ms + var(--g, 0) * 80ms + var(--i, 0) * 20ms);
+  }
+  .menu[data-closing] {
+    animation: menu-out 200ms var(--ease-nav) both;
+  }
+  .menu[data-closing] li,
+  .menu[data-closing] .more-label {
+    animation: item-out 200ms var(--ease-nav) both;
+  }
+  @keyframes menu-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes menu-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes item-in {
+    from {
+      opacity: 0;
+      transform: translateY(-4px);
+    }
+  }
+  @keyframes item-out {
+    to {
+      opacity: 0;
+      transform: translateY(-8px);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .menu,
+    .menu li,
+    .menu .more-label {
+      animation: none !important;
+    }
+  }
+  @media (min-width: 834px) {
+    .menu {
+      display: none !important;
+    }
+  }
+</style>

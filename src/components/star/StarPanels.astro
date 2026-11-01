@@ -1,0 +1,136 @@
+---
+/**
+ * STAR four-panel grid (spec §4.4): Situation and Task side by side, Action and Result at full
+ * width below, all visible at once. One column when the grid is narrower than 520px.
+ */
+import GraphBars from '~/components/tile/GraphBars.astro';
+import Stat from '~/components/tile/Stat.astro';
+import { useT, type Lang } from '~/i18n';
+import type { Metric } from '~/lib/star';
+
+interface Props {
+  /** Rendered HTML of Situation, Task, Action, Result. */
+  html: string[];
+  metrics: Metric[];
+  lang: Lang;
+  /** Heading level of the panel labels: 4 inside a story card (H3 question), 3 on a story page. */
+  level?: 3 | 4;
+}
+const { html, metrics, lang, level = 4 } = Astro.props;
+const t = useT(lang);
+const H = `h${level}` as const;
+const panels = [
+  { key: 's', label: t('star.situation') },
+  { key: 't', label: t('star.task') },
+  { key: 'a', label: t('star.action') },
+  { key: 'r', label: t('star.result') },
+] as const;
+---
+
+<div class="star-panels-wrap">
+  <div class="star-panels">
+    {panels.map((p, i) => (
+      <section class={`panel panel-${p.key}`} data-star-panel={p.key}>
+        <H class="panel-label">{p.label}</H>
+        <div class="panel-body">
+          <Fragment set:html={html[i]} />
+        </div>
+        {p.key === 'r' && metrics.length > 0 && (
+          <ul class="result-stats" aria-label={t('star.metrics')}>
+            {metrics.map((m) => (
+              <li class:list={['result-stat', { 'stat-graph': !!m.compare }]}>
+                <Stat
+                  card
+                  above={m.prefix}
+                  value={m.value}
+                  below={m.label}
+                  nocap={!m.prefix && metrics.some((x) => x.prefix)}
+                />
+                {m.compare && <GraphBars compare={m.compare} {lang} />}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    ))}
+  </div>
+</div>
+
+<style>
+  .star-panels-wrap {
+    container-type: inline-size;
+  }
+  .star-panels {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+  @container (min-width: 520px) {
+    .star-panels {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .panel-a,
+    .panel-r {
+      grid-column: 1 / -1;
+    }
+  }
+  /* Panels take the opposite colour of what they sit on (spec §5.3): white on the story page's
+     grey band and inside a grey card, grey inside a white card (a card on a grey band). */
+  .panel {
+    min-width: 0;
+    padding: 18px 20px 20px;
+    border-radius: 18px;
+    background: var(--bg);
+  }
+  :global(.section--surface .card) .panel {
+    background: var(--surface-2);
+  }
+  .panel-label {
+    margin: 0 0 8px;
+    color: var(--text-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3334;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .panel-body {
+    color: var(--text-2);
+  }
+  .panel-body :global(p + p),
+  .panel-body :global(p + ul),
+  .panel-body :global(ul + p) {
+    margin-top: 0.75em;
+  }
+  .panel-body :global(ul) {
+    padding-inline-start: 1.25em;
+    list-style: disc;
+  }
+  .panel-body :global(li + li) {
+    margin-top: 0.4em;
+  }
+  .panel-body :global(strong) {
+    color: var(--text);
+  }
+  .result-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px 48px;
+    margin: 20px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .result-stat :global(.stat) {
+    align-items: flex-start;
+  }
+  .result-stat.stat-graph {
+    display: grid;
+    flex-basis: 100%;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 48px;
+    align-items: center;
+  }
+  .result-stat :global(.graph-bars) {
+    margin: 0;
+  }
+</style>

@@ -1,13 +1,19 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import StarStepper from '~/components/star/StarStepper.astro';
-import { competencies } from '~/content/competencies';
+import StarPanels from '~/components/star/StarPanels.astro';
+import Quote from '~/components/blog/Quote.astro';
+import Hero from '~/components/tile/Hero.astro';
+import Section from '~/components/tile/Section.astro';
+import Stat from '~/components/tile/Stat.astro';
+import ChevronLink from '~/components/ui/ChevronLink.astro';
 import { getLocalized, render } from '~/lib/content';
+import { isFallback } from '~/lib/localize';
 import { companyLabel } from '~/lib/cv';
-import { splitStarHtml } from '~/lib/star';
+import { headlineStat, splitStarHtml } from '~/lib/star';
+import { singleNav } from '~/lib/localnav';
 import { getLang, langStaticPaths, localePath, switchTarget } from '~/i18n/routes';
-import { useT, type Lang } from '~/i18n';
+import { useT } from '~/i18n';
 
 export const getStaticPaths = (async () => {
   const paths = [];
@@ -29,45 +35,93 @@ const { items: roles } = await getLocalized('experience', lang);
 const role = roles.find((r) => r.slug === d.role);
 if (d.role && !role)
   throw new Error(`STAR story "${story.slug}" references unknown role "${d.role}".`);
+const stat = headlineStat(d.metrics);
+const eyebrow = role
+  ? `${role.data.role} · ${companyLabel(role.data.company, role.data.client)}`
+  : t('star.other');
 ---
 
 <BaseLayout
   title={d.title}
   description={d.question}
   {lang}
-  fallback={story.contentLang !== lang}
+  fallback={isFallback(story.contentLang, lang)}
   langs={story.available}
   searchType="star"
   switchHref={switchTarget(story.available, lang, `/star/${story.slug}/`, '/star/')}
+  localNav={singleNav(role ? role.data.role : t('star.other'), {
+    href: localePath('/star/', lang),
+    label: t('star.all'),
+  })}
 >
-  <article class="container-page page-head">
-    <p>
-      <a href={localePath(role ? `/star/#${role.slug}` : '/star/', lang)} class="link-quiet">
-        ← {t('star.back')}
-      </a>
-    </p>
-    <h1 class="mt-4">{d.title}</h1>
-    {d.sample && (
-      <p class="mt-3">
-        <span class="chip chip-butter">{t('star.sample')}</span>
-      </p>
-    )}
-    <p class="mt-3 text-xl text-text-2 italic">{d.question}</p>
-    <p class="meta mt-3">
-      {role
-        ? `${companyLabel(role.data.company, role.data.client)} · ${role.data.role}`
-        : t('star.other')}
-    </p>
-    <ul class="mt-4 flex flex-wrap gap-2">
-      {(d.competencies as (keyof typeof competencies)[]).map((c) => (
-        <li class="chip chip-sky">{competencies[c][lang as Lang]}</li>
-      ))}
-    </ul>
-    {lead && (
-      <div class="mt-6 rounded-xl bg-butter-tint px-4 py-3 text-[0.9375rem]" set:html={lead} />
-    )}
-    <div class="card mt-8 p-6">
-      <StarStepper {html} metrics={d.metrics} {lang} allOpen />
+  <Hero tight {eyebrow} title={d.title}>
+    <div class="story-lead">
+      <Quote reduced by={t('star.question')}>
+        {d.question}
+      </Quote>
+      {d.sample && (
+        <p>
+          <span class="chip">{t('star.sample')}</span>
+        </p>
+      )}
+      {stat && (
+        <div class="stat-wrap">
+          <Stat super above={stat.prefix} value={stat.value} below={stat.label} />
+        </div>
+      )}
     </div>
-  </article>
+  </Hero>
+  <Section tone="surface" labelledby="story-steps-title" class="story-steps">
+    <h2 id="story-steps-title" class="sr-only">
+      {t('star.steps')}
+    </h2>
+    {lead && <div class="lead" set:html={lead} />}
+    <StarPanels {html} metrics={d.metrics} {lang} level={3} />
+  </Section>
+  <Section id="more" tone="bg" tight labelledby="story-more-title">
+    <h2 id="story-more-title" class="sr-only">
+      {t('star.more')}
+    </h2>
+    <div class="closing">
+      <ChevronLink href={localePath('/star/', lang)}>{t('star.all')}</ChevronLink>
+      <ChevronLink href={localePath(role ? `/experiences/#${role.slug}` : '/experiences/', lang)}>
+        {t('star.readRole')}
+      </ChevronLink>
+    </div>
+  </Section>
 </BaseLayout>
+
+<style>
+  /* Peek rule (§5.10.2): at L the next band shows at least 64px at 1440 x 900. */
+  @media (min-width: 1069px) {
+    :global(.hero.hero--tight) {
+      padding-bottom: 56px;
+    }
+  }
+  .story-lead {
+    margin-top: 32px;
+    text-align: center;
+  }
+  .story-lead :global(.quote blockquote) {
+    text-wrap: balance;
+  }
+  .stat-wrap {
+    margin-top: 48px;
+  }
+  :global(.story-steps .section-inner) {
+    max-width: 760px;
+  }
+  .lead {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: var(--bg);
+    font-size: 0.9375rem;
+  }
+  .closing {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 24px;
+  }
+</style>

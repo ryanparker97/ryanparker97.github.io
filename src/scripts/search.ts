@@ -1,6 +1,8 @@
-// Spotlight-style search. The dialog is opened with Cmd/Ctrl+K, "/" or the nav icon; Pagefind is
-// only downloaded the first time it opens.
-const dialog = document.getElementById('search-dialog') as HTMLDialogElement | null;
+// Search flyout (spec §5.7). Opened with Cmd/Ctrl+K, "/" or the nav icon; Pagefind is only
+// downloaded the first time it opens.
+const dialog = document.getElementById('search-dialog');
+const curtain = document.getElementById('search-curtain');
+const quick = document.getElementById('search-quick');
 const input = document.getElementById('search-input') as HTMLInputElement | null;
 const list = document.getElementById('search-results');
 const status = document.getElementById('search-status');
@@ -40,12 +42,43 @@ const load = () =>
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
 
+const behind = () =>
+  document.querySelectorAll<HTMLElement>(
+    'main, .site-footer, [data-local-nav], .sr-only-focusable, [role=note]',
+  );
+let savedY = 0;
+const focusables = () =>
+  [...(dialog?.querySelectorAll<HTMLElement>('input, a[href], button') ?? [])].filter(
+    (el) => el.getClientRects().length > 0,
+  );
+const isOpen = () => !!dialog && !dialog.hidden;
+const triggers = () => document.querySelectorAll<HTMLElement>('[data-search-open]');
+
 function open() {
-  if (!dialog || dialog.open) return;
+  if (!dialog || !curtain || isOpen()) return;
   opener = document.activeElement as HTMLElement | null;
-  dialog.showModal();
+  // On local-nav pages the global nav scrolls away, and the panel hangs from it: go back up.
+  savedY = scrollY;
+  if (document.querySelector('[data-local-nav]')) scrollTo(0, 0);
+  dialog.hidden = curtain.hidden = false;
+  behind().forEach((el) => el.setAttribute('inert', ''));
+  triggers().forEach((b) => b.setAttribute('aria-expanded', 'true'));
   input?.focus();
   void load();
+}
+
+function close() {
+  if (!dialog || !curtain || !isOpen()) return;
+  dialog.hidden = curtain.hidden = true;
+  behind().forEach((el) => el.removeAttribute('inert'));
+  triggers().forEach((b) => b.setAttribute('aria-expanded', 'false'));
+  // Never leave focus on the hidden input (it would swallow the "/" shortcut).
+  input?.blur();
+  const keep = { preventScroll: true };
+  if (opener && opener !== document.body && opener.isConnected && opener.getClientRects().length)
+    opener.focus(keep);
+  else document.querySelector<HTMLElement>('[data-search-open]')?.focus(keep);
+  if (document.querySelector('[data-local-nav]') && savedY) scrollTo(0, savedY);
 }
 
 async function search(query: string) {
@@ -53,6 +86,7 @@ async function search(query: string) {
   const id = ++run;
   list.innerHTML = '';
   status.textContent = '';
+  if (quick) quick.hidden = !!query.trim();
   if (!query.trim()) return;
   const pf = await load();
   if (!pf) {
@@ -66,7 +100,10 @@ async function search(query: string) {
     status.textContent = (dialog.dataset.none ?? '').replace('{query}', query);
     return;
   }
-  status.textContent = (dialog.dataset.count ?? '').replace('{n}', String(items.length));
+  status.textContent =
+    items.length === 1
+      ? (dialog.dataset.countOne ?? '')
+      : (dialog.dataset.count ?? '').replace('{n}', String(items.length));
   list.innerHTML = items
     .map((d) => {
       const type = d.meta.type
@@ -89,22 +126,30 @@ if (dialog && input) {
   input.addEventListener('input', () => {
     clearTimeout(timer);
     timer = window.setTimeout(() => void search(input.value), 120);
+    if (quick) quick.hidden = !!input.value.trim();
   });
-  // Escape in a search field only clears it; make it close the dialog.
-  input.addEventListener('keydown', (e) => e.key === 'Escape' && dialog.close());
-  dialog.addEventListener('close', () => {
-    // Never leave focus on the hidden input (it would swallow the "/" shortcut).
-    input.blur();
-    if (opener && opener !== document.body) opener.focus();
-  });
+  // Escape in a search field only clears it; make it close the panel.
+  input.addEventListener('keydown', (e) => e.key === 'Escape' && close());
+  document
+    .querySelectorAll('[data-search-close]')
+    .forEach((b) => b.addEventListener('click', close));
+  // Following a result or quick link closes the panel (same-page anchors keep the page).
   dialog.addEventListener('click', (e) => {
-    if (e.target === dialog) dialog.close();
+    if ((e.target as Element).closest('a')) close();
   });
   document.querySelectorAll('[data-search-open]').forEach((b) => b.addEventListener('click', open));
   addEventListener('keydown', (e) => {
     const target = e.target as HTMLElement;
     const typing = target.closest('input, textarea, select, [contenteditable]');
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+    if (e.key === 'Escape' && isOpen()) close();
+    else if (e.key === 'Tab' && isOpen()) {
+      // Modal: Tab and Shift+Tab cycle inside the panel, whatever the browser's own Tab order.
+      e.preventDefault();
+      const items = focusables();
+      const at = items.indexOf(document.activeElement as HTMLElement);
+      const next = at < 0 ? (e.shiftKey ? items.length - 1 : 0) : at + (e.shiftKey ? -1 : 1);
+      items[(next + items.length) % items.length]?.focus();
+    } else if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
       open();
     } else if (e.key === '/' && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {

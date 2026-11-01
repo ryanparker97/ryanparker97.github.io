@@ -1,9 +1,11 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import Hero from '~/components/tile/Hero.astro';
 import { countTags } from '~/lib/blog';
 import { getPosts } from '~/lib/blog-content';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
+import { blogNav } from '~/lib/localnav';
 import { useT } from '~/i18n';
 
 export const getStaticPaths = (() => langStaticPaths()) satisfies GetStaticPaths;
@@ -20,19 +22,34 @@ const tags = countTags(posts);
   {lang}
   {fallback}
   noSearch
+  localNav={blogNav(lang, 'tags')}
 >
-  <div class="container-page">
-    <header class="page-head">
-      <h1>{t('blog.allTags')}</h1>
-    </header>
-    <ul class="flex flex-wrap gap-3 pb-8">
+  <Hero tight eyebrow={t('blog.title')} title={t('blog.allTags')} />
+  <section class="news-band">
+    <ul class="tag-list">
       {tags.map(({ tag, count }) => (
         <li>
-          <a class="chip hover:no-underline" href={localePath(`/blog/tags/${tag}/`, lang)}>
+          <a class="chip" href={localePath(`/blog/tags/${tag}/`, lang)}>
             {tag} · {count}
           </a>
         </li>
       ))}
     </ul>
-  </div>
+  </section>
 </BaseLayout>
+
+<style>
+  .tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    width: var(--content);
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+  }
+  .tag-list .chip {
+    background: var(--bg);
+  }
+</style>

@@ -1,0 +1,24 @@
+---
+/**
+ * Newsroom pull quote (spec §5.10.8). In MDX: `<Quote by="Name" role="Role">…</Quote>`. The
+ * reduced variant is the STAR story question.
+ */
+interface Props {
+  by?: string;
+  role?: string;
+  reduced?: boolean;
+}
+const { by, role, reduced = false } = Astro.props;
+const html = await Astro.slots.render('default');
+// The hanging marks hook onto paragraphs, so bare inline text gets one.
+const body = /<p[\s>]/.test(html) ? html : `<p>${html}</p>`;
+---
+
+<figure class:list={['quote', { 'quote--reduced': reduced }]}>
+  <blockquote set:html={body} />
+  {(by || role) && (
+    <figcaption>
+      {by} {role && <span>{role}</span>}
+    </figcaption>
+  )}
+</figure>

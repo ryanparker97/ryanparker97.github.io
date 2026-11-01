@@ -11,45 +11,51 @@ const { lang, present } = Astro.props;
 const t = useT(lang);
 ---
 
-<div data-js-only class="flex flex-wrap items-center gap-x-6 gap-y-3">
-  <div class="flex gap-4 text-[0.9375rem]">
-    <button type="button" class="link-quiet min-h-11" data-expand="all">
-      {t('star.expandAll')}
+<div role="group" aria-label={t('star.filter')} class="filter" data-competency-filter data-js-only>
+  <button type="button" class="chip chip-filter" data-c="all" aria-pressed="true">
+    {t('star.filterAll')}
+  </button>
+  {present.map((c) => (
+    <button type="button" class="chip chip-filter" data-c={c} aria-pressed="false">
+      {competencies[c][lang]}
     </button>
-    <button type="button" class="link-quiet min-h-11" data-expand="none">
-      {t('star.collapseAll')}
-    </button>
-  </div>
-  <div
-    role="group"
-    aria-label={t('star.filter')}
-    class="flex flex-wrap gap-2"
-    data-competency-filter
-  >
-    <button type="button" class="chip-btn" data-c="all" aria-pressed="true">
-      {t('star.filterAll')}
-    </button>
-    {present.map((c) => (
-      <button type="button" class="chip-btn" data-c={c} aria-pressed="false">
-        {competencies[c][lang]}
-      </button>
-    ))}
-  </div>
+  ))}
 </div>
 
 <style>
-  .chip-btn {
-    min-height: 44px;
-    padding-inline: 16px;
-    border-radius: 999px;
-    background: var(--surface-2);
-    color: var(--text);
-    font-size: 0.875rem;
-    font-weight: 500;
-    transition: background-color 200ms var(--ease);
+  .filter {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
   }
-  .chip-btn[aria-pressed='true'] {
-    background: var(--sky-tint);
-    box-shadow: inset 0 0 0 2px var(--sky-ink);
+  .chip-filter {
+    min-height: 36px;
+    padding-block: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition:
+      background-color 200ms var(--ease),
+      color 200ms var(--ease);
+  }
+  .chip-filter[aria-pressed='true'] {
+    background: var(--text);
+    color: var(--bg);
+  }
+  @media (max-width: 734px) {
+    .filter {
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      margin-inline: calc(var(--gutter) * -1);
+      padding-inline: var(--gutter);
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .filter::-webkit-scrollbar {
+      display: none;
+    }
+    .chip-filter {
+      flex: none;
+    }
   }
 </style>

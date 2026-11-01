@@ -6,7 +6,7 @@ const ROUTES = [
   '/experiences/',
   '/projects/',
   '/star/',
-  '/star/talend-to-databricks-migration/',
+  '/star/emr-cost-optimization/',
   '/blog/',
   '/blog/neovim-setup-1-zero-to-editor/',
   '/blog/tags/',
@@ -47,7 +47,7 @@ test.describe('axe with motion enabled', () => {
         await page.waitForTimeout(80);
       }
       await page.evaluate(() => window.scrollTo(0, 0));
-      await page.waitForTimeout(900);
+      await page.waitForTimeout(2400);
       const { violations } = await new AxeBuilder({ page }).analyze();
       const bad = violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
       expect(

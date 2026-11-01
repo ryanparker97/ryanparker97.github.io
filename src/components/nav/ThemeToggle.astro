@@ -2,33 +2,47 @@
 import { Icon } from 'astro-icon/components';
 import { useT, type Lang } from '~/i18n';
 
-const { lang } = Astro.props as { lang: Lang };
+interface Props {
+  lang: Lang;
+  /** `icon`: the bar button. `row`: the text row inside the mobile menu. */
+  variant?: 'icon' | 'row';
+}
+const { lang, variant = 'icon' } = Astro.props;
 const t = useT(lang);
+// Light is the default; theme.ts relabels the button once it knows the saved preference.
+const label = t('nav.theme', { value: t('theme.light') });
 ---
 
 <button
   type="button"
-  class="icon-btn theme-toggle"
+  class:list={['theme-toggle', variant === 'icon' ? 'icon-btn' : 'menu-row']}
   data-theme-toggle
-  data-label={t('theme.label')}
-  data-system={t('theme.system')}
+  data-fmt={t('nav.theme', { value: '{value}' })}
   data-light={t('theme.light')}
   data-dark={t('theme.dark')}
-  aria-label={`${t('theme.label')}: ${t('theme.system')}`}
-  title={`${t('theme.label')}: ${t('theme.system')}`}
+  data-system={t('theme.system')}
+  aria-label={variant === 'icon' ? label : undefined}
+  title={variant === 'icon' ? label : undefined}
+  data-js-only
 >
-  <Icon name="lucide:monitor" class="i-system" size={20} />
-  <Icon name="lucide:sun" class="i-light" size={20} />
-  <Icon name="lucide:moon" class="i-dark" size={20} />
+  {variant === 'icon' ? (
+    <>
+      <Icon name="lucide:sun" class="i-light" size={16} />
+      <Icon name="lucide:moon" class="i-dark" size={16} />
+      <Icon name="lucide:monitor" class="i-system" size={16} />
+    </>
+  ) : (
+    <span data-theme-text>{label}</span>
+  )}
 </button>
 
 <style>
   .theme-toggle :global(svg) {
     display: none;
   }
-  :global(:root:not([data-pref='light']):not([data-pref='dark'])) .i-system,
-  :global(:root[data-pref='light']) .i-light,
-  :global(:root[data-pref='dark']) .i-dark {
+  :global(:root:not([data-pref='dark']):not([data-pref='system'])) .i-light,
+  :global(:root[data-pref='dark']) .i-dark,
+  :global(:root[data-pref='system']) .i-system {
     display: block;
   }
 </style>

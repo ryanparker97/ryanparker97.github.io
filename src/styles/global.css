@@ -1,70 +1,104 @@
 @import 'tailwindcss';
 @import './fonts.css';
 @import './tokens.css';
+@import './blocks.css';
+
+/* Apple breakpoints (spec §5.2): M starts at 735px, compact chrome ends at 833px, L at 1069px. */
+@theme static {
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue',
+    'Inter Variable', Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+  --breakpoint-sm: 735px;
+  --breakpoint-md: 834px;
+  --breakpoint-lg: 1069px;
+  --breakpoint-xl: 1280px;
+}
 
 @theme inline {
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, -apple-system, sans-serif;
-  --font-serif: 'Newsreader Variable', Georgia, serif;
-  --font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', monospace;
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
+  --color-fill: var(--fill);
   --color-text: var(--text);
   --color-text-2: var(--text-2);
   --color-border: var(--border);
-  --color-mint: var(--mint);
-  --color-sky: var(--sky);
-  --color-butter: var(--butter);
+  --color-link: var(--link);
+  --color-accent: var(--accent);
   --color-mint-tint: var(--mint-tint);
-  --color-sky-tint: var(--sky-tint);
-  --color-butter-tint: var(--butter-tint);
-  --color-mint-ink: var(--mint-ink);
-  --color-sky-ink: var(--sky-ink);
-  --radius-card: 24px;
+  --radius-card: 28px;
   --radius-bento: 28px;
 }
 
 @layer base {
   html {
-    scroll-padding-top: calc(var(--nav-h) + 16px);
     -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  /* Every anchor target clears both sticky bars (spec §5.10.6). */
+  [id] {
+    scroll-margin-top: calc(var(--sticky-h) + 16px);
   }
   body {
     background: var(--bg);
     color: var(--text);
-    font: 400 1.0625rem/1.6 var(--font-sans);
+    font: 400 1.0625rem/1.4706 var(--font-sans);
+    letter-spacing: -0.022em;
     -webkit-font-smoothing: antialiased;
+    font-synthesis: none;
   }
   h1,
   h2,
   h3 {
     font-family: var(--font-sans);
-    line-height: 1.15;
+    font-weight: 600;
+    text-wrap: balance;
   }
+  p {
+    text-wrap: pretty;
+  }
+  /* Defaults for headings outside the building blocks (the blocks use the .t-* classes). */
   h1 {
-    font-size: clamp(2rem, 4vw, 3rem);
-    font-weight: 700;
-    letter-spacing: -0.02em;
+    font-size: 2rem;
+    line-height: 1.0835;
+    letter-spacing: -0.003em;
   }
   h2 {
-    font-size: clamp(1.5rem, 3vw, 2.25rem);
-    font-weight: 600;
-    letter-spacing: -0.015em;
+    font-size: 1.75rem;
+    line-height: 1.1429;
+    letter-spacing: 0.007em;
   }
   h3 {
-    font-size: 1.25rem;
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-size: 1.3125rem;
+    line-height: 1.1429;
+    letter-spacing: 0.007em;
+  }
+  @media (min-width: 735px) {
+    h1 {
+      font-size: 2.5rem;
+    }
+  }
+  @media (min-width: 1069px) {
+    h1 {
+      font-size: 3rem;
+    }
   }
   a {
-    color: var(--sky-ink);
-  }
-  a:hover {
-    text-decoration: underline;
+    color: var(--link);
+    text-decoration: none;
   }
   :focus-visible {
-    outline: 2px solid var(--sky-ink);
-    outline-offset: 2px;
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
+  }
+  .card :focus-visible,
+  .grid-tile :focus-visible,
+  .gallery-card :focus-visible {
+    outline-offset: 3px;
+  }
+  button,
+  summary {
+    -webkit-tap-highlight-color: transparent;
   }
   code,
   kbd,
@@ -75,28 +109,259 @@
   [hidden] {
     display: none !important;
   }
+  @media (hover: hover) {
+    a:hover {
+      text-decoration: underline;
+    }
+  }
+  /* Touch devices: a quick pressed state (spec §5.6). */
+  @media (hover: none) {
+    a:active,
+    button:not(.icon-btn, .plus-disc, .paddle):active,
+    summary:active {
+      opacity: 0.7;
+      transition: opacity 100ms linear;
+    }
+  }
 }
 
+/* Type scale (spec §5.4): L / M / S in rem. */
 @layer components {
+  .t-hero,
+  .t-unit,
+  .t-section,
+  .t-promo,
+  .t-subhead,
+  .t-card,
+  .t-eyebrow,
+  .t-intro {
+    font-family: var(--font-sans);
+  }
+  .t-hero {
+    font-size: 2.5rem;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    font-weight: 600;
+  }
+  .t-unit {
+    font-size: 2rem;
+    line-height: 1.0714;
+    letter-spacing: -0.005em;
+    font-weight: 600;
+  }
+  .t-section {
+    font-size: 2rem;
+    line-height: 1.0835;
+    letter-spacing: -0.003em;
+    font-weight: 600;
+  }
+  .t-promo {
+    font-size: 2rem;
+    line-height: 1.1;
+    letter-spacing: 0;
+    font-weight: 600;
+  }
+  .t-subhead {
+    font-size: 1.1875rem;
+    line-height: 1.1429;
+    letter-spacing: 0.007em;
+    font-weight: 400;
+  }
+  .t-card {
+    font-size: 1.3125rem;
+    line-height: 1.1429;
+    letter-spacing: 0.007em;
+    font-weight: 600;
+  }
+  .t-eyebrow {
+    font-size: 1.0625rem;
+    line-height: 1;
+    letter-spacing: 0.011em;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  .t-intro {
+    font-size: 1.1875rem;
+    line-height: 1.381;
+    letter-spacing: 0.011em;
+  }
+  .t-lockup {
+    font-size: 1.1875rem;
+    line-height: 1.421;
+    letter-spacing: 0.012em;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  .t-lockup strong {
+    color: var(--text);
+  }
+  .t-article-title {
+    font-size: 2rem;
+    line-height: 1.0835;
+    letter-spacing: -0.003em;
+    font-weight: 700;
+  }
+  .t-article-sub {
+    font-size: 1.3125rem;
+    line-height: 1.25;
+    letter-spacing: 0.009em;
+  }
+  .t-article-body {
+    font-size: 1.0625rem;
+    line-height: 1.42;
+    letter-spacing: 0.012em;
+  }
+  .t-article-section {
+    font-size: 1.3125rem;
+    line-height: 1.1667;
+    letter-spacing: 0.009em;
+    font-weight: 700;
+  }
+  .t-news-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 5;
+    overflow: hidden;
+    font-size: 1.3125rem;
+    line-height: 1.1667;
+    letter-spacing: 0.009em;
+    font-weight: 700;
+  }
+  .t-news-cat {
+    font-size: 0.75rem;
+    line-height: 1.2858;
+    letter-spacing: 0;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--text-2);
+  }
+  .t-quote {
+    font-size: 1.75rem;
+    line-height: 1.286;
+    letter-spacing: 0;
+    font-weight: 400;
+  }
+  .t-body {
+    font-size: 1.0625rem;
+    line-height: 1.4706;
+    letter-spacing: -0.022em;
+  }
+  .t-reduced {
+    font-size: 0.875rem;
+    line-height: 1.4286;
+    letter-spacing: -0.016em;
+  }
+  .t-caption {
+    font-size: 0.75rem;
+    line-height: 1.3334;
+    letter-spacing: -0.01em;
+  }
+  @media (min-width: 735px) {
+    .t-hero {
+      font-size: 4rem;
+    }
+    .t-unit {
+      font-size: 3rem;
+    }
+    .t-section {
+      font-size: 2.5rem;
+    }
+    .t-promo {
+      font-size: 2rem;
+    }
+    .t-subhead {
+      font-size: 1.5rem;
+    }
+    .t-card {
+      font-size: 1.5rem;
+    }
+    .t-eyebrow {
+      font-size: 1.1875rem;
+    }
+    .t-intro {
+      font-size: 1.3125rem;
+    }
+    .t-lockup {
+      font-size: 1.3125rem;
+      line-height: 1.381;
+      letter-spacing: 0.011em;
+    }
+    .t-article-title {
+      font-size: 2.5rem;
+    }
+    .t-article-body {
+      font-size: 1.0625rem;
+    }
+    .t-news-cat {
+      font-size: 0.75rem;
+    }
+    .t-quote {
+      font-size: 2rem;
+      line-height: 1.25;
+    }
+  }
+  @media (min-width: 1069px) {
+    .t-lockup {
+      font-size: 1.3125rem;
+    }
+    .t-article-title {
+      font-size: 3rem;
+    }
+    .t-article-sub {
+      font-size: 1.5rem;
+    }
+    .t-article-body {
+      font-size: 1.1875rem;
+    }
+    .t-article-section,
+    .t-news-title {
+      font-size: 1.5rem;
+    }
+    .t-news-cat {
+      font-size: 0.875rem;
+    }
+    .t-quote {
+      font-size: 2.5rem;
+      line-height: 1.2;
+    }
+    .t-hero {
+      font-size: 5rem;
+    }
+    .t-unit {
+      font-size: 3.5rem;
+    }
+    .t-section {
+      font-size: 3rem;
+    }
+    .t-promo {
+      font-size: 2.5rem;
+    }
+    .t-subhead {
+      font-size: 1.75rem;
+    }
+    .t-card {
+      font-size: 1.75rem;
+    }
+    .t-eyebrow {
+      font-size: 1.3125rem;
+    }
+  }
+
   .container-page {
-    width: 100%;
-    max-width: calc(1120px + 2 * 32px);
+    width: var(--content);
     margin-inline: auto;
-    padding-inline: 16px;
   }
-  /* Home only: nav and footer line up with the 1520px Home container. */
-  .container-page.wide {
-    max-width: calc(1520px + 2 * 32px);
+  .container-wide {
+    width: var(--content-wide);
+    margin-inline: auto;
   }
-  @media (min-width: 640px) {
-    .container-page {
-      padding-inline: 24px;
-    }
-  }
-  @media (min-width: 1024px) {
-    .container-page {
-      padding-inline: 32px;
-    }
+  /* Nav, local nav and footer rows (spec §5.2): centred, gutters grow with the safe areas. */
+  .chrome-row {
+    width: 100%;
+    max-width: var(--chrome-nav);
+    margin-inline: auto;
+    padding-inline: max(var(--gutter), env(safe-area-inset-left))
+      max(var(--gutter), env(safe-area-inset-right));
   }
   .page-head {
     padding-block: 64px 32px;
@@ -106,64 +371,161 @@
     font-weight: 500;
     color: var(--text-2);
   }
+
+  /* Chips (spec §5.6): neutral by default, mint for tech and "Current". */
   .chip {
-    display: inline-flex;
-    align-items: center;
+    display: inline-block;
     max-width: 100%;
     min-height: 28px;
-    padding: 3px 12px;
-    border-radius: 999px;
-    background: var(--surface-2);
+    padding: 6px 12px;
+    border-radius: 980px;
+    background: var(--fill);
     color: var(--text);
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     font-weight: 500;
-    line-height: 1.3;
+    line-height: 1.3334;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    vertical-align: middle;
+  }
+  /* A long static chip (a headline metric) is cut with an ellipsis instead of widening its row. */
+  .chip:not(a, button) {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .chip-mint {
     background: var(--mint-tint);
   }
-  .chip-sky {
-    background: var(--sky-tint);
+  .chip-sm {
+    min-height: 24px;
+    padding: 4px 10px;
   }
-  .chip-butter {
-    background: var(--butter-tint);
-  }
+
+  /* Buttons (spec §5.6). */
   .btn {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     min-height: 44px;
-    padding-inline: 22px;
+    padding: 12px 22px;
+    border: 1px solid transparent;
     border-radius: 980px;
-    font-weight: 500;
+    font-size: 1.0625rem;
+    font-weight: 400;
+    line-height: 1.1765;
+    letter-spacing: -0.022em;
+    text-align: center;
+    cursor: pointer;
     transition:
-      opacity 200ms var(--ease),
-      background-color 200ms var(--ease);
+      background-color 200ms var(--ease),
+      color 200ms var(--ease);
   }
   .btn:hover {
     text-decoration: none;
-    opacity: 0.88;
   }
-  .btn-primary {
-    background: var(--text);
-    color: var(--bg);
-  }
-  .btn-secondary {
-    background: var(--sky-tint);
-    color: var(--text);
-  }
-  a.btn-primary,
-  a.btn-secondary {
-    color: inherit;
-  }
+  .btn-primary,
   a.btn-primary {
-    color: var(--bg);
+    background: var(--accent);
+    color: #fff;
   }
+  .btn-secondary,
+  a.btn-secondary {
+    background: transparent;
+    border-color: var(--link);
+    color: var(--link);
+  }
+  @media (hover: hover) {
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+    .btn-secondary:hover {
+      background: var(--link);
+      color: #fff;
+    }
+  }
+  .btn-primary:active {
+    background: var(--accent-active);
+  }
+  /* Small pill (local nav): ~24px tall, with a transparent 44px tap area. */
+  .btn-sm {
+    min-height: 24px;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    line-height: 1.3334;
+    letter-spacing: -0.01em;
+  }
+  .btn-sm::before {
+    content: '';
+    position: absolute;
+    inset: 50% 0 auto;
+    height: 44px;
+    min-width: 44px;
+    left: 50%;
+    width: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 17px;
+  }
+
+  /* Chevron link (spec §5.6): the chevron is a separate aria-hidden span. */
+  .link-chevron {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--link);
+  }
+  .link-chevron .chev {
+    margin-inline-start: 0.24em;
+  }
+  .link-quiet {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--link);
+  }
+  /* Interactive chips keep a 44px tap area through a transparent ::before. */
+  a.chip,
+  button.chip {
+    position: relative;
+  }
+  a.chip::before,
+  button.chip::before {
+    content: '';
+    position: absolute;
+    inset: 50% 0 auto;
+    height: 44px;
+    transform: translateY(-50%);
+  }
+  .meta a,
+  .card a:not(.btn, .link-chevron) {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
   .card {
-    background: var(--surface);
+    background: var(--surface-2);
     border-radius: var(--radius-card);
-    box-shadow: var(--shadow);
+    padding: 24px;
+  }
+  .card,
+  .prose,
+  article {
+    overflow-wrap: anywhere;
+  }
+  /* A card in a grid shrinks to its column instead of stretching it. */
+  .card {
+    min-width: 0;
+  }
+  @media (min-width: 735px) {
+    .card {
+      padding: 28px;
+    }
   }
   .icon-btn {
     display: inline-flex;
@@ -171,21 +533,119 @@
     justify-content: center;
     width: 44px;
     height: 44px;
-    border-radius: 12px;
     color: var(--text);
+    opacity: 0.8;
   }
-  .icon-btn:hover {
-    background: var(--surface-2);
-    text-decoration: none;
+  @media (hover: hover) {
+    .icon-btn:hover {
+      opacity: 1;
+      text-decoration: none;
+    }
   }
-  .meta a,
-  .link-quiet {
-    text-decoration: underline;
-    text-underline-offset: 3px;
+  /* Round buttons press to 95% (spec §5.6). */
+  .icon-btn,
+  .plus-disc,
+  .paddle {
+    transition: transform 100ms linear;
   }
-  .link-quiet {
-    color: var(--sky-ink);
-    font-weight: 500;
+  .icon-btn:active,
+  .plus-disc:active,
+  .paddle:active {
+    transform: scale(0.95);
+  }
+
+  /* Plus disc (expanders): a 36px circle in a 44px target; the plus turns into a cross. */
+  .plus-disc {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    cursor: pointer;
+    list-style: none;
+  }
+  .plus-disc::-webkit-details-marker {
+    display: none;
+  }
+  .plus-disc::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: var(--fill);
+    transition: background-color 100ms linear;
+  }
+  .plus-disc::after {
+    content: '';
+    position: relative;
+    width: 14px;
+    height: 14px;
+    background:
+      linear-gradient(var(--text), var(--text)) center / 100% 2px no-repeat,
+      linear-gradient(var(--text), var(--text)) center / 2px 100% no-repeat;
+    opacity: 0.56;
+    transition: transform 320ms var(--ease);
+  }
+  .plus-disc[aria-expanded='true']::after,
+  details[open] > .plus-disc::after {
+    transform: rotate(45deg);
+  }
+
+  /* Paddle (gallery arrows): a 36px circle in a 44px target. */
+  .paddle {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    color: var(--paddle-ink);
+    cursor: pointer;
+  }
+  .paddle::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: var(--paddle-fill);
+    transition: background-color 100ms linear;
+  }
+  .paddle > * {
+    position: relative;
+  }
+  .paddle:hover::before {
+    background: var(--paddle-fill-hover);
+  }
+  .paddle:active::before {
+    background: var(--paddle-fill-active);
+  }
+  .paddle:disabled {
+    opacity: 0.42;
+    cursor: default;
+  }
+  /* Whole-card links lift on hover, with a fine pointer only. */
+  @media (hover: hover) and (pointer: fine) {
+    .lift {
+      transition:
+        transform 300ms var(--ease-card),
+        background-color 344ms ease;
+    }
+    .lift:hover {
+      transform: scale(1.0161);
+    }
+  }
+  .menu-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 48px;
+    color: var(--menu-ink);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
   }
 
   /* Labelled achievement bullets: bold label in --text, detail in --text-2 (spec §4.2). */
@@ -211,7 +671,7 @@
     width: 5px;
     height: 5px;
     border-radius: 50%;
-    background: var(--mint-ink);
+    background: var(--text-2);
   }
   .bullets strong {
     color: var(--text);
@@ -219,28 +679,9 @@
   }
 }
 
-/* Scroll reveal (spec §5.6): elements start hidden only when JS is available. */
-@media (prefers-reduced-motion: no-preference) {
-  .js [data-reveal] {
-    opacity: 0;
-    transform: translateY(16px);
-    transition:
-      opacity 600ms var(--ease),
-      transform 600ms var(--ease);
-    transition-delay: calc(var(--i, 0) * 60ms);
-  }
-  .js [data-reveal].is-visible {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 /* Elements that only make sense with JavaScript. */
-[data-js-only] {
+html:not(.js) [data-js-only] {
   display: none;
-}
-.js [data-js-only] {
-  display: revert;
 }
 
 .sr-only-focusable:not(:focus) {
@@ -258,7 +699,7 @@
 }
 .code-block {
   margin-block: 1.5em;
-  border-radius: 16px;
+  border-radius: 18px;
   overflow: hidden;
   background: var(--surface-2);
 }
@@ -274,7 +715,7 @@
   padding-inline: 16px;
 }
 .code-block .line.highlighted {
-  background: var(--mint-tint);
+  background: var(--fill);
 }
 .code-block .prompt {
   user-select: none;
@@ -330,7 +771,7 @@
   margin-bottom: 2px;
   padding: 1px 8px;
   border-radius: 999px;
-  background: var(--mint-tint);
+  background: var(--fill);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -346,30 +787,38 @@
   padding-block: 6px;
 }
 .hit mark {
-  background: var(--butter-tint);
+  background: var(--fill);
   color: var(--text);
   border-radius: 3px;
-  box-shadow: 0 0 0 2px var(--butter-tint);
 }
 
-/* Pastel tints (cards, chips and monograms). */
-.tint-mint {
-  background: var(--mint-tint);
-}
-.tint-sky {
-  background: var(--sky-tint);
-}
-.tint-butter {
-  background: var(--butter-tint);
-}
-.chip-sm {
-  min-height: 24px;
-  padding-inline: 10px;
-  font-size: 0.75rem;
-}
-/* Secondary text needs more contrast on the pastel tints. */
-.tint-mint,
-.tint-sky,
-.tint-butter {
-  --text-2: light-dark(#4d4d52, #a1a1a6);
+/* Nav and local nav match the page at rest and turn to glass over 1px of scroll (spec §5.7). Pure
+   CSS (a scroll timeline); without support the bars are always glass. */
+@supports (animation-timeline: scroll()) {
+  [data-nav],
+  [data-local-nav] {
+    /* Longhands on purpose: minifiers fold them into a shorthand that browsers do not parse. */
+    animation-name: chrome-rest;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
+    animation-timeline: scroll(root);
+    animation-range: 0 1px;
+  }
+  @keyframes chrome-rest {
+    from {
+      background-color: transparent;
+      -webkit-backdrop-filter: none;
+      backdrop-filter: none;
+    }
+  }
+  /* The local nav turns glass only once it is stuck (the global nav has scrolled away). */
+  [data-local-nav] {
+    animation-range: calc(var(--nav-h) - 1px) var(--nav-h);
+  }
+  /* Solid states (menu, search, open dropdown) win over the scroll animation. */
+  [data-nav][data-menu-open],
+  html:has(#search-dialog:not([hidden])) [data-nav],
+  [data-local-nav]:has(details[open]) {
+    animation: none;
+  }
 }

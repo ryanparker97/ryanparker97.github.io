@@ -1,12 +1,12 @@
-# jomatran97.github.io
+# ryanparker97.github.io
 
-[![CI](https://github.com/jomatran97/jomatran97.github.io/actions/workflows/ci.yml/badge.svg)](https://github.com/jomatran97/jomatran97.github.io/actions/workflows/ci.yml)
+[![CI](https://github.com/ryanparker97/ryanparker97.github.io/actions/workflows/ci.yml/badge.svg)](https://github.com/ryanparker97/ryanparker97.github.io/actions/workflows/ci.yml)
 
-Personal portfolio of Ryan Parker, live at <https://jomatran97.github.io>: Experiences (with a CV PDF built in CI), projects, STAR interview stories and a blog, in English and Vietnamese. Built with Astro and Tailwind CSS; every entry is a Markdown/MDX file. The full specification is in [`spec.md`](./spec.md).
+Personal portfolio of Ryan Parker, live at <https://ryanparker97.github.io>: Experiences (with a CV PDF built in CI), projects, STAR interview stories and a blog, in English and Vietnamese. Built with Astro and Tailwind CSS; every entry is a Markdown/MDX file. The full specification is in [`spec.md`](./spec.md).
 
 ## Develop
 
-Requires Node 22 and pnpm.
+Requires Node 24 (22.23.4 at minimum) and pnpm.
 
 ```sh
 pnpm install
@@ -51,7 +51,7 @@ Run `scripts/setup-repo.sh` (needs `gh` signed in as the repo admin) or do these
 
 ### Placeholders to fill (spec section 15)
 
-- [ ] Sample STAR stories (`src/content/star/*/*.md`, marked `sample: true`, placeholder metrics `<n>`): replace with real stories, then remove `sample: true`.
+- [ ] More STAR stories in `src/content/star/{en,vi}/`. The sample stories are gone and one real story exists (`emr-cost-optimization`); add others as needed (`sample: true` still marks an illustrative one).
 - [ ] Optional X and Bluesky URLs in `profile/*/index.md`.
 - [ ] Certification badge images (`badge:`) and credential URLs (`credentialUrl:`).
 - [ ] Review the Vietnamese translations, and the skill descriptions (written from the CV; spec section 14, item 18).

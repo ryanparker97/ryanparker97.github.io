@@ -8,6 +8,11 @@ if (headings.length && links.length) {
       if (a.hash === `#${id}`) a.setAttribute('aria-current', 'location');
       else a.removeAttribute('aria-current');
     });
+  // Headings count as read once they pass under both sticky bars.
+  const bars = [...document.querySelectorAll<HTMLElement>('[data-nav], [data-local-nav]')].reduce(
+    (n, el) => n + el.offsetHeight,
+    0,
+  );
   const visible = new Set<string>();
   const io = new IntersectionObserver(
     (entries) => {
@@ -17,11 +22,11 @@ if (headings.length && links.length) {
       }
       // Highlight the first visible heading, otherwise the last one scrolled past.
       const first = headings.find((h) => visible.has(h.id));
-      const past = headings.filter((h) => h.getBoundingClientRect().top < 0).pop();
+      const past = headings.filter((h) => h.getBoundingClientRect().top < bars).pop();
       const target = first ?? past ?? headings[0];
       mark(target.id);
     },
-    { rootMargin: '-60px 0px -65% 0px' },
+    { rootMargin: `-${bars + 8}px 0px -65% 0px` },
   );
   headings.forEach((h) => io.observe(h));
 }

@@ -1,0 +1,66 @@
+---
+import { competencies } from '~/content/competencies';
+import type { Localized } from '~/lib/content';
+import { headlineStat } from '~/lib/star';
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+import GridTile from '~/components/tile/GridTile.astro';
+import Lockup from '~/components/tile/Lockup.astro';
+import Stat from '~/components/tile/Stat.astro';
+
+interface Props {
+  lang: Lang;
+  story: Localized<'star'>;
+  span?: boolean;
+}
+const { lang, story, span = false } = Astro.props;
+const t = useT(lang);
+const d = story.data;
+const stat = headlineStat(d.metrics);
+const chips = d.competencies.slice(0, 3);
+---
+
+<GridTile id="stories" {span} labelledby="stories-title">
+  <Lockup
+    id="stories-title"
+    size="promo"
+    title={d.title}
+    eyebrow={t('home.stories.eyebrow')}
+    reveal
+  >
+    <ul slot="extra" class="chips" data-competencies>
+      {chips.map((c) => (
+        <li class="chip">{competencies[c][lang]}</li>
+      ))}
+    </ul>
+    <Fragment slot="actions">
+      <a
+        href={localePath(`/star/${story.slug}/`, lang)}
+        class="btn btn-primary"
+        aria-label={`${t('home.stories.read')}: ${d.title}`}
+      >
+        {t('home.stories.read')}
+      </a>
+      <a href={localePath('/star/', lang)} class="btn btn-secondary">
+        {t('home.stories.all')}
+      </a>
+    </Fragment>
+  </Lockup>
+  {stat && (
+    <Fragment slot="visual">
+      <Stat super above={stat.prefix} value={stat.value} below={stat.label} />
+    </Fragment>
+  )}
+</GridTile>
+
+<style>
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+</style>

@@ -1,0 +1,28 @@
+---
+/** Stat strip (spec §5.10.5): a list of 1–3 stat lockups separated by hairlines. */
+import Stat from './Stat.astro';
+
+interface Props {
+  stats: { value: string; above?: string; below?: string }[];
+  /** Accessible name of the list, e.g. "At a glance". */
+  label: string;
+  /** `card` uses the smaller value sizes. */
+  variant?: 'hero' | 'card';
+}
+const { stats, label, variant = 'hero' } = Astro.props;
+// At S, short values (5 characters at most) stay three across.
+const anyAbove = stats.some((s) => s.above);
+const compact = stats.every((s) => [...s.value].length <= 5);
+---
+
+<ul
+  class:list={[
+    'stat-strip',
+    { 'stat-strip--card': variant === 'card', 'stat-strip--compact': compact },
+  ]}
+  aria-label={label}
+>
+  {stats.slice(0, 3).map((s) => (
+    <Stat {...s} item card={variant === 'card'} nocap={anyAbove && !s.above} />
+  ))}
+</ul>

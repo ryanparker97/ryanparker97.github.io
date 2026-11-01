@@ -8,7 +8,7 @@ parts:
   - part: 2
     title: 'Languages: LSP, completion, formatting and linting'
   - part: 3
-    title: 'Data engineering: dbt, SQL, databases and CloudFormation'
+    title: 'Data engineering: DBT, SQL, databases and CloudFormation'
   - part: 4
     title: 'Java with nvim-jdtls'
   - part: 5

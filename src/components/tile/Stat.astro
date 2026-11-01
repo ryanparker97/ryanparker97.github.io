@@ -1,0 +1,37 @@
+---
+/**
+ * Stat lockup (spec §5.10.5): an optional short caption above (two words at most), the value, and
+ * a caption below, in reading order. Render inside a `<ul>` (see StatStrip) or on its own.
+ */
+interface Props {
+  value: string;
+  /** Short caption above the value: "Up to", "Led", "Cut". */
+  above?: string;
+  /** Caption below the value. */
+  below?: string;
+  /** The page's one big visual (`.stat--super`). */
+  super?: boolean;
+  /** Smaller value sizes for use inside cards. */
+  card?: boolean;
+  /** Renders a plain `<li>` (inside a strip) instead of a `<figure>`. */
+  item?: boolean;
+  /** Pads a stat with no top caption so its value shares a baseline with its siblings. */
+  nocap?: boolean;
+}
+const {
+  value,
+  above,
+  below,
+  super: isSuper = false,
+  card = false,
+  item = false,
+  nocap = false,
+} = Astro.props;
+const Tag = item ? 'li' : 'figure';
+---
+
+<Tag class:list={['stat', { 'stat--super': isSuper, 'stat--card': card, 'stat--nocap': nocap }]}>
+  {above && <span class="stat-cap">{above}</span>}
+  <span class="stat-value">{value}</span>
+  {below && <span class="stat-cap">{below}</span>}
+</Tag>

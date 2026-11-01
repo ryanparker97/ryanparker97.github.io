@@ -1,0 +1,47 @@
+---
+/**
+ * Section header (spec §5.10.4): centred, or start-aligned with the chevron CTA on the right at
+ * the baseline (inner-page sections).
+ */
+import Lockup from './Lockup.astro';
+
+interface Props {
+  id?: string;
+  title: string;
+  eyebrow?: string;
+  subline?: string;
+  copy?: string;
+  /** Headline size: inner-page section (default), Home unit, or grid-tile promo. */
+  size?: 'section' | 'unit' | 'promo';
+  align?: 'center' | 'start';
+  long?: boolean;
+  reveal?: boolean;
+}
+const {
+  id,
+  title,
+  eyebrow,
+  subline,
+  copy,
+  size = 'section',
+  align = 'center',
+  long,
+  reveal = true,
+} = Astro.props;
+---
+
+<header class:list={['section-header', { 'section-header--start': align === 'start' }]}>
+  <Lockup {id} {size} {title} {eyebrow} {subline} {copy} {long} start={align === 'start'} {reveal}>
+    <Fragment slot="eyebrow">
+      <slot name="eyebrow" />
+    </Fragment>
+    <Fragment slot="actions">
+      <slot name="actions" />
+    </Fragment>
+  </Lockup>
+  {Astro.slots.has('cta') && (
+    <div class="cta" data-reveal style="--i:2">
+      <slot name="cta" />
+    </div>
+  )}
+</header>

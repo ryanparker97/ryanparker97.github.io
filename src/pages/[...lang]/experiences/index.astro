@@ -1,9 +1,12 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import CvHeader from '~/components/cv/CvHeader.astro';
-import Timeline from '~/components/cv/Timeline.astro';
-import { getLocalized, getProfile, render } from '~/lib/content';
+import Chapter from '~/components/experiences/Chapter.astro';
+import HighlightsGallery from '~/components/experiences/HighlightsGallery.astro';
+import Section from '~/components/tile/Section.astro';
+import SectionHeader from '~/components/tile/SectionHeader.astro';
+import { getLocalized, getProfile } from '~/lib/content';
+import { roleNavLabels, sortRoles } from '~/lib/cv';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
 import { personLd } from '~/lib/jsonld';
 import { useT } from '~/i18n';
@@ -12,16 +15,24 @@ export const getStaticPaths = (() => langStaticPaths()) satisfies GetStaticPaths
 
 const lang = getLang(Astro.params.lang);
 const t = useT(lang);
-const { entry, data: profile, fallback: profileFallback } = await getProfile(lang);
-const { items: roles, fallback: rolesFallback } = await getLocalized('experience', lang);
-const { Content: Summary } = await render(entry);
+const { data: profile, fallback: profileFallback } = await getProfile(lang);
+const { items: allRoles, fallback: rolesFallback } = await getLocalized('experience', lang);
+const roles = sortRoles(allRoles.map((r) => ({ ...r, start: r.data.start, end: r.data.end })));
 
 // Same fallback rule as everywhere else: untranslated stories still count.
 const { items: starStories } = await getLocalized('star', lang);
-const stories: Record<string, number> = {};
+const stories: Record<string, string[]> = {};
 for (const s of starStories) {
-  if (s.data.role) stories[s.data.role] = (stories[s.data.role] ?? 0) + 1;
+  if (s.data.role) (stories[s.data.role] ??= []).push(s.slug);
 }
+
+// Skill names are English in every language, so the EN collection serves both.
+const skillTerms = (await getLocalized('skills', 'en')).items.flatMap((g) => g.data.items);
+
+const navLabels = roleNavLabels(roles.map((r) => r.data));
+const links = roles.map((r, i) => ({ id: r.slug, label: navLabels[i] }));
+// Chapters alternate --surface-2 / --bg starting with --surface-2; the closing section continues.
+const toneAt = (i: number) => (i % 2 === 0 ? 'surface' : 'bg');
 const jsonLd = personLd(profile, new URL(localePath('/experiences/', lang), Astro.site).href, lang);
 ---
 
@@ -31,33 +42,34 @@ const jsonLd = personLd(profile, new URL(localePath('/experiences/', lang), Astr
   {lang}
   fallback={profileFallback || rolesFallback}
   searchType="cv"
+  localNav={{
+    title: t('cv.title'),
+    links: links.map((l) => ({ href: `#${l.id}`, label: l.label })),
+    pill: {
+      href: localePath('/cv.pdf', lang),
+      label: t('common.download'),
+      download: 'Ryan-Parker-CV.pdf',
+    },
+  }}
   {jsonLd}
 >
-  <div class="container-page">
-    <CvHeader {profile} {lang} />
-
-    <section aria-labelledby="summary" class="mt-8" data-reveal>
-      <h2 id="summary" class="mb-4">
-        {t('cv.summary')}
-      </h2>
-      <div class="max-w-[68ch] text-[1.1875rem] leading-relaxed [&_strong]:font-semibold">
-        <Summary />
-      </div>
-      <p class="mt-4 flex flex-wrap gap-x-6">
-        <a href={localePath('/projects/', lang)} class="link-quiet">
-          {t('cv.projectsLink')}
-        </a>
-        <a href={localePath('/#skills', lang)} class="link-quiet">
-          {t('cv.skillsLink')}
-        </a>
-      </p>
-    </section>
-
-    <section aria-labelledby="experience" class="mt-20 pb-8">
-      <h2 id="experience" class="mb-10">
-        {t('cv.experience')}
-      </h2>
-      <Timeline {roles} {lang} {stories} />
-    </section>
+  <h1 class="sr-only">{t('cv.title')}</h1>
+  <HighlightsGallery {lang} {roles} {skillTerms} />
+  <div class="chapters">
+    {roles.map((role, i) => (
+      <Chapter {role} {lang} tone={toneAt(i)} stories={stories[role.slug] ?? []} {skillTerms} />
+    ))}
   </div>
+  <Section id="more" tone={toneAt(roles.length)} labelledby="more-title">
+    <SectionHeader id="more-title" title={t('exp.more.title')} subline={t('exp.more.text')}>
+      <Fragment slot="actions">
+        <a href={localePath('/cv.pdf', lang)} download="Ryan-Parker-CV.pdf" class="btn btn-primary">
+          {t('common.download')}
+        </a>
+        <a href={localePath('/projects/', lang)} class="btn btn-secondary">
+          {t('exp.more.projects')}
+        </a>
+      </Fragment>
+    </SectionHeader>
+  </Section>
 </BaseLayout>

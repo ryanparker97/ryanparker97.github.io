@@ -1,0 +1,113 @@
+---
+/** The Blog feature unit (spec §4.5): the newest post as a full-width tile. */
+import GridTile from '~/components/tile/GridTile.astro';
+import ChevronLink from '~/components/ui/ChevronLink.astro';
+import type { Post } from '~/lib/blog-content';
+import { formatDate } from '~/lib/format';
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+import PartsList from './PartsList.astro';
+
+interface Props {
+  lang: Lang;
+  post: Post;
+  series?: {
+    slug: string;
+    title: string;
+    parts: { part: number; title: string; post?: { slug: string } }[];
+  };
+}
+const { lang, post, series } = Astro.props;
+const t = useT(lang);
+const d = post.data;
+---
+
+<GridTile id="feature" span labelledby="feature-title">
+  <div class:list={['feature', { 'has-parts': !!series }]} data-reveal-group>
+    <div class="fl">
+      {series && d.seriesPart && (
+        <p data-reveal style="--i:0">
+          <a class="chip" href={localePath(`/blog/series/${series.slug}/`, lang)}>
+            {t('series.chip', { title: series.title, n: d.seriesPart })}
+          </a>
+        </p>
+      )}
+      <h2 id="feature-title" class="t-promo" data-reveal style="--i:1">
+        {d.title}
+      </h2>
+      <p class="fdesc t-subhead" data-reveal style="--i:2">
+        {d.description}
+      </p>
+      <p class="fmeta" data-reveal style="--i:3">
+        <span class="nw">
+          <time datetime={d.pubDate.toISOString()}>{formatDate(d.pubDate, lang)}</time>
+          <span class="sep" aria-hidden="true">
+            {' ·'}
+          </span>
+        </span>{' '}
+        <span class="nw">{t('blog.readingTime', { n: post.minutes })}</span>
+      </p>
+      <p data-reveal style="--i:3">
+        <ChevronLink
+          href={localePath(`/blog/${post.slug}/`, lang)}
+          label={`${t('blog.read')}: ${d.title}`}
+        >
+          {t('blog.read')}
+        </ChevronLink>
+      </p>
+    </div>
+    {series && (
+      <div class="fr" data-reveal style="--i:3">
+        <p class="fcap">
+          {t('series.box', {
+            part: d.seriesPart ?? 1,
+            total: series.parts.length,
+            title: series.title,
+          })}
+        </p>
+        <PartsList {lang} parts={series.parts} current={d.seriesPart} hairline />
+      </div>
+    )}
+  </div>
+</GridTile>
+
+<style>
+  .feature {
+    display: grid;
+    gap: 32px;
+    text-align: start;
+    width: 100%;
+  }
+  .feature p {
+    margin: 0;
+  }
+  .fl > * + * {
+    margin-top: 16px;
+  }
+  .fdesc {
+    color: var(--text-2);
+    font-size: 1.1875rem;
+  }
+  .fmeta {
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .fcap {
+    margin-bottom: 8px !important;
+    color: var(--text-2);
+    font-size: 0.75rem;
+  }
+  @media (min-width: 735px) {
+    .fdesc {
+      font-size: 1.3125rem;
+    }
+  }
+  @media (min-width: 1069px) {
+    .feature.has-parts {
+      grid-template-columns: 3fr 2fr;
+      column-gap: 80px;
+      align-items: start;
+    }
+  }
+</style>

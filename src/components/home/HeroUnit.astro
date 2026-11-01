@@ -1,0 +1,64 @@
+---
+import { Icon } from 'astro-icon/components';
+import type { CollectionEntry } from 'astro:content';
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+import { isLongCopy, type Stat } from '~/lib/home';
+import Lockup from '~/components/tile/Lockup.astro';
+import StatStrip from '~/components/tile/StatStrip.astro';
+import Unit from '~/components/tile/Unit.astro';
+
+interface Props {
+  lang: Lang;
+  profile: CollectionEntry<'profile'>['data'];
+  stats: Stat[];
+}
+const { lang, profile: p, stats } = Astro.props;
+const t = useT(lang);
+const copy = t('home.positioning');
+const subline = `${p.headline} — ${p.tagline}`;
+---
+
+<Unit id="top" tone="bg" hero stack labelledby="top-title">
+  <Lockup
+    id="top-title"
+    level={1}
+    size="hero"
+    title={p.name}
+    {subline}
+    {copy}
+    long={isLongCopy(subline, copy.replace(/\*\*/g, ''))}
+    intro
+  >
+    <Fragment slot="eyebrow">
+      <Icon name="lucide:map-pin" size={18} class="pin" />
+      {p.location}
+    </Fragment>
+    <Fragment slot="subline">
+      <span class="text-gradient">{p.headline}</span>
+      {` — ${p.tagline}`}
+    </Fragment>
+    <Fragment slot="actions">
+      <a href={localePath('/experiences/', lang)} class="btn btn-primary">
+        {t('common.learnMore')}
+        <span class="sr-only"> {t('home.experienceSuffix')}</span>
+      </a>
+      <a href={localePath('/cv.pdf', lang)} download="Ryan-Parker-CV.pdf" class="btn btn-secondary">
+        {t('common.download')}
+      </a>
+    </Fragment>
+  </Lockup>
+  {stats.length > 0 && (
+    <Fragment slot="visual">
+      <StatStrip {stats} label={t('home.highlights')} />
+    </Fragment>
+  )}
+</Unit>
+
+<style>
+  .pin {
+    display: inline-block;
+    margin-inline-end: 6px;
+    vertical-align: -2px;
+  }
+</style>

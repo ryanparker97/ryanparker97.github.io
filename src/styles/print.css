@@ -5,7 +5,7 @@ html {
 body {
   background: #fff;
   color: #1d1d1f;
-  font: 400 1rem/1.38 var(--font-sans);
+  font: 400 1rem/1.33 var(--font-sans);
 }
 .cv {
   --muted: #4a4a4f;

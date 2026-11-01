@@ -1,38 +1,401 @@
 ---
+/** Apple-style global footer (spec §5.9): breadcrumbs, four-column directory, legal row. */
+import { Icon } from 'astro-icon/components';
 import { getProfile } from '~/lib/content';
 import { useT, type Lang } from '~/i18n';
-import { localePath } from '~/i18n/routes';
-import SocialLinks from '~/components/ui/SocialLinks.astro';
+import { localePath, stripLang } from '~/i18n/routes';
 
-const {
-  lang,
-  chromeLang,
-  analytics = false,
-  wide = false,
-} = Astro.props as {
+interface Props {
   lang: Lang;
   chromeLang?: string;
   analytics?: boolean;
-  wide?: boolean;
-};
+  /** Title of the current page, the last breadcrumb. */
+  current?: string;
+  switchHref: string;
+}
+const { lang, chromeLang, analytics = false, current, switchHref } = Astro.props;
 const t = useT(lang);
 const { data: profile } = await getProfile(lang);
+const path = stripLang(Astro.url.pathname);
+const other: Lang = lang === 'vi' ? 'en' : 'vi';
+
+const sections = [
+  ['/experiences/', t('nav.cv')],
+  ['/projects/', t('nav.projects')],
+  ['/star/', t('nav.star')],
+  ['/blog/', t('nav.blog')],
+] as const;
+const section = sections.find(([href]) => path.startsWith(href));
+const isRoot = !!section && path === section[0];
+const crumbs = [
+  ...(section ? [{ label: section[1], href: localePath(section[0], lang), current: isRoot }] : []),
+  ...(path !== '/' && !isRoot && current ? [{ label: current, href: '', current: true }] : []),
+];
+
+const pdf = localePath('/cv.pdf', lang);
+const columns = [
+  {
+    title: t('footer.explore'),
+    links: [
+      { href: localePath('/experiences/', lang), label: t('nav.cv') },
+      { href: localePath('/projects/', lang), label: t('nav.projects') },
+      { href: localePath('/star/', lang), label: t('star.title') },
+      { href: localePath('/blog/', lang), label: t('nav.blog') },
+    ],
+  },
+  {
+    title: t('footer.writing'),
+    links: [
+      { href: localePath('/blog/', lang), label: t('blog.all') },
+      { href: localePath('/blog/series/', lang), label: t('series.title') },
+      { href: localePath('/blog/tags/', lang), label: t('blog.tags') },
+      { href: localePath('/rss.xml', lang), label: t('footer.rss') },
+    ],
+  },
+  {
+    title: t('footer.connect'),
+    links: [
+      { href: `mailto:${profile.email}`, label: t('cv.email') },
+      { href: profile.socials.linkedin, label: t('cv.linkedin') },
+      { href: profile.socials.github, label: t('cv.github') },
+      { href: `tel:${profile.phone}`, label: t('footer.phone') },
+    ],
+  },
+  {
+    title: t('footer.resources'),
+    links: [
+      { href: pdf, label: t('nav.pdf'), download: 'Ryan-Parker-CV.pdf' },
+      { href: '', label: t('footer.search'), search: true },
+    ],
+  },
+];
 ---
 
-<footer class="mt-24 border-t border-border py-10" lang={chromeLang}>
-  <div
-    class:list={[
-      'container-page flex flex-col gap-6 md:flex-row md:items-center md:justify-between',
-      { wide },
-    ]}
-  >
-    <SocialLinks {profile} {lang} />
-    <p class="meta flex flex-wrap items-center gap-x-4">
-      <a href={localePath('/rss.xml', lang)} class="link-quiet inline-flex min-h-11 items-center">
-        {t('footer.rss')}
+<footer class="site-footer" lang={chromeLang}>
+  <div class="chrome-row inner">
+    {path !== '/' && (
+      <nav class="crumbs" aria-label={t('footer.breadcrumbs')}>
+        <ol>
+          <li>
+            <a href={localePath('/', lang)} aria-label={`RP, ${t('footer.home')}`}>
+              RP
+            </a>
+          </li>
+          {crumbs.map((c) => (
+            <li>
+              <svg class="sep" viewBox="0 0 6 11" width="6" height="11" aria-hidden="true">
+                <path d="M.5.5l5 5-5 5" fill="none" stroke="currentColor" />
+              </svg>
+              {c.current ? (
+                <span aria-current="page">{c.label}</span>
+              ) : (
+                <a href={c.href}>{c.label}</a>
+              )}
+            </li>
+          ))}
+        </ol>
+      </nav>
+    )}
+
+    <nav class="dir" aria-label={t('footer.nav')}>
+      <div class="cols">
+        {columns.map((c) => (
+          <div class="col">
+            <p class="col-title">{c.title}</p>
+            <ul>
+              {c.links.map((l) => (
+                <li>
+                  {'search' in l ? (
+                    <button type="button" data-search-open data-js-only>
+                      {l.label}
+                    </button>
+                  ) : (
+                    <a
+                      href={l.href}
+                      download={'download' in l ? l.download : undefined}
+                      rel={l.href.startsWith('http') ? 'noopener' : undefined}
+                    >
+                      {l.label}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <div class="accordions">
+        {columns.map((c) => (
+          <details>
+            <summary>
+              <span>{c.title}</span>
+              <Icon name="lucide:chevron-down" size={16} class="acc-chev" />
+            </summary>
+            <ul>
+              {c.links.map((l) => (
+                <li>
+                  {'search' in l ? (
+                    <button type="button" data-search-open data-js-only>
+                      {l.label}
+                    </button>
+                  ) : (
+                    <a
+                      href={l.href}
+                      download={'download' in l ? l.download : undefined}
+                      rel={l.href.startsWith('http') ? 'noopener' : undefined}
+                    >
+                      {l.label}
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </details>
+        ))}
+      </div>
+    </nav>
+
+    <p class="reach">
+      {t('footer.reachBefore')} <a href={`mailto:${profile.email}`}>{t('footer.reachEmail')}</a>{' '}
+      {t('footer.reachMid')}{' '}
+      <a href={profile.socials.linkedin} rel="noopener">
+        {t('footer.reachLinkedin')}
       </a>
-      {t('footer.copyright', { year: new Date().getFullYear() })} · {t('footer.built')}
-      {analytics && <span>· {t('footer.analytics')}</span>}
+      .
     </p>
+
+    <div class="legal">
+      <p class="copy">
+        {t('footer.copyright', { year: new Date().getFullYear() })} {t('footer.rights')}
+      </p>
+      <ul class="legal-links">
+        <li>
+          <a href="https://astro.build" rel="noopener">
+            {t('footer.built')}
+          </a>
+        </li>
+        {analytics && <li>{t('footer.analytics')}</li>}
+      </ul>
+      <a class="lang" href={switchHref} lang={other} hreflang={other}>
+        {t('footer.language')}
+      </a>
+    </div>
   </div>
 </footer>
+
+<style>
+  .site-footer {
+    background: var(--surface-2);
+    color: var(--ft-text);
+    font-size: 0.75rem;
+    line-height: 1.3334;
+    letter-spacing: -0.01em;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* A page whose last band is also --surface-2 gets a line above the footer. */
+  :global(
+      html:has(
+        main > :nth-last-child(1 of :not([hidden])):is(.section--surface, .tone-surface, .news-band)
+      )
+    )
+    .site-footer,
+  :global(
+      html:has(
+        main
+          > :nth-last-child(1 of :not([hidden]))
+          > :last-child:is(.section--surface, .tone-surface, .news-band)
+      )
+    )
+    .site-footer {
+    border-top: 1px solid var(--border);
+  }
+  .site-footer a,
+  .site-footer button {
+    color: var(--ft-link);
+  }
+  @media (hover: hover) {
+    .site-footer a:hover,
+    .site-footer button:hover {
+      text-decoration: underline;
+    }
+  }
+  ul,
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* Desktop density follows Apple: 25.6px link pitch. Targets are 44px only at compact chrome. */
+  .crumbs {
+    padding-block: 17px;
+  }
+  .crumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .crumbs li {
+    display: inline-flex;
+    align-items: center;
+    margin-inline-end: 7px;
+  }
+  .crumbs a,
+  .crumbs span[aria-current] {
+    display: inline-flex;
+    align-items: center;
+    padding-block: 3px;
+  }
+  .crumbs [aria-current] {
+    color: var(--ft-text);
+  }
+  .sep {
+    flex: none;
+    margin-inline-end: 11px;
+    color: var(--ft-pipe);
+  }
+  .cols {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    padding-block: 0 28px;
+  }
+  .col {
+    padding-inline-end: 20px;
+  }
+  .col-title {
+    margin-bottom: 0.8em;
+    color: var(--ft-title);
+    font-weight: 600;
+  }
+  .col li + li {
+    margin-top: 0.8em;
+  }
+  .col li > :is(a, button) {
+    display: inline;
+    text-align: left;
+  }
+  .accordions {
+    display: none;
+  }
+  .reach {
+    margin: 0;
+    padding-block: 37px 19px;
+    border-bottom: 1px solid var(--border);
+  }
+  .reach a {
+    color: var(--link);
+    text-decoration: underline;
+  }
+  .legal {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 30px;
+    padding-block: 17px 11px;
+  }
+  .legal p {
+    margin: 0;
+  }
+  .legal-links {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .legal-links li + li::before {
+    content: '';
+    display: inline-block;
+    width: 1px;
+    height: 10px;
+    margin-inline: 9px;
+    background: var(--ft-pipe);
+    vertical-align: middle;
+  }
+  .legal-links li:first-child {
+    padding-inline-end: 0;
+  }
+  .lang {
+    margin-inline-start: auto;
+  }
+  @media (max-width: 833px) {
+    .crumbs {
+      padding-block: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .crumbs a,
+    .crumbs span[aria-current] {
+      min-height: 44px;
+    }
+    .crumbs a,
+    .crumbs span[aria-current] {
+      min-width: 44px;
+      justify-content: flex-start;
+    }
+    .cols {
+      display: none;
+    }
+    .accordions {
+      display: block;
+    }
+    summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 44px;
+      color: var(--ft-title);
+      font-weight: 400;
+      cursor: pointer;
+      list-style: none;
+    }
+    summary::-webkit-details-marker {
+      display: none;
+    }
+    summary :global(.acc-chev) {
+      width: 12px;
+      transition: transform 300ms ease;
+    }
+    details {
+      border-bottom: 1px solid var(--border);
+    }
+    details[open] summary :global(.acc-chev) {
+      transform: rotate(180deg);
+    }
+    details ul {
+      padding: 5px 0 16px;
+    }
+    details li > :is(a, button) {
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      padding-inline: 14px;
+    }
+    .reach {
+      padding-block: 8px;
+      border-bottom: 0;
+    }
+    .reach a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+    .legal {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      padding-block: 12px 20px;
+    }
+    .legal-links a,
+    .lang {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+    }
+    .lang {
+      min-width: 44px;
+      margin-inline-start: 0;
+    }
+  }
+  @media print {
+    .site-footer {
+      display: none;
+    }
+  }
+</style>

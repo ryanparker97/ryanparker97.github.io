@@ -1,11 +1,11 @@
 {
-  "name": "jomatran97-github-io",
+  "name": "ryanparker97-github-io",
   "type": "module",
   "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@12.16.1",
   "engines": {
-    "node": ">=22"
+    "node": ">=22.23.4"
   },
   "scripts": {
     "dev": "astro dev",
@@ -28,7 +28,6 @@
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.4",
     "@fontsource-variable/inter": "^5.3.0",
-    "@fontsource-variable/newsreader": "^5.3.0",
     "@iconify-json/lucide": "^1.2.148",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.4.3",
@@ -39,6 +38,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.12",
     "@axe-core/playwright": "^4.14.0",
+    "@iconify-json/logos": "^1.2.18",
     "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.64.1",
     "@types/hast": "^3.0.5",

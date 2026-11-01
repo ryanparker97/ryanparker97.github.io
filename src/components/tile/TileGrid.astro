@@ -1,0 +1,17 @@
+---
+/** Two-up grid of square tiles (spec §5.10.3); an odd last tile spans both columns. */
+interface Props {
+  /** Projects and Blog: tiles hold more text, so 420px instead of 580px at L. */
+  dense?: boolean;
+  label?: string;
+}
+const { dense = false, label } = Astro.props;
+---
+
+<div
+  class:list={['tiles-2up', { 'tiles-2up--dense': dense }]}
+  role={label ? 'group' : undefined}
+  aria-label={label}
+>
+  <slot />
+</div>

@@ -29,9 +29,8 @@ const label = t('series.box', { part: current, total: parts.length, title: serie
 
 <style>
   .series-box {
-    margin-block: 24px;
-    padding: 16px 20px;
-    border-radius: 20px;
+    padding: 24px;
+    border-radius: 18px;
     background: var(--surface-2);
     font-size: 0.9375rem;
   }
@@ -46,8 +45,22 @@ const label = t('series.box', { part: current, total: parts.length, title: serie
     min-height: 44px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     cursor: pointer;
     font-weight: 600;
+  }
+  summary::after {
+    content: '';
+    width: 8px;
+    height: 8px;
+    margin-inline-end: 4px;
+    border-right: 2px solid currentcolor;
+    border-bottom: 2px solid currentcolor;
+    transform: translateY(-2px) rotate(45deg);
+    transition: transform 200ms var(--ease);
+  }
+  details[open] > summary::after {
+    transform: translateY(2px) rotate(-135deg);
   }
   .narrow {
     display: block;
@@ -55,12 +68,17 @@ const label = t('series.box', { part: current, total: parts.length, title: serie
   .wide {
     display: none;
   }
-  @media (min-width: 640px) {
+  @media (min-width: 735px) {
     .wide {
       display: block;
     }
     .narrow {
       display: none;
+    }
+  }
+  @media (max-width: 734px) {
+    .series-box {
+      padding: 0 16px;
     }
   }
 </style>

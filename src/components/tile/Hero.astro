@@ -1,0 +1,46 @@
+---
+/**
+ * Page hero (spec §5.10.1): eyebrow (page name), the page's only H1, one subhead, up to two
+ * actions. The load animation never touches the H1 (it is the LCP element).
+ */
+import Lockup from './Lockup.astro';
+
+interface Props {
+  title: string;
+  eyebrow?: string;
+  subline?: string;
+  copy?: string;
+  long?: boolean;
+  id?: string;
+  /** A grid or chapter follows: 80 / 64 / 48px below instead of the section padding. */
+  tight?: boolean;
+}
+const { title, eyebrow, subline, copy, long, id = 'hero', tight = false } = Astro.props;
+---
+
+<section class:list={['hero', { 'hero--tight': tight }]} id={id} aria-labelledby={`${id}-title`}>
+  <div class="hero-inner" data-hero>
+    <Lockup
+      id={`${id}-title`}
+      level={1}
+      size="hero"
+      {title}
+      {eyebrow}
+      {subline}
+      {copy}
+      {long}
+      intro
+    >
+      {Astro.slots.has('actions') && (
+        <Fragment slot="actions">
+          <slot name="actions" />
+        </Fragment>
+      )}
+    </Lockup>
+    {Astro.slots.has('default') && (
+      <div class="hero-extra intro" style="--i:4">
+        <slot />
+      </div>
+    )}
+  </div>
+</section>

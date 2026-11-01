@@ -225,7 +225,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      SITE: https://jomatran97.github.io
+      SITE: https://ryanparker97.github.io
       SHA: ${{ github.sha }}
     steps:
       - name: Wait for this commit's build, then check routes

@@ -2,7 +2,18 @@ import tseslint from 'typescript-eslint';
 import astro from 'eslint-plugin-astro';
 
 export default [
-  { ignores: ['dist', '.astro', 'node_modules', '.lighthouseci', 'playwright-report'] },
+  {
+    ignores: [
+      'dist',
+      '.astro',
+      'node_modules',
+      '.lighthouseci',
+      'playwright-report',
+      'test-results',
+      // Tests are not linted; they are still type-checked and formatted.
+      'tests',
+    ],
+  },
   ...tseslint.configs.recommended,
   ...astro.configs.recommended,
 ];

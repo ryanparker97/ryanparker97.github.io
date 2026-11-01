@@ -4,18 +4,12 @@ import { localePath, stripLang } from '~/i18n/routes';
 import { useT, type Lang } from '~/i18n';
 import ThemeToggle from './ThemeToggle.astro';
 import LangSwitch from './LangSwitch.astro';
-import MobileSheet from './MobileSheet.astro';
+import MobileMenu from './MobileMenu.astro';
 
-const {
-  lang,
-  switchHref,
-  chromeLang,
-  wide = false,
-} = Astro.props as {
+const { lang, switchHref, chromeLang } = Astro.props as {
   lang: Lang;
   switchHref: string;
   chromeLang?: string;
-  wide?: boolean;
 };
 const t = useT(lang);
 const path = stripLang(Astro.url.pathname);
@@ -30,7 +24,7 @@ const links = (
 ---
 
 <header class="nav" data-nav lang={chromeLang}>
-  <div class:list={['container-page bar', { wide }]}>
+  <div class="bar chrome-row">
     <a href={localePath('/', lang)} class="brand" aria-label={t('nav.home')}>
       Ryan Parker
     </a>
@@ -44,29 +38,36 @@ const links = (
     <div class="tools">
       <button
         type="button"
-        class="icon-btn"
+        class="icon-btn search"
         data-search-open
+        data-js-only
         aria-label={t('search.open')}
         aria-keyshortcuts="Control+K Meta+K"
+        aria-expanded="false"
+        aria-controls="search-dialog"
         title={`${t('search.open')} (⌘K)`}
       >
-        <Icon name="lucide:search" size={20} />
+        <Icon name="lucide:search" size={16} />
       </button>
       <ThemeToggle {lang} />
       <LangSwitch {lang} href={switchHref} />
       <button
         type="button"
-        class="icon-btn menu"
+        class="icon-btn menu-btn"
         data-menu-button
+        data-js-only
+        data-label-menu={t('nav.menu')}
+        data-label-close={t('nav.close')}
         aria-expanded="false"
-        aria-controls="mobile-sheet"
+        aria-controls="mobile-menu"
         aria-label={t('nav.menu')}
       >
-        <Icon name="lucide:menu" size={22} />
+        <span class="line"></span>
+        <span class="line"></span>
       </button>
     </div>
   </div>
-  <MobileSheet {lang} {links} />
+  <MobileMenu {lang} {links} {switchHref} />
 </header>
 
 <style>
@@ -75,9 +76,12 @@ const links = (
     top: 0;
     z-index: 50;
     height: var(--nav-h);
-    background: var(--bg);
+    background: color-mix(in srgb, var(--nav-solid) 92%, transparent);
     border-bottom: 1px solid transparent;
-    transition: border-color 200ms var(--ease);
+  }
+  /* With a local nav the global nav scrolls away and the local nav sticks at the top instead. */
+  :global(html:has([data-local-nav])) .nav {
+    position: relative;
   }
   @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
     .nav {
@@ -86,64 +90,139 @@ const links = (
       backdrop-filter: saturate(180%) blur(20px);
     }
   }
+  /* The keyline shows only when there is no local nav (which has its own) and the page scrolled. */
   .nav[data-scrolled] {
-    border-bottom-color: var(--border);
+    border-bottom-color: var(--keyline);
+  }
+  :global(html:has([data-local-nav])) .nav[data-scrolled] {
+    border-bottom-color: transparent;
+  }
+  .nav[data-menu-open],
+  :global(html:has(#search-dialog:not([hidden]))) .nav {
+    background: var(--nav-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
   .bar {
     display: flex;
     align-items: center;
-    gap: 12px;
+    justify-content: space-between;
     height: 100%;
   }
   .brand {
-    min-height: 44px;
     display: inline-flex;
     align-items: center;
+    min-height: 44px;
     color: var(--text);
+    font-size: 0.875rem;
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.016em;
   }
   .links {
-    display: none;
+    display: flex;
     flex: 1;
-    gap: 4px;
+    justify-content: space-evenly;
+    min-width: 0;
+  }
+  .tools {
+    display: flex;
+    align-items: center;
+  }
+  .links a,
+  .nav :global(.icon-btn),
+  .nav :global(.lang-switch a) {
+    color: var(--nav-ink);
+    opacity: 1;
+    transition: color 320ms var(--ease-nav);
   }
   .links a {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
-    padding-inline: 12px;
-    border-radius: 999px;
-    color: var(--text-2);
-    font-size: 0.9375rem;
-    font-weight: 500;
-  }
-  .links a:hover,
-  .links a[aria-current='page'] {
-    color: var(--text);
-    text-decoration: none;
+    padding-inline: 8px;
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
   }
   .links a[aria-current='page'] {
-    background: var(--surface-2);
+    color: var(--nav-ink-hover);
   }
-  .tools {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: auto;
+  @media (hover: hover) {
+    .links a:hover,
+    .nav :global(.icon-btn:hover),
+    .nav :global(.lang-switch a:hover) {
+      color: var(--nav-ink-hover);
+      text-decoration: none;
+    }
   }
-  @media (min-width: 768px) {
-    .bar {
-      gap: 24px;
-    }
-    .links {
-      display: flex;
-    }
-    .menu {
+  .nav :is(a, button, summary):focus-visible {
+    outline-offset: -7px;
+  }
+  .menu-btn {
+    display: none;
+    position: relative;
+  }
+  .menu-btn .line {
+    position: absolute;
+    left: 14px;
+    right: 14px;
+    top: 50%;
+    height: 1px;
+    background: currentColor;
+    transition: transform 240ms var(--ease-nav);
+  }
+  .menu-btn .line:first-child {
+    transform: translateY(-3px);
+  }
+  .menu-btn .line:last-child {
+    transform: translateY(3px);
+  }
+  .menu-btn[aria-expanded='true'] .line:first-child {
+    transform: rotate(45deg);
+  }
+  .menu-btn[aria-expanded='true'] .line:last-child {
+    transform: rotate(-45deg);
+  }
+  @media (max-width: 833px) {
+    .links,
+    .tools :global(.theme-toggle),
+    .tools :global(.lang-switch) {
       display: none;
     }
+    /* The 48px buttons sit flush with the right edge. */
     .tools {
-      margin-left: 0;
+      margin-inline-end: calc(-1 * max(0px, var(--gutter) - env(safe-area-inset-right)));
+    }
+    .tools :global(.icon-btn) {
+      width: 48px;
+      height: 48px;
+    }
+    .menu-btn {
+      display: inline-flex;
+    }
+    .menu-btn .line {
+      left: 17px;
+      right: 17px;
+    }
+    /* Without JavaScript there is no menu: the four links scroll in the bar instead. */
+    :global(html:not(.js)) .links {
+      display: flex;
+      justify-content: flex-start;
+      margin-inline-start: 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    :global(html:not(.js)) .links a {
+      flex: none;
+      padding-inline: 12px;
+    }
+    :global(html:not(.js)) .menu-btn {
+      display: none;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .menu-btn .line,
+    .links a {
+      transition: none;
     }
   }
 </style>

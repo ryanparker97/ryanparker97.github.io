@@ -3,24 +3,51 @@ import { expect, test } from '@playwright/test';
 const POST = '/blog/neovim-setup-1-zero-to-editor/';
 
 test.describe('blog', () => {
-  test('index lists the post with its series chip, reading time and tags', async ({ page }) => {
+  test('index: hero, a feature tile with chip and parts list, no Newsroom band for one post', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/blog/');
-    const card = page.locator('li.card', { hasText: 'Neovim setup guide, Part 1' });
-    await expect(card).toBeVisible();
-    await expect(card.getByRole('link', { name: 'Neovim setup guide · Part 1' })).toHaveAttribute(
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Notes on data and tools.');
+    const tile = page.locator('#feature');
+    await expect(tile.locator('h2')).toHaveText(
+      'Neovim setup guide, Part 1: from zero to a working editor',
+    );
+    await expect(tile.getByRole('link', { name: 'Neovim setup guide · Part 1' })).toHaveAttribute(
       'href',
       '/blog/series/neovim-setup-guide/',
     );
-    await expect(card).toContainText('min read');
-    await expect(card.getByRole('link', { name: 'neovim', exact: true })).toBeVisible();
+    await expect(tile).toContainText('min read');
+    await expect(tile.locator('.parts li')).toHaveCount(5);
+    await expect(tile.getByRole('link', { name: /^Read:/ })).toHaveAttribute('href', POST);
+    const box = (await tile.boundingBox())!;
+    expect(box.width).toBe(1416);
+    await expect(page.locator('.news-band')).toHaveCount(0);
   });
 
-  test('tag pages and the tag index work', async ({ page }) => {
+  test('tag pages and the tag index work; tag pages use Newsroom tiles', async ({ page }) => {
     await page.goto('/blog/tags/');
     await page.getByRole('link', { name: /^neovim/ }).click();
     await expect(page).toHaveURL(/\/blog\/tags\/neovim\/$/);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Posts tagged neovim');
-    await expect(page.locator('li.card')).toHaveCount(1);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('#neovim');
+    const tile = page.locator('.news-tile');
+    await expect(tile).toHaveCount(1);
+    await expect(tile.locator('.t-news-cat')).toHaveText('Neovim setup guide');
+    await expect(tile.locator('h2 a')).toHaveAttribute('href', POST);
+    await expect(tile).toHaveCSS('border-top-left-radius', '32px');
+    // The stretched link makes the whole tile clickable.
+    const a = (await tile.locator('h2 a').evaluate((e) => {
+      const r = getComputedStyle(e, '::after');
+      return r.position;
+    })) as string;
+    expect(a).toBe('absolute');
+  });
+
+  test('Newsroom tiles are 32px rounded at L with a 3px-offset focus ring', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/blog/tags/neovim/');
+    await expect(page.locator('.news-tile')).toHaveCSS('border-top-left-radius', '32px');
+    await expect(page.locator('.news-tile')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   });
 
   test('post header, series box, TOC and footer', async ({ page }) => {
@@ -49,13 +76,16 @@ test.describe('blog', () => {
     );
   });
 
-  test('body uses the serif font and kbd renders as a keycap', async ({ page }) => {
+  test('body uses the SF font stack (no Newsreader) and kbd renders as a keycap', async ({
+    page,
+  }) => {
     await page.goto(POST);
     const font = await page
       .locator('.prose p')
       .first()
       .evaluate((el) => getComputedStyle(el).fontFamily);
-    expect(font).toContain('Newsreader');
+    expect(font.startsWith('-apple-system')).toBe(true);
+    expect(font).not.toContain('Newsreader');
     await expect(page.locator('.prose kbd').first()).toBeVisible();
     await expect(page.locator('[role=note].callout')).toHaveCount(4);
   });
@@ -81,7 +111,7 @@ test.describe('blog', () => {
   test('series index shows progress and every part', async ({ page }) => {
     await page.goto('/blog/series/neovim-setup-guide/');
     await expect(page.getByText('1 of 5 published')).toBeVisible();
-    const cards = page.locator('ol > li.card');
+    const cards = page.locator('ol.news-grid > li.news-tile');
     await expect(cards).toHaveCount(5);
     await expect(cards.nth(0).getByRole('link')).toHaveAttribute('href', POST);
     await expect(cards.nth(1)).toContainText('Coming soon');
@@ -153,7 +183,7 @@ test.describe('diagram', () => {
 
 test.describe('series box on small screens', () => {
   test.use({ viewport: { width: 600, height: 900 } });
-  test('collapses to a single "Part 1 of 5" line below 640px', async ({ page }) => {
+  test('collapses to a single "Part 1 of 5" line below 735px', async ({ page }) => {
     await page.goto(POST);
     const box = page.locator('nav.series-box');
     await expect(box.locator('.wide')).toBeHidden();
@@ -163,30 +193,61 @@ test.describe('series box on small screens', () => {
     await summary.click();
     await expect(box.locator('details li')).toHaveCount(5);
     await expect(box.locator('details li').first()).toBeVisible();
-    await page.setViewportSize({ width: 700, height: 900 });
+    await page.setViewportSize({ width: 800, height: 900 });
     await expect(box.locator('.wide')).toBeVisible();
     await expect(box.locator('details')).toBeHidden();
   });
 });
 
-test('post footer links to its tags and the language switch keeps the translation', async ({
+test('post header lists its tags and the language switch keeps the translation', async ({
   page,
 }) => {
   await page.goto(POST);
-  const tags = page.locator('footer.foot ul[aria-label="Tags"] a');
-  await expect(tags).toHaveText(['neovim', 'dotfiles', 'macos', 'developer-tools']);
+  const tags = page.locator('header.head .meta-line a');
+  await expect(tags).toHaveText(['#neovim', '#dotfiles', '#macos', '#developer-tools']);
   await expect(tags.first()).toHaveAttribute('href', '/blog/tags/neovim/');
   await expect(page.locator('.lang-switch a')).toHaveAttribute('href', `/vi${POST}`);
+});
+
+test('post header follows the Newsroom composition', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(POST);
+  const head = page.locator('header.head');
+  await expect(head.locator('.t-news-cat')).toHaveText('Part 1 · Neovim setup guide');
+  await expect(head.locator('h1')).toHaveCSS('font-weight', '700');
+  await expect(head.locator('h1')).toHaveCSS('font-size', '48px');
+  await expect(head.locator('.keyline')).toHaveCSS('width', '653px');
+  const h1 = (await head.locator('h1').boundingBox())!;
+  const body = (await page.locator('.prose p').first().boundingBox())!;
+  expect(Math.round(body.width)).toBeLessThanOrEqual(653);
+  expect(h1.x).toBeCloseTo(body.x, 0);
+});
+
+test('drop cap and quote styles apply when opted in', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(POST);
+  await page.evaluate(() => document.querySelector('.prose')!.classList.add('dropcap'));
+  const size = await page
+    .locator('.prose > p')
+    .first()
+    .evaluate((e) => getComputedStyle(e, '::first-letter').fontSize);
+  expect(size).toBe('84px');
+  await page.setViewportSize({ width: 375, height: 800 });
+  const small = await page
+    .locator('.prose > p')
+    .first()
+    .evaluate((e) => getComputedStyle(e, '::first-letter').fontSize);
+  expect(small).toBe('48px');
 });
 
 test('reading time is the same in both languages', async ({ page }) => {
   await page.goto(POST);
   const en = (
-    (await page.locator('header.head .meta span', { hasText: /read|đọc/ }).textContent()) ?? ''
+    (await page.locator('header.head .meta-line span', { hasText: /read|đọc/ }).textContent()) ?? ''
   ).match(/(\d+) min read/)?.[1];
   await page.goto(`/vi${POST}`);
   const vi = (
-    (await page.locator('header.head .meta span', { hasText: /read|đọc/ }).textContent()) ?? ''
+    (await page.locator('header.head .meta-line span', { hasText: /read|đọc/ }).textContent()) ?? ''
   ).match(/(\d+) phút đọc/)?.[1];
   expect(en).toBeTruthy();
   expect(vi).toBe(en);

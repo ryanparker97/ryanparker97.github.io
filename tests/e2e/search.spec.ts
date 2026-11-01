@@ -17,7 +17,7 @@ test.describe('search', () => {
     page,
   }) => {
     await page.goto('/experiences/');
-    const trigger = page.getByRole('button', { name: 'Search' });
+    const trigger = page.locator('header').getByRole('button', { name: 'Search' });
     await trigger.focus();
     await page.keyboard.press('/');
     const dialog = page.locator('#search-dialog');
@@ -33,7 +33,7 @@ test.describe('search', () => {
     page,
   }) => {
     await page.goto('/');
-    await page.getByRole('button', { name: 'Search' }).click();
+    await page.locator('header').getByRole('button', { name: 'Search' }).click();
     await page.locator('#search-input').fill('lazy-loaded plugins');
     const hit = page.locator('.hit').first();
     await expect(hit).toBeVisible();
@@ -52,12 +52,12 @@ test.describe('search', () => {
     const input = page.locator('#search-input');
     await input.fill('Datadog observability');
     await expect(page.locator('.hit .type', { hasText: 'Experiences' })).toBeVisible();
-    await input.fill('Agentic Coding Workflow');
+    await input.fill('Multi-Agent Coding System');
     await expect(page.locator('.hit .type', { hasText: 'Projects' })).toBeVisible();
     await expect(
       page.locator('.hit a[href*="/projects/#agentic-coding-workflow"]').first(),
     ).toBeVisible();
-    await input.fill('Talend migration technical direction');
+    await input.fill('Airflow reuse idle EMR clusters');
     await expect(page.locator('.hit .type', { hasText: 'STAR' }).first()).toBeVisible();
     await input.fill('zzqxjwvk');
     await expect(page.locator('#search-status')).toContainText('No results for “zzqxjwvk”.');
@@ -67,7 +67,7 @@ test.describe('search', () => {
     await page.goto('/');
     await page.keyboard.press('ControlOrMeta+k');
     const input = page.locator('#search-input');
-    for (const query of ['Selected Projects Technical Skills', 'Posts tagged', 'Page not found']) {
+    for (const query of ['Agentic Coding Technical Skills', 'Posts tagged', 'Page not found']) {
       await input.fill(query);
       await page.waitForTimeout(600);
       const urls = await page

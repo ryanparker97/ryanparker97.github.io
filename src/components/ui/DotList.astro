@@ -1,0 +1,29 @@
+---
+/**
+ * Items of a `·`-separated list (spec §5.4): each item is a `nowrap` span that carries the
+ * separator after itself, so an item never splits and a line never starts with a `·`.
+ */
+interface Item {
+  text: string;
+  href?: string;
+}
+interface Props {
+  items: (string | Item)[];
+}
+const { items } = Astro.props;
+const list = items.map((i) => (typeof i === 'string' ? { text: i } : i));
+---
+
+{list.map((item, i) => (
+  <>
+    {i > 0 && ' '}
+    <span class="nw">
+      {item.href ? <a href={item.href}>{item.text}</a> : item.text}
+      {i < list.length - 1 && (
+        <span class="sep" aria-hidden="true">
+          {' ·'}
+        </span>
+      )}
+    </span>
+  </>
+))}

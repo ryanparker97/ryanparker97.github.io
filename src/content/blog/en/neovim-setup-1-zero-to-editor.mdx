@@ -10,13 +10,13 @@ seriesPart: 1
 import Callout from '~/components/blog/Callout.astro';
 import NeovimStartupDiagram from '~/components/blog/diagrams/NeovimStartupDiagram.astro';
 
-This guide takes you from nothing to a working Neovim on macOS, using a small config I built for a mix of web, data engineering and SRE work: Java, Python, dbt/SQL, Terraform, Bash, CloudFormation/YAML, JSON, Docker and frontend files. It needs **Neovim 0.12 or newer**, and step 1 checks that.
+This guide takes you from nothing to a working Neovim on macOS, using a small config I built for a mix of web, data engineering and SRE work: Java, Python, DBT/SQL, Terraform, Bash, CloudFormation/YAML, JSON, Docker and frontend files. It needs **Neovim 0.12 or newer**, and step 1 checks that.
 
 I wrote it because big distros like LazyVim or NvChad do a lot for you, and then it's hard to tell which part does what. This config is the opposite: one Lua file per topic, plugins loaded only when they're needed, and nothing I can't explain. Over five parts you'll build it up step by step. This first part makes sure everything installs and starts. You can see the whole series on the [series page](/blog/series/neovim-setup-guide/).
 
 <Callout type="note">
   **Tested with:** Neovim 0.12, macOS, dotfiles commit `2101fb4`. **Source:**
-  [github.com/jomatran97/dotfiles](https://github.com/jomatran97/dotfiles) (folder `nvim/`).
+  [github.com/ryanparker97/dotfiles](https://github.com/ryanparker97/dotfiles) (folder `nvim/`).
 </Callout>
 
 ## What you'll have at the end
@@ -100,7 +100,7 @@ There are three ways to get the config. Pick one.
 ### A. The whole dotfiles repo
 
 ```sh
-$ git clone https://github.com/jomatran97/dotfiles.git ~/dotfiles
+$ git clone https://github.com/ryanparker97/dotfiles.git ~/dotfiles
 $ cd ~/dotfiles
 $ ./install.sh
 ```
@@ -116,7 +116,7 @@ $ ./install.sh
 Back up any config you already have, then link the `nvim/` folder:
 
 ```sh
-$ git clone https://github.com/jomatran97/dotfiles.git ~/dotfiles
+$ git clone https://github.com/ryanparker97/dotfiles.git ~/dotfiles
 $ mv ~/.config/nvim ~/.config/nvim.bak
 $ mv ~/.local/share/nvim ~/.local/share/nvim.bak
 $ mv ~/.local/state/nvim ~/.local/state/nvim.bak
@@ -131,7 +131,7 @@ If one of those folders doesn't exist, `mv` just says so. You can ignore that.
 This is the one I recommend for a first try. Neovim reads its config from a folder named after `NVIM_APPNAME`, so you can run this config next to your own:
 
 ```sh
-$ git clone https://github.com/jomatran97/dotfiles.git ~/dotfiles
+$ git clone https://github.com/ryanparker97/dotfiles.git ~/dotfiles
 $ ln -s ~/dotfiles/nvim ~/.config/nvim-ryan
 $ NVIM_APPNAME=nvim-ryan nvim
 ```
@@ -215,7 +215,7 @@ require("lazy").setup({
 | `formatting.lua` | conform.nvim |
 | `linting.lua` | nvim-lint |
 | `treesitter.lua` | Treesitter parsers |
-| `data.lua` | dbt and database tooling |
+| `data.lua` | DBT and database tooling |
 | `dev.lua` | trouble, grug-far, dap, neotest |
 | `extras.lua` | quicker, treesitter-context, todo-comments, snacks, refactoring, yaml.nvim, overseer |
 
