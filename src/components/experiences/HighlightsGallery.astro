@@ -1,0 +1,66 @@
+---
+/** "Get the highlights." (spec §4.2.0): one gallery card per role, newest first. */
+import type { Localized } from '~/lib/content';
+import Gallery from '~/components/tile/Gallery.astro';
+import SectionHeader from '~/components/tile/SectionHeader.astro';
+import Spans from '~/components/tile/Spans.astro';
+import ChevronLink from '~/components/ui/ChevronLink.astro';
+import { useT, type Lang } from '~/i18n';
+import {
+  buildTechVocab,
+  markTech,
+  parseHighlights,
+  pickHighlight,
+  startYear,
+  truncateSpans,
+} from '~/lib/cv';
+
+interface Props {
+  lang: Lang;
+  /** Sorted newest first. */
+  roles: Localized<'experience'>[];
+  skillTerms?: { name: string; children?: string[] }[];
+}
+const { lang, roles, skillTerms = [] } = Astro.props;
+const t = useT(lang);
+const cards = roles.map((role) => {
+  const d = role.data;
+  const card = pickHighlight(parseHighlights(role.body ?? ''), d.highlight);
+  const vocab = buildTechVocab(d.tech, skillTerms);
+  return {
+    slug: role.slug,
+    label: `${d.shortName || d.client || d.company} · ${startYear(d.start)}`,
+    title: card?.label ?? d.role,
+    body: card ? truncateSpans(markTech(card.body, vocab), 140) : [],
+    role: d.role,
+  };
+});
+---
+
+<section
+  class="section section--tight highlights"
+  id="highlights"
+  aria-labelledby="highlights-title"
+>
+  <div class="section-inner section-inner--wide">
+    <SectionHeader id="highlights-title" align="start" title={t('exp.highlights')} />
+  </div>
+  <Gallery {lang} labelledby="highlights-title" id="highlights-list" few={cards.length <= 3}>
+    {cards.map((c, i) => (
+      <li class="gallery-card lift" data-reveal style={`--i:${Math.min(i, 3)}`}>
+        <p class="gc-label">{c.label}</p>
+        <h3 class="t-card">{c.title}</h3>
+        {c.body.length > 0 && (
+          <p class="gc-body">
+            <Spans spans={c.body} />
+          </p>
+        )}
+        <p class="gc-link">
+          <ChevronLink href={`#${c.slug}`} label={`${t('exp.readRole')}: ${c.role}`}>
+            {t('exp.readRole')}
+          </ChevronLink>
+        </p>
+      </li>
+    ))}
+  </Gallery>
+</section>

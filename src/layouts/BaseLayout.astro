@@ -1,10 +1,9 @@
 ---
-import interLatin from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
-import interVietnamese from '@fontsource-variable/inter/files/inter-vietnamese-wght-normal.woff2?url';
 import '~/styles/global.css';
 import GlassNav from '~/components/nav/GlassNav.astro';
 import Footer from '~/components/Footer.astro';
-import SearchModal from '~/components/search/SearchModal.astro';
+import SearchPanel from '~/components/search/SearchPanel.astro';
+import LocalNav, { type LocalNavLink } from '~/components/localnav/LocalNav.astro';
 import { htmlLang, useT, type Lang } from '~/i18n';
 import { localePath, stripLang, switchLangPath } from '~/i18n/routes';
 import { viPageHasContent } from '~/lib/vi-coverage';
@@ -26,10 +25,15 @@ interface Props {
   noSearch?: boolean;
   /** schema.org JSON-LD for the page. */
   jsonLd?: object;
-  /** Nav and footer use the 1520px Home container (Home only). */
-  wide?: boolean;
   /** Overrides the language switch target (e.g. a section index when no translation exists). */
   switchHref?: string;
+  /** Local nav (spec §5.8), rendered directly under the global nav. Home and 404 have none. */
+  localNav?: {
+    title: string;
+    titleHref?: string;
+    links: LocalNavLink[];
+    pill?: { href: string; label: string; download?: string };
+  };
 }
 const {
   title,
@@ -45,8 +49,8 @@ const {
   searchType,
   noSearch = false,
   jsonLd,
-  wide = false,
   switchHref,
+  localNav,
 } = Astro.props;
 const t = useT(lang);
 const contentLang: Lang = fallback ? 'en' : lang;
@@ -62,6 +66,7 @@ const ogImage = url('/og-default.png');
 const beaconToken = import.meta.env.PUBLIC_CF_BEACON_TOKEN;
 const analytics = import.meta.env.PROD && !!beaconToken;
 // Fallback pages repeat English content, so only real translations are indexed for search.
+const langHref = switchHref ?? switchLangPath(Astro.url.pathname, lang === 'vi' ? 'en' : 'vi');
 const indexed = !!searchType && !fallback && !noindex && !noSearch;
 ---
 
@@ -69,7 +74,7 @@ const indexed = !!searchType && !fallback && !noindex && !noSearch;
 <html lang={htmlLang(contentLang)}>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
     <meta name="build-id" content={buildId} />
@@ -100,22 +105,18 @@ const indexed = !!searchType && !fallback && !noindex && !noSearch;
         set:html={JSON.stringify(jsonLd).replace(/</g, '\\u003c')}
       />
     )}
-    <link rel="preload" as="font" type="font/woff2" href={interLatin} crossorigin />
-    {lang === 'vi' && (
-      <link rel="preload" as="font" type="font/woff2" href={interVietnamese} crossorigin />
-    )}
     <slot name="head" />
     <script is:inline>
       // Runs before first paint so the page never flashes the wrong theme.
       (function () {
         const root = document.documentElement;
-        let pref = 'system';
+        let pref = 'light';
         try {
-          pref = localStorage.getItem('theme') || 'system';
+          pref = localStorage.getItem('theme') || 'light';
         } catch {
-          /* storage blocked: follow the system theme */
+          /* storage blocked: stay on the light default */
         }
-        if (pref !== 'light' && pref !== 'dark') pref = 'system';
+        if (pref !== 'dark' && pref !== 'system') pref = 'light';
         root.classList.add('js');
         root.dataset.pref = pref;
         if (pref !== 'system') root.dataset.theme = pref;
@@ -130,18 +131,10 @@ const indexed = !!searchType && !fallback && !noindex && !noSearch;
     >
       {t('nav.skip')}
     </a>
-    <GlassNav
-      {lang}
-      {chromeLang}
-      {wide}
-      switchHref={switchHref ?? switchLangPath(Astro.url.pathname, lang === 'vi' ? 'en' : 'vi')}
-    />
+    <GlassNav {lang} {chromeLang} switchHref={langHref} />
+    {localNav && <LocalNav {lang} {chromeLang} {...localNav} />}
     {fallback && (
-      <div
-        role="note"
-        class="bg-butter-tint py-3 text-center text-sm font-medium"
-        lang={chromeLang}
-      >
+      <div role="note" class="bg-fill py-3 text-center text-sm font-medium" lang={chromeLang}>
         {t('banner.englishOnly')}
       </div>
     )}
@@ -153,8 +146,8 @@ const indexed = !!searchType && !fallback && !noindex && !noSearch;
     >
       <slot />
     </main>
-    <Footer {lang} {chromeLang} {analytics} {wide} />
-    <SearchModal {lang} {chromeLang} />
+    <Footer {lang} {chromeLang} {analytics} current={title} switchHref={langHref} />
+    <SearchPanel {lang} {chromeLang} />
     {analytics && (
       <script
         is:inline

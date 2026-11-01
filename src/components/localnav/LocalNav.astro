@@ -1,0 +1,416 @@
+---
+/**
+ * Shared local nav (spec §5.8). Sticky directly under the global nav. At L it is a bar with the
+ * title on the left and the links (plus an optional small pill) on the right; at compact chrome it
+ * is a title + chevron `<details>` dropdown. A single link is a plain chevron text link.
+ */
+import { useT, type Lang } from '~/i18n';
+
+export interface LocalNavLink {
+  href: string;
+  label: string;
+  /** Marks the current item (Projects kinds): shown with a check in the dropdown. */
+  current?: boolean;
+  /** Extra data attributes for scripts (e.g. the Projects filter). */
+  data?: Record<string, string>;
+  /** Hidden when JavaScript is off (the link only works with a script). */
+  jsOnly?: boolean;
+  /** Renders a toggle button (`aria-expanded`) that swaps `label` for this text while pressed. */
+  toggleLabel?: string;
+}
+interface Props {
+  lang: Lang;
+  chromeLang?: string;
+  title: string;
+  titleHref?: string;
+  links: LocalNavLink[];
+  pill?: { href: string; label: string; download?: string };
+}
+const { lang, chromeLang, title, titleHref, links, pill } = Astro.props;
+const t = useT(lang);
+const single = links.length === 1;
+const attrs = (l: LocalNavLink) => ({
+  ...Object.fromEntries(Object.entries(l.data ?? {}).map(([k, v]) => [`data-${k}`, v])),
+  ...(l.jsOnly ? { 'data-js-only': '' } : {}),
+});
+---
+
+<nav class="local-nav" aria-label={t('localnav.label', { title })} data-local-nav lang={chromeLang}>
+  <div class="bar chrome-row">
+    {links.length > 1 ? (
+      <>
+        <span class="title title-static">
+          <span class="t">{title}</span>
+        </span>
+        <details class="dd">
+          <summary class="title" aria-label={t('localnav.sections', { title })}>
+            <span class="t">{title}</span>
+            <svg class="chev" viewBox="0 0 16 9" width="16" height="9" aria-hidden="true">
+              <path d="M1 1l7 7 7-7" fill="none" stroke="currentColor" stroke-width="1.2" />
+            </svg>
+          </summary>
+          <ul class="tray">
+            {links.map((l, i) => (
+              <li style={`--i:${i}`}>
+                {l.toggleLabel ? (
+                  <button type="button" class="ctl" aria-expanded="false" {...attrs(l)}>
+                    <span data-label-open>{l.label}</span>
+                    <span data-label-close hidden>
+                      {l.toggleLabel}
+                    </span>
+                  </button>
+                ) : (
+                  <a href={l.href} aria-current={l.current ? 'true' : undefined} {...attrs(l)}>
+                    {l.label}
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        </details>
+        <ul class="links">
+          {links.map((l) => (
+            <li>
+              {l.toggleLabel ? (
+                <button type="button" class="ctl" aria-expanded="false" {...attrs(l)}>
+                  <span data-label-open>{l.label}</span>
+                  <span data-label-close hidden>
+                    {l.toggleLabel}
+                  </span>
+                </button>
+              ) : (
+                <a href={l.href} aria-current={l.current ? 'true' : undefined} {...attrs(l)}>
+                  {l.label}
+                </a>
+              )}
+            </li>
+          ))}
+        </ul>
+      </>
+    ) : (
+      <>
+        {titleHref ? (
+          <a class="title plain" href={titleHref}>
+            <span class="t">{title}</span>
+          </a>
+        ) : (
+          <span class="title">
+            <span class="t">{title}</span>
+          </span>
+        )}
+        {single &&
+          (links[0].toggleLabel ? (
+            <button type="button" class="solo-link ctl" aria-expanded="false" {...attrs(links[0])}>
+              <span data-label-open>{links[0].label}</span>
+              <span data-label-close hidden>
+                {links[0].toggleLabel}
+              </span>
+              <span class="chev-text" aria-hidden="true">
+                ›
+              </span>
+            </button>
+          ) : (
+            <a class="solo-link" href={links[0].href} {...attrs(links[0])}>
+              <span>{links[0].label}</span>
+              <span class="chev-text" aria-hidden="true">
+                ›
+              </span>
+            </a>
+          ))}
+      </>
+    )}
+    {pill && (
+      <a class="btn btn-primary btn-sm pill" href={pill.href} download={pill.download}>
+        {pill.label}
+      </a>
+    )}
+  </div>
+</nav>
+
+<style>
+  .local-nav {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    height: var(--local-h);
+    background: color-mix(in srgb, var(--nav-solid) 92%, transparent);
+    transition: background-color 0s 240ms;
+  }
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    .local-nav {
+      background: var(--nav-glass);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      backdrop-filter: saturate(180%) blur(20px);
+    }
+  }
+  /* One keyline: 980px wide and centred at rest, full width once the page scrolls (always full
+     width at compact chrome). */
+  .local-nav::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    height: 1px;
+    background: var(--keyline);
+    inset-inline: max(0px, calc((100% - 980px) / 2));
+  }
+  @supports (animation-timeline: scroll()) {
+    .local-nav::after {
+      animation-name: keyline-full;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: scroll(root);
+      animation-range: calc(var(--nav-h) - 1px) var(--nav-h);
+    }
+  }
+  @keyframes keyline-full {
+    to {
+      inset-inline: 0;
+    }
+  }
+  /* Open dropdown: bar and tray share one solid surface. */
+  .local-nav:has(details[open]) {
+    background: var(--nav-solid);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    transition: none;
+  }
+  .local-nav:has(details[open])::after {
+    display: none;
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    height: 100%;
+  }
+  .title {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    min-width: 0;
+    min-height: 44px;
+    color: var(--text);
+    font-size: 1.3125rem;
+    font-weight: 600;
+    line-height: 1.19;
+    letter-spacing: 0.011em;
+  }
+  .title .t {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .title.plain:hover {
+    text-decoration: none;
+  }
+  .dd {
+    display: none;
+  }
+  .links {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 24px;
+    min-width: 0;
+    height: 100%;
+    margin: 0;
+    padding: 0 32px 0 0;
+    list-style: none;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-padding-inline: 24px;
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  }
+  .links::-webkit-scrollbar {
+    display: none;
+  }
+  .links:focus-within {
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+  .links li {
+    display: flex;
+    flex: none;
+    height: 100%;
+  }
+  .links li:first-child {
+    margin-inline-start: auto;
+  }
+  .ctl {
+    padding: 0;
+    border: 0;
+    background: none;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .links :is(a, button),
+  .solo-link {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: var(--nav-ink);
+    font-size: 0.75rem;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    transition: color 320ms var(--ease-nav);
+  }
+  .local-nav :is(a, button, summary):focus-visible {
+    outline-offset: -7px;
+  }
+  /* Current marker: full ink and a 1px rule on the bar's bottom edge. */
+  .links a[aria-current='true'] {
+    color: var(--nav-ink-hover);
+  }
+  .links a[aria-current='true']::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.8;
+  }
+  .solo-link {
+    flex: none;
+    margin-inline-start: auto;
+    color: var(--link);
+    font-size: 0.875rem;
+  }
+  .chev-text {
+    margin-inline-start: 0.24em;
+  }
+  @media (hover: hover) {
+    .links :is(a, button):hover {
+      color: var(--nav-ink-hover);
+      text-decoration: none;
+    }
+    .solo-link:hover {
+      text-decoration: underline;
+    }
+  }
+  .pill {
+    flex: none;
+    color: #fff;
+  }
+  @media (max-width: 833px) {
+    .local-nav::after {
+      inset-inline: 0;
+      animation: none;
+    }
+    .bar {
+      gap: 12px;
+    }
+    .title {
+      font-size: 1.1875rem;
+    }
+    .links {
+      display: none;
+    }
+    .title-static {
+      display: none;
+    }
+    .dd {
+      display: block;
+      flex: 1;
+      min-width: 0;
+    }
+    summary.title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      list-style: none;
+    }
+    summary.title::-webkit-details-marker {
+      display: none;
+    }
+    summary .chev {
+      flex: none;
+      margin-inline-end: 8px;
+      opacity: 0.8;
+      transition: transform 320ms var(--ease);
+    }
+    .dd[open] summary .chev {
+      transform: rotate(180deg);
+    }
+    .tray {
+      position: absolute;
+      inset: 100% 0 auto;
+      z-index: 1;
+      max-height: 60dvh;
+      margin: 0;
+      padding: 16px max(16px, env(safe-area-inset-left)) 20px;
+      list-style: none;
+      overflow-y: auto;
+      background: var(--nav-solid);
+      border-bottom: 1px solid var(--keyline);
+    }
+    .tray :is(a, button) {
+      position: relative;
+      display: flex;
+      align-items: center;
+      min-height: 44px;
+      padding-inline-start: 16px;
+      color: var(--nav-ink);
+      font-size: 0.875rem;
+      letter-spacing: -0.02em;
+    }
+    .tray a[aria-current='true'] {
+      color: var(--nav-ink-hover);
+    }
+    .tray a[aria-current='true']::before {
+      content: '';
+      position: absolute;
+      inset-inline-start: 0;
+      width: 1.2px;
+      height: 12px;
+      border-radius: 1.2px;
+      background: currentColor;
+    }
+    .dd[open] .tray {
+      animation: tray-in 320ms var(--ease-nav) both;
+    }
+    .dd[open] .tray li {
+      animation: link-in 320ms var(--ease-nav) both;
+      animation-delay: calc(260ms + var(--i, 0) * 20ms);
+    }
+    .pill {
+      margin-inline-start: auto;
+    }
+    .solo-link {
+      font-size: 1.0625rem;
+    }
+  }
+  @keyframes tray-in {
+    from {
+      clip-path: inset(0 0 100% 0);
+    }
+  }
+  @keyframes link-in {
+    from {
+      opacity: 0;
+      transform: translate3d(0, -4px, 0);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tray,
+    .tray li,
+    summary .chev,
+    .links :is(a, button) {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+  @media print {
+    .local-nav {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  import '~/scripts/local-nav';
+</script>

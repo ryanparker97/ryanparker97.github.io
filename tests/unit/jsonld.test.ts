@@ -6,6 +6,7 @@ describe('JSON-LD', () => {
     const ld = personLd(
       {
         name: 'Ryan Parker',
+        realName: 'Tran Thanh Hai',
         headline: 'Senior Data Engineer',
         tagline: 'Pipelines',
         location: 'Ho Chi Minh City',
@@ -19,6 +20,7 @@ describe('JSON-LD', () => {
     expect(ld['@type']).toBe('Person');
     expect(ld.sameAs).toEqual(['https://l', 'https://g']);
     expect(ld.telephone).toBe('+84963378831');
+    expect(ld.alternateName).toBe('Tran Thanh Hai');
   });
   it('builds a BlogPosting with dateModified falling back to pubDate', () => {
     const ld = blogPostingLd(

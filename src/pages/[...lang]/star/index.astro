@@ -3,8 +3,9 @@ import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import StarGroup from '~/components/star/StarGroup.astro';
 import CompetencyFilter from '~/components/star/CompetencyFilter.astro';
+import Hero from '~/components/tile/Hero.astro';
 import { getLocalized } from '~/lib/content';
-import { sortRoles } from '~/lib/cv';
+import { companyLabel, sortRoles } from '~/lib/cv';
 import { groupStories } from '~/lib/star';
 import { competencyKeys } from '~/content/competencies';
 import { getLang, langStaticPaths } from '~/i18n/routes';
@@ -19,12 +20,12 @@ const { items: roles, fallback: rolesFallback } = await getLocalized('experience
 const sortedRoles = sortRoles(roles.map((r) => ({ ...r, start: r.data.start, end: r.data.end })));
 const groups = groupStories(stories, sortedRoles);
 const present = competencyKeys.filter((c) => stories.some((s) => s.data.competencies.includes(c)));
-const legend = [
-  ['s', t('star.situation')],
-  ['t', t('star.task')],
-  ['a', t('star.action')],
-  ['r', t('star.result')],
-] as const;
+const n = stories.length;
+const m = groups.length;
+const subline = t('star.subline', {
+  stories: n === 1 ? t('star.oneStory') : t('star.nStories', { n }),
+  roles: m === 1 ? t('star.oneRole') : t('star.nRoles', { n: m }),
+});
 ---
 
 <BaseLayout
@@ -32,44 +33,43 @@ const legend = [
   description={t('star.description')}
   {lang}
   fallback={fallback || (rolesFallback && groups.some((g) => g.role))}
+  localNav={{
+    title: t('star.title'),
+    links: groups.map((g) => ({
+      href: `#${g.id}`,
+      label: g.role ? companyLabel(g.role.data.company, g.role.data.client) : t('star.other'),
+    })),
+  }}
 >
-  <div class="container-page">
-    <header class="page-head">
-      <h1>{t('star.title')}</h1>
-      <p class="mt-3 max-w-[60ch] text-xl text-text-2">{t('star.intro')}</p>
-      <ul class="mt-5 flex flex-wrap items-center gap-2" aria-label={t('star.legend')}>
-        {legend.map(([key, label]) => (
-          <li class={`chip legend legend-${key}`}>{label}</li>
-        ))}
-      </ul>
-      <div class="mt-6">
-        <CompetencyFilter {lang} {present} />
-      </div>
-    </header>
-
-    <div class="grid gap-16 pb-8">
-      {groups.map((g) => (
-        <StarGroup id={g.id} role={g.role} stories={g.stories} {lang} />
-      ))}
+  <Hero tight eyebrow={t('star.title')} title={t('star.hero')} {subline}>
+    <CompetencyFilter {lang} {present} />
+  </Hero>
+  {groups.map((g, i) => (
+    <StarGroup
+      id={g.id}
+      role={g.role}
+      stories={g.stories}
+      {lang}
+      tone={i % 2 === 0 ? 'surface' : 'bg'}
+      first={i === 0}
+    />
+  ))}
+  <section id="star-empty" class="section section--tight" hidden>
+    <div class="section-inner empty">
+      <p class="t-subhead">{t('star.empty')}</p>
+      <button type="button" class="btn btn-secondary" data-reset>
+        {t('star.reset')}
+      </button>
     </div>
-    <p id="star-empty" class="py-8 text-center text-xl" hidden>
-      {t('star.empty')}
-    </p>
-  </div>
+  </section>
 </BaseLayout>
 
 <style>
-  .legend-s {
-    background: var(--mint-tint);
+  .empty {
+    text-align: center;
   }
-  .legend-t {
-    background: var(--sky-tint);
-  }
-  .legend-a {
-    background: var(--butter-tint);
-  }
-  .legend-r {
-    background: linear-gradient(90deg, var(--mint-tint), var(--sky-tint));
+  .empty .btn {
+    margin-top: 17px;
   }
 </style>
 

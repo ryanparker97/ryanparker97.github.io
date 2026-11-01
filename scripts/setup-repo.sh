@@ -2,7 +2,7 @@
 # One-time GitHub repo settings (spec §11.9). Needs `gh` logged in as the repo admin.
 # Usage: scripts/setup-repo.sh [owner/repo]   (a few settings can still need the web UI)
 set -euo pipefail
-REPO="${1:-jomatran97/jomatran97.github.io}"
+REPO="${1:-ryanparker97/ryanparker97.github.io}"
 api() { gh api -H "Accept: application/vnd.github+json" "$@"; }
 
 echo "Pages: source = GitHub Actions"

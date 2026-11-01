@@ -58,3 +58,27 @@ export function headlineMetric(metrics: { label: string; value: string }[]): str
   const m = metrics[0];
   return m ? `${m.value} ${m.label}` : undefined;
 }
+
+export interface Metric {
+  prefix?: string;
+  label: string;
+  value: string;
+  compare?: { label: string; value: number }[];
+}
+
+/** The story's headline stat (spec §4.1.2): the first metric, when its value has a digit. */
+export function headlineStat(metrics: Metric[]): Metric | undefined {
+  const m = metrics[0];
+  return m && /\d/.test(m.value) ? m : undefined;
+}
+
+/** Graph bars (spec §5.10.9): widths are proportional to the largest value, in 0-1. */
+export function graphBars(compare: { label: string; value: number }[]) {
+  const max = Math.max(...compare.map((c) => c.value));
+  return compare.map((c, i) => ({
+    label: c.label,
+    value: c.value,
+    w: Number((c.value / max).toFixed(3)),
+    after: i === compare.length - 1,
+  }));
+}

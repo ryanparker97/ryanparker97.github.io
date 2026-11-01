@@ -37,6 +37,7 @@ const bodies = new Map(
     <header class="top">
       <div>
         <h1>{p.name}</h1>
+        {p.realName && <p>{p.realName}</p>}
         <p>
           <strong>{p.headline}</strong> — {p.tagline}
         </p>
@@ -93,7 +94,10 @@ const bodies = new Map(
           return (
             <div class="entry">
               <div class="row">
-                <strong>{x.data.title}</strong>
+                <strong>
+                  {x.data.title}
+                  {x.data.kind === 'personal' && ` (${t('cv.print.personalProject')})`}
+                </strong>
                 <span>{formatDateRange(x.data.start, x.data.end, lang)}</span>
               </div>
               <div class="row sub">

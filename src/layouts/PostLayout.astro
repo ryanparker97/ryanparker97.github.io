@@ -1,16 +1,16 @@
 ---
 import '~/styles/prose.css';
-import newsreaderLatin from '@fontsource-variable/newsreader/files/newsreader-latin-wght-normal.woff2?url';
-import newsreaderVietnamese from '@fontsource-variable/newsreader/files/newsreader-vietnamese-wght-normal.woff2?url';
 import BaseLayout from './BaseLayout.astro';
 import SeriesBox from '~/components/blog/SeriesBox.astro';
-import SeriesNav from '~/components/blog/SeriesNav.astro';
+import MoreFrom from '~/components/blog/MoreFrom.astro';
+import DotList from '~/components/ui/DotList.astro';
 import Toc from '~/components/blog/Toc.astro';
 import { seriesNeighbors } from '~/lib/blog';
 import type { Post } from '~/lib/blog-content';
 import { formatDate } from '~/lib/format';
 import { blogPostingLd } from '~/lib/jsonld';
 import { getProfile } from '~/lib/content';
+import { singleNav } from '~/lib/localnav';
 import { useT, type Lang } from '~/i18n';
 import { localePath, switchTarget } from '~/i18n/routes';
 
@@ -41,6 +41,24 @@ const jsonLd = blogPostingLd(d, {
   lang: post.contentLang,
 });
 const neighbors = series && d.seriesPart ? seriesNeighbors(series.parts, d.seriesPart) : undefined;
+const category =
+  series && d.seriesPart
+    ? `${t('series.part', { n: d.seriesPart })} · ${series.title}`
+    : t('blog.article');
+// "More from": the previous and next published parts, else the two newest other posts.
+const more = neighbors
+  ? [neighbors.prev, neighbors.next]
+      .filter((n) => n?.post)
+      .map((n) => ({
+        href: localePath(`/blog/${n!.post!.slug}/`, lang),
+        title: t(n === neighbors.prev ? 'series.prev' : 'series.next', {
+          n: n!.part,
+          title: n!.title,
+        }),
+      }))
+  : [prev, next]
+      .filter((p): p is Post => !!p)
+      .map((p) => ({ href: localePath(`/blog/${p.slug}/`, lang), title: p.data.title }));
 ---
 
 <BaseLayout
@@ -53,89 +71,59 @@ const neighbors = series && d.seriesPart ? seriesNeighbors(series.parts, d.serie
   ogType="article"
   searchType="blog"
   {jsonLd}
+  localNav={singleNav(
+    series?.title ?? t('blog.title'),
+    {
+      href: localePath('/blog/', lang),
+      label: t('blog.all'),
+    },
+    series ? localePath(`/blog/series/${series.slug}/`, lang) : undefined,
+  )}
 >
-  <Fragment slot="head">
-    <link rel="preload" as="font" type="font/woff2" href={newsreaderLatin} crossorigin />
-    {post.contentLang === 'vi' && (
-      <link rel="preload" as="font" type="font/woff2" href={newsreaderVietnamese} crossorigin />
-    )}
-  </Fragment>
-  <article class="container-page post">
+  <article class="post">
     <header class="head">
-      <h1 class="mt-12">{d.title}</h1>
-      <p class="mt-4 text-xl text-text-2">{d.description}</p>
-      <p class="meta mt-4 flex flex-wrap gap-x-3">
+      <p class="t-news-cat">{category}</p>
+      <p class="date">
         <time datetime={d.pubDate.toISOString()}>{formatDate(d.pubDate, lang)}</time>
         {d.updatedDate && (
-          <time datetime={d.updatedDate.toISOString()}>
-            {t('blog.updated', { date: formatDate(d.updatedDate, lang) })}
-          </time>
+          <>
+            {' · '}
+            <time datetime={d.updatedDate.toISOString()}>
+              {t('blog.updated', { date: formatDate(d.updatedDate, lang) })}
+            </time>
+          </>
         )}
-        <span>{t('blog.readingTime', { n: minutes })}</span>
       </p>
-      {d.tags.length > 0 && (
-        <ul class="mt-3 flex flex-wrap gap-2" aria-label={t('blog.tags')}>
-          {d.tags.map((tag) => (
-            <li>
-              <a class="chip hover:no-underline" href={localePath(`/blog/tags/${tag}/`, lang)}>
-                {tag}
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-      {series && d.seriesPart && (
-        <SeriesBox {lang} {series} parts={series.parts} current={d.seriesPart} />
-      )}
+      <h1 class="t-article-title">{d.title}</h1>
+      <p class="t-article-sub sub">{d.description}</p>
+      <p class="meta-line">
+        <DotList
+          items={[
+            t('blog.readingTime', { n: minutes }),
+            ...d.tags.map((tag) => ({
+              text: `#${tag}`,
+              href: localePath(`/blog/tags/${tag}/`, lang),
+            })),
+          ]}
+        />
+      </p>
+      <hr class="keyline" />
     </header>
+
+    {series && d.seriesPart && (
+      <div class="series">
+        <SeriesBox {lang} {series} parts={series.parts} current={d.seriesPart} />
+      </div>
+    )}
 
     <Toc {lang} {headings} />
 
-    <div class="prose body">
+    <div class:list={['prose body t-article-body', { dropcap: d.dropcap }]}>
       <slot />
     </div>
 
     <footer class="foot">
-      {neighbors ? (
-        <SeriesNav {lang} prev={neighbors.prev} next={neighbors.next} />
-      ) : (
-        (prev || next) && (
-          <nav class="grid gap-4 sm:grid-cols-2" aria-label={t('blog.back')}>
-            {prev ? (
-              <a class="card nav-card" rel="prev" href={localePath(`/blog/${prev.slug}/`, lang)}>
-                ← {prev.data.title}
-              </a>
-            ) : (
-              <span />
-            )}
-            {next && (
-              <a
-                class="card nav-card text-right"
-                rel="next"
-                href={localePath(`/blog/${next.slug}/`, lang)}
-              >
-                {next.data.title} →
-              </a>
-            )}
-          </nav>
-        )
-      )}
-      {d.tags.length > 0 && (
-        <ul class="mt-8 flex flex-wrap items-center gap-2" aria-label={t('blog.tags')}>
-          {d.tags.map((tag) => (
-            <li>
-              <a class="chip hover:no-underline" href={localePath(`/blog/tags/${tag}/`, lang)}>
-                {tag}
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-      <p class="mt-8">
-        <a href={localePath('/blog/', lang)} class="link-quiet">
-          ← {t('blog.back')}
-        </a>
-      </p>
+      <MoreFrom {lang} heading={t(neighbors ? 'blog.moreSeries' : 'blog.moreFrom')} items={more} />
     </footer>
   </article>
 </BaseLayout>
@@ -143,49 +131,83 @@ const neighbors = series && d.seriesPart ? seriesNeighbors(series.parts, d.serie
 <style>
   .post {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: 'head' 'tocn' 'body' 'foot';
-    padding-bottom: 32px;
-  }
-  .head,
-  .body,
-  .foot {
-    width: 100%;
-    max-width: 68ch;
-    margin-inline: auto;
+    grid-template-columns: 1fr minmax(0, var(--article)) 1fr;
+    grid-template-areas: '. head .' '. series .' '. tocn .' '. body .' '. foot .';
+    padding-bottom: 64px;
   }
   .head {
     grid-area: head;
+    padding-top: var(--section-pad-tight);
+  }
+  .series {
+    grid-area: series;
+    margin-top: 44px;
   }
   .body {
     grid-area: body;
+    margin-top: 24px;
   }
   .foot {
     grid-area: foot;
     margin-top: 64px;
   }
-  @media (min-width: 1024px) {
-    .post {
-      grid-template-columns: minmax(0, 68ch) 240px;
-      grid-template-areas: 'head .' 'body toc' 'foot .';
-      justify-content: center;
-      column-gap: 56px;
-    }
-    .head,
-    .body,
-    .foot {
-      margin-inline: 0;
-    }
+  .head p {
+    margin: 0;
   }
-  .nav-card {
-    display: block;
-    padding: 16px 20px;
-    color: var(--text);
+  .date {
+    margin-top: 4px !important;
+    color: var(--text-2);
+    font-size: 0.875rem;
     font-weight: 600;
+    line-height: 1.4286;
   }
-  .nav-card:hover {
-    text-decoration: none;
-    box-shadow: var(--shadow-lg);
+  .head h1 {
+    margin-top: 20px;
+  }
+  /* Newsroom article subhead: 24 / 500 / 28px, --text, 20px below the H1. */
+  .sub {
+    margin-top: 20px !important;
+    color: var(--text);
+    font-weight: 500;
+  }
+  @media (min-width: 1069px) {
+    .sub {
+      line-height: 28px;
+    }
+  }
+  .meta-line :global(a) {
+    display: inline-block;
+    padding-block: 14px;
+    margin-block: -14px;
+  }
+  .meta-line {
+    margin-top: 16px !important;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    line-height: 1.4286;
+  }
+  .keyline {
+    width: 100%;
+    max-width: 653px;
+    margin: 44px 0 0;
+    border: 0;
+    border-top: 1px solid var(--border);
+  }
+  @media (max-width: 1068px) {
+    .keyline {
+      margin-top: 36px;
+    }
+    .series {
+      margin-top: 36px;
+    }
+  }
+  @media (max-width: 734px) {
+    .keyline {
+      margin-top: 32px;
+    }
+    .series {
+      margin-top: 32px;
+    }
   }
 </style>
 

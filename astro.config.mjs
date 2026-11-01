@@ -9,7 +9,7 @@ import { viPageHasContent } from './src/lib/vi-coverage';
 import { codeBlockTransformer } from './src/lib/shiki-transformer';
 
 export default defineConfig({
-  site: 'https://jomatran97.github.io',
+  site: 'https://ryanparker97.github.io',
   trailingSlash: 'always',
   // Old web CV URLs (the PDFs stay at /cv.pdf). Static hosting: Astro emits meta-refresh pages.
   redirects: { '/cv/': '/experiences/', '/vi/cv/': '/vi/experiences/' },

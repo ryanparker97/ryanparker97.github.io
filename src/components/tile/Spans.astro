@@ -1,0 +1,29 @@
+---
+/** Inline text runs from `lib/cv.ts` (bold, italic, code, links, tech marks). */
+import type { Span } from '~/lib/cv';
+
+interface Props {
+  spans: Span[];
+}
+const { spans } = Astro.props;
+---
+
+{spans.map((s, i) => {
+  let node: unknown = s.text;
+  if (s.code) node = <code>{s.text}</code>;
+  if (s.italic) node = <em>{node}</em>;
+  if (s.bold) node = <strong>{node}</strong>;
+  if (s.tech) {
+    // Punctuation right after (or an opener right before) a highlight stays attached to it.
+    const after = spans[i + 1]?.text[0] ?? '';
+    const before = spans[i - 1]?.text.slice(-1) ?? '';
+    const cls = [
+      'tech',
+      /[,.;:!?)\]…\-–]/.test(after) && 'tech--end',
+      /[(["“]/.test(before) && 'tech--start',
+    ];
+    node = <mark class={cls.filter(Boolean).join(' ')}>{node}</mark>;
+  }
+  if (s.href) node = <a href={s.href}>{node}</a>;
+  return node;
+})}

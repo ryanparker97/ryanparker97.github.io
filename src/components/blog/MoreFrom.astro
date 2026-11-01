@@ -1,0 +1,57 @@
+---
+/** Newsroom "More from" list (spec §4.5): a hairline list of two other places to read next. */
+import { useT, type Lang } from '~/i18n';
+
+interface Props {
+  lang: Lang;
+  heading: string;
+  items: { href: string; title: string }[];
+}
+const { lang, heading, items } = Astro.props;
+useT(lang);
+---
+
+{items.length > 0 && (
+  <nav class="more-from" aria-label={heading}>
+    <h2 class="mf-title">{heading}</h2>
+    <ul>
+      {items.map((i) => (
+        <li>
+          <a href={i.href}>{i.title}</a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+)}
+
+<style>
+  .mf-title {
+    margin: 0 0 8px;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+  }
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-top: 1px solid var(--border);
+  }
+  li {
+    border-bottom: 1px solid var(--border);
+  }
+  a {
+    display: block;
+    padding-block: 32px;
+    color: var(--text);
+    font-size: 1.1875rem;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  a:hover {
+    text-decoration: none;
+    color: var(--link);
+  }
+</style>

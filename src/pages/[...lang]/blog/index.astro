@@ -1,10 +1,15 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import PostCard from '~/components/blog/PostCard.astro';
-import { countTags } from '~/lib/blog';
-import { getPosts, getSeriesList } from '~/lib/blog-content';
+import FeatureTile from '~/components/blog/FeatureTile.astro';
+import Hero from '~/components/tile/Hero.astro';
+import NewsTile from '~/components/tile/NewsTile.astro';
+import SectionHeader from '~/components/tile/SectionHeader.astro';
+import TileGrid from '~/components/tile/TileGrid.astro';
+import { getPosts, getSeriesDetail, getSeriesList } from '~/lib/blog-content';
+import { formatDate } from '~/lib/format';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
+import { blogNav } from '~/lib/localnav';
 import { useT } from '~/i18n';
 
 export const getStaticPaths = (() => langStaticPaths()) satisfies GetStaticPaths;
@@ -14,39 +19,57 @@ const t = useT(lang);
 const { posts, fallback } = await getPosts(lang);
 const { series } = await getSeriesList(lang);
 const seriesTitle = (id?: string) => series.find((s) => s.slug === id)?.data.title;
-const tags = countTags(posts);
+const [feature, ...others] = posts;
+const featureSeries = feature?.data.series
+  ? await getSeriesDetail(feature.data.series, lang)
+  : undefined;
 ---
 
-<BaseLayout title={t('blog.title')} description={t('blog.description')} {lang} {fallback}>
-  <div class="container-page">
-    <header class="page-head">
-      <h1>{t('blog.title')}</h1>
-      <p class="mt-3 text-xl text-text-2">{t('blog.subline')}</p>
-      {tags.length > 0 && (
-        <ul class="mt-6 flex flex-wrap gap-2" aria-label={t('blog.tags')}>
-          {tags.map(({ tag, count }) => (
-            <li>
-              <a class="chip hover:no-underline" href={localePath(`/blog/tags/${tag}/`, lang)}>
-                {tag} · {count}
-              </a>
-            </li>
-          ))}
-          <li>
-            <a class="chip chip-sky hover:no-underline" href={localePath('/blog/tags/', lang)}>
-              {t('blog.allTags')}
-            </a>
-          </li>
-        </ul>
-      )}
-    </header>
-    {posts.length ? (
-      <ul class="grid max-w-[68ch] gap-5 pb-8">
-        {posts.map((post) => (
-          <PostCard {post} {lang} seriesTitle={seriesTitle(post.data.series)} />
+<BaseLayout
+  title={t('blog.title')}
+  description={t('blog.description')}
+  {lang}
+  {fallback}
+  localNav={blogNav(lang, 'all')}
+>
+  <Hero tight eyebrow={t('blog.title')} title={t('blog.hero')} subline={t('blog.subline')} />
+  {feature ? (
+    <TileGrid dense>
+      <FeatureTile
+        {lang}
+        post={feature}
+        series={
+          featureSeries && {
+            slug: featureSeries.entry.slug,
+            title: featureSeries.entry.data.title,
+            parts: featureSeries.parts,
+          }
+        }
+      />
+    </TileGrid>
+  ) : (
+    <section class="section section--tight">
+      <p class="section-inner t-subhead" style="text-align:center">
+        {t('blog.noPosts')}
+      </p>
+    </section>
+  )}
+  {others.length > 0 && (
+    <section class="news-band" aria-labelledby="more-posts-title">
+      <SectionHeader id="more-posts-title" align="start" title={t('blog.more')} />
+      <ul class="news-grid">
+        {others.map((post, i) => (
+          <NewsTile
+            level={3}
+            index={i}
+            href={localePath(`/blog/${post.slug}/`, lang)}
+            title={post.data.title}
+            category={seriesTitle(post.data.series) ?? t('blog.article')}
+            description={post.data.description}
+            meta={`${formatDate(post.data.pubDate, lang)} · ${t('blog.readingTime', { n: post.minutes })}`}
+          />
         ))}
       </ul>
-    ) : (
-      <p class="pb-8 text-xl text-text-2">{t('blog.noPosts')}</p>
-    )}
-  </div>
+    </section>
+  )}
 </BaseLayout>

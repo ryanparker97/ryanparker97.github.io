@@ -26,7 +26,9 @@ const icon = { note: 'info', tip: 'lightbulb', warning: 'triangle-alert' }[type]
     gap: 12px;
     margin-block: 1.5em;
     padding: 16px 20px;
-    border-radius: 16px;
+    border-radius: 18px;
+    border-inline-start: 4px solid var(--link);
+    background: var(--surface-2);
     font-family: var(--font-sans);
     font-size: 1rem;
     line-height: 1.55;
@@ -41,19 +43,9 @@ const icon = { note: 'info', tip: 'lightbulb', warning: 'triangle-alert' }[type]
   .callout :global(.callout-icon) {
     flex: none;
     margin-top: 2px;
+    color: var(--link);
   }
   .callout-title {
-    font-weight: 600;
-  }
-  .callout-note {
-    background: var(--sky-tint);
-  }
-  .callout-tip {
-    background: var(--mint-tint);
-  }
-  /* Butter is pale, so the warning gets a --text border for contrast. */
-  .callout-warning {
-    background: var(--butter-tint);
-    border: 2px solid var(--text);
+    font-weight: 700;
   }
 </style>

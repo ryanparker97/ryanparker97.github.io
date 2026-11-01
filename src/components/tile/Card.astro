@@ -1,0 +1,20 @@
+---
+/** Card (spec §5.10.4): 28px radius, opposite colour of its band, no shadow or border. */
+interface Props {
+  tag?: 'div' | 'article' | 'li';
+  class?: string;
+  /** Position in a reveal group: fades up with the staggered delay. */
+  index?: number;
+  [attr: string]: unknown;
+}
+const { tag: Tag = 'div', class: cls, index, ...rest } = Astro.props;
+---
+
+<Tag
+  class:list={['card', cls]}
+  data-reveal={index === undefined ? undefined : ''}
+  style={index === undefined ? undefined : `--i:${Math.min(index, 3)}`}
+  {...rest}
+>
+  <slot />
+</Tag>

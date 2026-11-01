@@ -1,0 +1,98 @@
+---
+import type { Post } from '~/lib/blog-content';
+import { formatDate } from '~/lib/format';
+import { tileHeadline } from '~/lib/home';
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+import GridTile from '~/components/tile/GridTile.astro';
+import Lockup from '~/components/tile/Lockup.astro';
+
+interface Props {
+  lang: Lang;
+  /** Newest published post; absent shows the empty state. */
+  post?: Post;
+  seriesTitle?: string;
+  /** Parts in the post's series, for the progress segments. */
+  seriesTotal?: number;
+  span?: boolean;
+}
+const { lang, post, seriesTitle, seriesTotal = 0, span = false } = Astro.props;
+const t = useT(lang);
+const meta = post
+  ? `${formatDate(post.data.pubDate, lang)} · ${t('blog.readingTime', { n: post.minutes })}`
+  : undefined;
+const part = post?.data.seriesPart ?? 0;
+---
+
+<GridTile id="writing" {span} stack labelledby="writing-title">
+  <Lockup
+    id="writing-title"
+    size="promo"
+    title={post ? tileHeadline(post.data.title) : t('home.writing.empty')}
+    eyebrow={t('home.writing.eyebrow')}
+    subline={meta}
+    reveal
+  >
+    {post && seriesTitle && (
+      <a slot="extra" class="chip" href={localePath(`/blog/series/${post.data.series}/`, lang)}>
+        {t('series.chip', { title: seriesTitle, n: part })}
+      </a>
+    )}
+    {post && (
+      <Fragment slot="actions">
+        <a
+          href={localePath(`/blog/${post.slug}/`, lang)}
+          class="btn btn-primary"
+          aria-label={`${t('home.posts.read')}: ${post.data.title}`}
+        >
+          {t('home.posts.read')}
+        </a>
+        <a href={localePath('/blog/', lang)} class="btn btn-secondary">
+          {t('home.posts.all')}
+        </a>
+      </Fragment>
+    )}
+  </Lockup>
+  {post && seriesTotal > 1 && part > 0 && (
+    <div slot="visual" class="progress" data-series-progress>
+      <p>{t('home.writing.part', { n: part, total: seriesTotal })}</p>
+      <ol aria-hidden="true">
+        {Array.from({ length: seriesTotal }, (_, i) => (
+          <li class:list={{ on: i + 1 === part }}>{i + 1}</li>
+        ))}
+      </ol>
+    </div>
+  )}
+</GridTile>
+
+<style>
+  /* Part numerals at Promo size, the current part in --text and the rest in --border. */
+  .progress p {
+    margin: 0 0 12px;
+    color: var(--text-2);
+    font-size: 0.75rem;
+    line-height: 1.3334;
+  }
+  .progress ol {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .progress li {
+    color: var(--border);
+    font-size: 2rem;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+  @media (min-width: 1069px) {
+    .progress li {
+      font-size: 2.5rem;
+    }
+  }
+  .progress li.on {
+    color: var(--text);
+  }
+</style>

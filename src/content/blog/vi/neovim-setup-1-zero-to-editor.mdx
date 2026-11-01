@@ -10,13 +10,13 @@ seriesPart: 1
 import Callout from '~/components/blog/Callout.astro';
 import NeovimStartupDiagram from '~/components/blog/diagrams/NeovimStartupDiagram.astro';
 
-Hướng dẫn này đưa bạn từ con số 0 đến một Neovim chạy được trên macOS, dùng cấu hình nhỏ gọn tôi xây dựng cho công việc pha trộn giữa web, kỹ thuật dữ liệu và SRE: Java, Python, dbt/SQL, Terraform, Bash, CloudFormation/YAML, JSON, Docker và các tệp frontend. Bạn cần **Neovim 0.12 trở lên**, và bước 1 sẽ kiểm tra điều đó.
+Hướng dẫn này đưa bạn từ con số 0 đến một Neovim chạy được trên macOS, dùng cấu hình nhỏ gọn tôi xây dựng cho công việc pha trộn giữa web, kỹ thuật dữ liệu và SRE: Java, Python, DBT/SQL, Terraform, Bash, CloudFormation/YAML, JSON, Docker và các tệp frontend. Bạn cần **Neovim 0.12 trở lên**, và bước 1 sẽ kiểm tra điều đó.
 
 Tôi viết bài này vì các bản phân phối lớn như LazyVim hay NvChad làm giúp bạn rất nhiều thứ, và rồi khó biết phần nào làm gì. Cấu hình này thì ngược lại: mỗi chủ đề một tệp Lua, plugin chỉ được nạp khi cần, và không có gì tôi không giải thích được. Qua năm phần, bạn sẽ xây dựng nó từng bước. Phần đầu này đảm bảo mọi thứ cài được và khởi động được. Bạn có thể xem cả chuỗi bài trên [trang chuỗi bài viết](/vi/blog/series/neovim-setup-guide/).
 
 <Callout type="note" lang="vi">
   **Đã thử với:** Neovim 0.12, macOS, dotfiles commit `2101fb4`. **Nguồn:**
-  [github.com/jomatran97/dotfiles](https://github.com/jomatran97/dotfiles) (thư mục `nvim/`).
+  [github.com/ryanparker97/dotfiles](https://github.com/ryanparker97/dotfiles) (thư mục `nvim/`).
 </Callout>
 
 ## Bạn sẽ có gì khi kết thúc
@@ -100,7 +100,7 @@ Có ba cách để lấy cấu hình. Chọn một.
 ### A. Toàn bộ repo dotfiles
 
 ```sh
-$ git clone https://github.com/jomatran97/dotfiles.git ~/dotfiles
+$ git clone https://github.com/ryanparker97/dotfiles.git ~/dotfiles
 $ cd ~/dotfiles
 $ ./install.sh
 ```
@@ -116,7 +116,7 @@ $ ./install.sh
 Sao lưu cấu hình hiện có của bạn, rồi liên kết thư mục `nvim/`:
 
 ```sh
-$ git clone https://github.com/jomatran97/dotfiles.git ~/dotfiles
+$ git clone https://github.com/ryanparker97/dotfiles.git ~/dotfiles
 $ mv ~/.config/nvim ~/.config/nvim.bak
 $ mv ~/.local/share/nvim ~/.local/share/nvim.bak
 $ mv ~/.local/state/nvim ~/.local/state/nvim.bak
@@ -131,7 +131,7 @@ Nếu một trong các thư mục đó không tồn tại, `mv` chỉ báo như 
 Đây là cách tôi khuyên dùng cho lần thử đầu tiên. Neovim đọc cấu hình từ thư mục đặt theo `NVIM_APPNAME`, nên bạn có thể chạy cấu hình này song song với cấu hình của mình:
 
 ```sh
-$ git clone https://github.com/jomatran97/dotfiles.git ~/dotfiles
+$ git clone https://github.com/ryanparker97/dotfiles.git ~/dotfiles
 $ ln -s ~/dotfiles/nvim ~/.config/nvim-ryan
 $ NVIM_APPNAME=nvim-ryan nvim
 ```
@@ -215,7 +215,7 @@ require("lazy").setup({
 | `formatting.lua` | conform.nvim |
 | `linting.lua` | nvim-lint |
 | `treesitter.lua` | các parser của Treesitter |
-| `data.lua` | dbt và công cụ cơ sở dữ liệu |
+| `data.lua` | DBT và công cụ cơ sở dữ liệu |
 | `dev.lua` | trouble, grug-far, dap, neotest |
 | `extras.lua` | quicker, treesitter-context, todo-comments, snacks, refactoring, yaml.nvim, overseer |
 

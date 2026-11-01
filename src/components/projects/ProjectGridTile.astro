@@ -1,0 +1,202 @@
+---
+/**
+ * One project tile (spec §4.6): the lockup on top, tech chips and links below, and a plus disc
+ * that opens the labelled bullets in place. The tile has no per-project page.
+ */
+import { Image } from 'astro:assets';
+import type { Localized } from '~/lib/content';
+import { companyLabel, formatDateRange, parseHighlights } from '~/lib/cv';
+import GridTile from '~/components/tile/GridTile.astro';
+import HighlightCards from '~/components/tile/HighlightCards.astro';
+import Lockup from '~/components/tile/Lockup.astro';
+import ChevronLink from '~/components/ui/ChevronLink.astro';
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+
+interface Props {
+  project: Localized<'projects'>;
+  lang: Lang;
+  /** Role (experience entry) this project belongs to, when `role` is set. */
+  role?: Localized<'experience'>;
+}
+const { project, lang, role } = Astro.props;
+const t = useT(lang);
+const d = project.data;
+const cards = parseHighlights(project.body ?? '');
+const shownTech = d.tech.slice(0, 6);
+const moreTech = d.tech.length - shownTech.length;
+---
+
+<GridTile
+  tag="article"
+  id={project.slug}
+  labelledby={`${project.slug}-title`}
+  data-project={project.slug}
+  data-kind={d.kind}
+>
+  <Lockup
+    id={`${project.slug}-title`}
+    size="promo"
+    title={d.title}
+    eyebrow={t(`projects.kind.${d.kind}`)}
+    subline={d.subtitle}
+    reveal
+  >
+    <Fragment slot="extra">
+      <p class="dates">{formatDateRange(d.start, d.end, lang)}</p>
+      <p class="summary">{d.summary}</p>
+    </Fragment>
+  </Lockup>
+  <div slot="visual" class="visual">
+    {d.image && (
+      <Image src={d.image} alt="" width={640} height={360} loading="lazy" class="cover" />
+    )}
+    {shownTech.length > 0 && (
+      <ul class="chips" aria-label={t('common.tech')}>
+        {shownTech.map((x) => (
+          <li class="chip chip-mint">{x}</li>
+        ))}
+        {moreTech > 0 && <li class="chip chip-mint">+{moreTech}</li>}
+      </ul>
+    )}
+    {(d.repo || d.demo) && (
+      <p class="links">
+        {d.repo && (
+          <a href={d.repo} rel="noopener" target="_blank" class="link-chevron">
+            {t('projects.repo')} ↗
+          </a>
+        )}
+        {d.demo && (
+          <a href={d.demo} rel="noopener" target="_blank" class="link-chevron">
+            {t('projects.live')} ↗
+          </a>
+        )}
+      </p>
+    )}
+  </div>
+  <details slot="after" class="more">
+    <summary class="plus-row" aria-label={t('common.learnAbout', { title: d.title })}>
+      <span class="plus-label" aria-hidden="true">
+        {t('common.learnMore')}
+      </span>
+      <span class="plus-disc" aria-hidden="true"></span>
+    </summary>
+    <div class="more-body">
+      <HighlightCards {cards} />
+      {role && (
+        <p class="at">
+          <ChevronLink href={localePath(`/experiences/#${role.slug}`, lang)}>
+            {t('common.at', { company: companyLabel(role.data.company, role.data.client) })}
+          </ChevronLink>
+        </p>
+      )}
+    </div>
+  </details>
+</GridTile>
+
+<style>
+  :global(.grid-tile[data-project]) {
+    padding-bottom: 76px;
+    /* The chips follow the summary 32px below it; they are not pushed to the tile bottom. */
+    justify-content: center;
+  }
+  :global(.grid-tile[data-project] > .more) {
+    max-width: none;
+    width: calc(100% - 0px);
+  }
+  .dates {
+    margin: 8px 0 0;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.4286;
+  }
+  .summary {
+    max-width: 68ch;
+    margin: 8px auto 0;
+    text-wrap: balance;
+  }
+  .visual {
+    display: grid;
+    gap: 16px;
+    justify-items: center;
+  }
+  .cover {
+    width: 100%;
+    max-width: 640px;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    border-radius: 18px;
+    object-fit: cover;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0 24px;
+    margin: 0;
+  }
+  .more summary {
+    position: absolute;
+    inset-inline-end: 16px;
+    inset-block-end: 16px;
+  }
+  @media (max-width: 1068px) {
+    .more summary {
+      inset-inline-end: 13px;
+      inset-block-end: 13px;
+    }
+  }
+  /* A tile spanning both columns: the disc sits at the right edge of the lockup column, 60px
+     from the tile bottom. */
+  @media (min-width: 735px) {
+    :global(
+        .tiles-2up
+          > .grid-tile[data-project]:is(
+            .grid-tile--span,
+            :last-child:nth-child(odd),
+            :has(details[open])
+          )
+      )
+      .more
+      summary {
+      inset-inline-end: max(16px, calc((100% - var(--content)) / 2));
+      inset-block-end: 60px;
+    }
+  }
+  .more-body {
+    width: min(100%, calc(var(--content-wide) - 64px));
+    margin: 32px auto 0;
+    text-align: start;
+  }
+  .at {
+    margin: 32px 0 0;
+    text-align: center;
+  }
+  @supports (interpolate-size: allow-keywords) {
+    @media (prefers-reduced-motion: no-preference) {
+      .more {
+        interpolate-size: allow-keywords;
+      }
+      .more::details-content {
+        height: 0;
+        overflow: hidden;
+        transition:
+          height 320ms var(--ease),
+          content-visibility 320ms allow-discrete;
+      }
+      .more[open]::details-content {
+        height: auto;
+      }
+    }
+  }
+</style>

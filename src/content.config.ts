@@ -20,6 +20,8 @@ const profile = defineCollection({
   schema: ({ image }) =>
     z.object({
       name: z.string(),
+      /** Legal name shown alongside the display name, e.g. "Tran Thanh Hai". */
+      realName: optionalText,
       headline: z.string(),
       tagline: z.string(),
       location: z.string(),
@@ -29,6 +31,8 @@ const profile = defineCollection({
       avatar: image().optional(),
       yearsOfExperience: z.string(),
       headlineMetric: z.object({ value: z.string(), label: z.string() }).optional(),
+      /** Short caption above the headline metric number, e.g. "Led" (spec §5.10.5). */
+      headlineMetricPrefix: optionalText,
       socials: z.object({
         linkedin: z.url(),
         github: z.url(),
@@ -45,12 +49,15 @@ const experience = defineCollection({
     z.object({
       company: z.string(),
       client: optionalText,
+      shortName: optionalText,
       role: z.string(),
       location: z.string(),
       start: cvDate,
       end: optionalDate,
       logo: image().optional(),
       tech: z.array(z.string()).default([]),
+      /** Which bullet (1-based) feeds the "Get the highlights." card (spec §4.2.0). */
+      highlight: z.preprocess(emptyToUndefined, z.number().int().min(1).optional()),
     }),
 });
 
@@ -87,8 +94,26 @@ const certifications = defineCollection({
       year: z.string().regex(/^\d{4}$/),
       credentialUrl: optionalUrl,
       badge: image().optional(),
+      /** Iconify name of the issuer's logo, e.g. `logos:aws`; shown when there is no badge. */
+      logo: z
+        .string()
+        .regex(/^[a-z0-9-]+:[a-z0-9-]+$/)
+        .optional(),
       monogram: z.string().min(2).max(3),
     }),
+});
+
+const metric = z.object({
+  /** Short caption above the value: "Cut", "Led" (spec §5.10.5). */
+  prefix: optionalText,
+  label: z.string(),
+  value: z.string(),
+  /** 2-3 entries draw graph bars next to the stat (spec §5.10.9). */
+  compare: z
+    .array(z.object({ label: z.string(), value: z.number().positive() }))
+    .min(2)
+    .max(3)
+    .optional(),
 });
 
 const star = defineCollection({
@@ -99,7 +124,7 @@ const star = defineCollection({
     role: optionalText,
     competencies: z.array(z.enum(competencyKeys)).min(1),
     date: z.coerce.date(),
-    metrics: z.array(z.object({ label: z.string(), value: z.string() })).default([]),
+    metrics: z.array(metric).default([]),
     featured: z.boolean().default(false),
     /** Placeholder content to replace before publishing; shows a "Sample" marker. */
     sample: z.boolean().default(false),
@@ -116,6 +141,8 @@ const blog = defineCollection({
       updatedDate: z.preprocess(emptyToUndefined, z.coerce.date().optional()),
       tags: z.array(z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'kebab-case')).default([]),
       heroImage: image().optional(),
+      /** Newsroom drop cap on the first paragraph (spec §5.10.8). */
+      dropcap: z.boolean().default(false),
       draft: z.boolean().default(false),
       series: optionalText,
       seriesPart: z.preprocess(emptyToUndefined, z.number().int().min(1).optional()),

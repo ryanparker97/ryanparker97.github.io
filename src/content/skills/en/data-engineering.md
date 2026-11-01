@@ -11,7 +11,7 @@ items:
   - name: 'PySpark'
   - name: 'Apache Spark'
   - name: 'Apache Airflow'
-  - name: 'dbt'
+  - name: 'DBT'
   - name: 'Databricks'
   - name: 'Talend'
   - name: 'ETL/ELT'

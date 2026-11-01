@@ -1,10 +1,13 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import PostCard from '~/components/blog/PostCard.astro';
+import Hero from '~/components/tile/Hero.astro';
+import NewsTile from '~/components/tile/NewsTile.astro';
 import { countTags } from '~/lib/blog';
 import { getPosts, getSeriesList } from '~/lib/blog-content';
+import { formatDate } from '~/lib/format';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
+import { blogNav } from '~/lib/localnav';
 import { useT } from '~/i18n';
 
 export const getStaticPaths = (async () => {
@@ -26,23 +29,34 @@ const seriesTitle = (id?: string) => series.find((s) => s.slug === id)?.data.tit
 const title = t('blog.tagTitle', { tag: tag! });
 ---
 
-<BaseLayout {title} description={title} {lang} {fallback} noSearch>
-  <div class="container-page">
-    <header class="page-head">
-      <h1>{title}</h1>
-      <p class="meta mt-3">
-        {posts.length === 1 ? t('blog.post') : t('blog.posts', { n: posts.length })}
-      </p>
-      <p class="mt-3">
-        <a href={localePath('/blog/tags/', lang)} class="link-quiet">
-          ← {t('blog.allTags')}
-        </a>
-      </p>
-    </header>
-    <ul class="grid max-w-[68ch] gap-5 pb-8">
-      {posts.map((post) => (
-        <PostCard {post} {lang} seriesTitle={seriesTitle(post.data.series)} />
+<BaseLayout {title} description={title} {lang} {fallback} noSearch localNav={blogNav(lang, 'tags')}>
+  <Hero
+    tight
+    eyebrow={t('blog.title')}
+    title={`#${tag}`}
+    subline={posts.length === 1 ? t('blog.post') : t('blog.posts', { n: posts.length })}
+  >
+    <Fragment slot="actions">
+      <a href={localePath('/blog/tags/', lang)} class="link-chevron">
+        <span>{t('blog.allTags')}</span>
+        <span class="chev" aria-hidden="true">
+          ›
+        </span>
+      </a>
+    </Fragment>
+  </Hero>
+  <section class="news-band">
+    <ul class="news-grid">
+      {posts.map((post, i) => (
+        <NewsTile
+          index={i}
+          href={localePath(`/blog/${post.slug}/`, lang)}
+          title={post.data.title}
+          category={seriesTitle(post.data.series) ?? t('blog.article')}
+          description={post.data.description}
+          meta={`${formatDate(post.data.pubDate, lang)} · ${t('blog.readingTime', { n: post.minutes })}`}
+        />
       ))}
     </ul>
-  </div>
+  </section>
 </BaseLayout>

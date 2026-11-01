@@ -2,16 +2,23 @@
 import { useT, type Lang } from '~/i18n';
 import { localePath } from '~/i18n/routes';
 
+interface Part {
+  part: number;
+  title: string;
+  post?: { slug: string };
+}
 interface Props {
   lang: Lang;
-  parts: { part: number; title: string; post?: { slug: string } }[];
-  current: number;
+  parts: Part[];
+  current?: number;
+  /** Hairline rows (the Blog feature tile) instead of a plain list. */
+  hairline?: boolean;
 }
-const { lang, parts, current } = Astro.props;
+const { lang, parts, current, hairline = false } = Astro.props;
 const t = useT(lang);
 ---
 
-<ol class="parts">
+<ol class:list={['parts', { hairline }]}>
   {parts.map((p) => (
     <li aria-current={p.part === current ? 'true' : undefined}>
       {p.part === current ? (
@@ -24,7 +31,10 @@ const t = useT(lang);
         </a>
       ) : (
         <span class="soon">
-          {t('series.part', { n: p.part })}: {p.title} <span class="chip">{t('series.soon')}</span>
+          <span class="ptitle">
+            {t('series.part', { n: p.part })}: {p.title}
+          </span>
+          <span class="chip">{t('series.soon')}</span>
         </span>
       )}
     </li>
@@ -39,12 +49,32 @@ const t = useT(lang);
     display: grid;
     gap: 6px;
   }
+  /* The chip sits in its own column, so chips line up and never wrap onto their own line. */
   .soon {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: baseline;
+    gap: 12px;
     color: var(--text-2);
   }
   .soon .chip {
-    margin-left: 6px;
+    align-self: start;
     height: 24px;
-    font-size: 0.75rem;
+    min-height: 24px;
+    padding-block: 4px;
+  }
+  .hairline {
+    gap: 0;
+    border-top: 1px solid var(--border);
+  }
+  .hairline li {
+    padding-block: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .hairline a {
+    color: var(--link);
+  }
+  .hairline strong {
+    color: var(--text);
   }
 </style>

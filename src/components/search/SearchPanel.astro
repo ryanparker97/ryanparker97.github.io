@@ -1,0 +1,255 @@
+---
+/** Apple-style search flyout (spec §5.7): drops down from under the bar; Pagefind loads on first open. */
+import { Icon } from 'astro-icon/components';
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+import { getPosts } from '~/lib/blog-content';
+
+const { lang, chromeLang } = Astro.props as { lang: Lang; chromeLang?: string };
+const t = useT(lang);
+const newest = (await getPosts(lang)).posts[0];
+const quick = [
+  { href: localePath('/experiences/', lang), label: t('nav.cv') },
+  { href: localePath('/projects/', lang), label: t('nav.projects') },
+  { href: localePath('/cv.pdf', lang), label: t('nav.pdf'), download: true },
+  ...(newest
+    ? [
+        {
+          href: localePath(`/blog/${newest.slug}/`, lang),
+          label: newest.data.title,
+          hint: t('search.latest'),
+        },
+      ]
+    : []),
+];
+---
+
+<div id="search-curtain" class="curtain" hidden data-search-close></div>
+<div
+  id="search-dialog"
+  class="panel"
+  role="dialog"
+  aria-modal="true"
+  aria-label={t('search.title')}
+  lang={chromeLang}
+  hidden
+  data-unavailable={t('search.unavailable')}
+  data-none={t('search.noResults', { query: '{query}' })}
+  data-count={t('search.count', { n: '{n}' })}
+  data-count-one={t('search.countOne')}
+  data-type-blog={t('search.type.blog')}
+  data-type-star={t('search.type.star')}
+  data-type-cv={t('search.type.cv')}
+  data-type-projects={t('search.type.projects')}
+>
+  <div class="inner chrome-row">
+    <div class="field">
+      <Icon name="lucide:search" size={20} stroke-width={1.5} />
+      <input
+        id="search-input"
+        type="search"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder={t('search.placeholder')}
+        aria-label={t('search.title')}
+        aria-controls="search-results"
+      />
+      <button type="button" class="close icon-btn" data-search-close aria-label={t('search.close')}>
+        <Icon name="lucide:x" size={16} />
+      </button>
+    </div>
+    <div id="search-quick" class="quick">
+      <p class="label">{t('search.quick')}</p>
+      <ul>
+        {quick.map((q, i) => (
+          <li style={`--i:${i}`}>
+            <a href={q.href} download={q.download ? 'Ryan-Parker-CV.pdf' : undefined}>
+              {q.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+    <p id="search-status" class="status" role="status" aria-live="polite"></p>
+    <ul id="search-results" class="results"></ul>
+  </div>
+</div>
+
+<style>
+  .curtain {
+    position: fixed;
+    inset: var(--nav-h) 0 0;
+    z-index: 44;
+    background: var(--curtain);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
+  .panel {
+    position: fixed;
+    inset: var(--nav-h) 0 auto;
+    z-index: 45;
+    max-height: calc(100dvh - var(--nav-h));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--nav-solid);
+  }
+  .inner {
+    padding-block: 32px 80px;
+  }
+  .field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .field :global(svg) {
+    flex: none;
+    color: var(--text-2);
+    transition: color 320ms var(--ease-nav);
+  }
+  /* No ring or box around the field: the caret and the darkened glyph mark focus. */
+  .field:focus-within :global(svg) {
+    color: var(--text);
+  }
+  input {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    background: transparent;
+    color: var(--text);
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.007em;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input::-webkit-search-cancel-button,
+  input::-webkit-search-decoration {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+  }
+  input::placeholder {
+    color: var(--text-2);
+  }
+  .label {
+    margin-top: 32px;
+    color: var(--text-2);
+    font-size: 0.75rem;
+  }
+  .quick ul,
+  .results {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .quick li + li {
+    margin-top: 4px;
+  }
+  .quick ul {
+    margin-top: 8px;
+  }
+  .quick a {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin-inline: -8px;
+    padding: 4px 8px;
+    border-radius: 5px;
+    color: var(--menu-ink);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .quick a::before {
+    content: '→' / '';
+    flex: none;
+    color: var(--text-2);
+    font-size: 11px;
+  }
+  .quick a:focus-visible {
+    background: var(--surface-2);
+  }
+  @media (hover: hover) {
+    .quick a:hover {
+      background: var(--surface-2);
+      text-decoration: none;
+    }
+  }
+  .status {
+    margin-top: 16px;
+    color: var(--text-2);
+    font-size: 0.875rem;
+  }
+  .status:empty,
+  .results:empty,
+  .quick[hidden] {
+    display: none;
+  }
+  .results {
+    margin-top: 32px;
+  }
+  /* The ✕ shows only at compact chrome or with a coarse pointer; Esc and the curtain close it. */
+  @media (min-width: 834px) and (pointer: fine) {
+    .close {
+      display: none;
+    }
+  }
+  .panel:not([hidden]) {
+    animation: panel-in 240ms var(--ease-nav) both;
+  }
+  .panel:not([hidden]) .field {
+    animation: field-in 240ms var(--ease-nav) 200ms both;
+  }
+  .panel:not([hidden]) .quick li {
+    animation: field-in 240ms var(--ease-nav) both;
+    animation-delay: calc(220ms + var(--i, 0) * 20ms);
+  }
+  .curtain:not([hidden]) {
+    animation: curtain-in 320ms var(--ease-nav) 80ms both;
+  }
+  @keyframes panel-in {
+    from {
+      clip-path: inset(0 0 100% 0);
+    }
+  }
+  @keyframes field-in {
+    from {
+      opacity: 0;
+      transform: translateY(var(--dy, -4px));
+    }
+  }
+  @keyframes curtain-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @media (max-width: 833px) {
+    input {
+      font-size: 1.75rem;
+    }
+    .quick a {
+      min-height: 44px;
+      padding-block: 3px;
+      gap: 14px;
+      font-size: 1.0625rem;
+    }
+    .quick a::before {
+      font-size: 14px;
+    }
+    .results {
+      margin-top: 49px;
+    }
+    .panel:not([hidden]) .field,
+    .panel:not([hidden]) .quick li {
+      --dy: -8px;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .panel,
+    .field,
+    .quick li,
+    .curtain {
+      animation: none !important;
+    }
+  }
+</style>

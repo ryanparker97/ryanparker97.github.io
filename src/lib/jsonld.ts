@@ -2,6 +2,7 @@ import { htmlLang, type Lang } from '../i18n';
 
 interface PersonInput {
   name: string;
+  realName?: string;
   headline: string;
   tagline: string;
   location: string;
@@ -16,6 +17,7 @@ export function personLd(p: PersonInput, url: string, lang: Lang) {
     '@context': 'https://schema.org',
     '@type': 'Person',
     name: p.name,
+    ...(p.realName && { alternateName: p.realName }),
     jobTitle: p.headline,
     description: `${p.headline}: ${p.tagline}`,
     url,

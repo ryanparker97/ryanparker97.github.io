@@ -1,13 +1,21 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('theme toggle', () => {
-  test('cycles System → Light → Dark and survives a reload', async ({ page }) => {
+  test('is light by default, even when the OS is dark', async ({ page }) => {
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/');
+    await expect(page.locator('html')).toHaveAttribute('data-pref', 'light');
+    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(
+      'rgb(255, 255, 255)',
+    );
+  });
+
+  test('cycles Light → Dark → System and survives a reload', async ({ page }) => {
     await page.goto('/');
     const html = page.locator('html');
-    const toggle = page.locator('[data-theme-toggle]');
-    await expect(html).toHaveAttribute('data-pref', 'system');
-    await toggle.click();
-    await expect(html).toHaveAttribute('data-theme', 'light');
+    const toggle = page.locator('header .bar [data-theme-toggle]');
+    await expect(html).toHaveAttribute('data-pref', 'light');
+    await expect(toggle).toHaveAttribute('aria-label', 'Theme: Light');
     await toggle.click();
     await expect(html).toHaveAttribute('data-theme', 'dark');
     await expect(toggle).toHaveAttribute('aria-label', 'Theme: Dark');
@@ -16,6 +24,17 @@ test.describe('theme toggle', () => {
     await toggle.click();
     await expect(html).toHaveAttribute('data-pref', 'system');
     await expect(html).not.toHaveAttribute('data-theme', /.*/);
+    await toggle.click();
+    await expect(html).toHaveAttribute('data-theme', 'light');
+  });
+
+  test('System follows the OS setting', async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem('theme', 'system'));
+    await page.emulateMedia({ colorScheme: 'dark' });
+    await page.goto('/');
+    expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(
+      'rgb(0, 0, 0)',
+    );
   });
 
   test('is applied before any script bundle runs (no flash)', async ({ page }) => {
@@ -25,7 +44,7 @@ test.describe('theme toggle', () => {
     await page.goto('/experiences/');
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe(
-      'rgb(11, 15, 20)',
+      'rgb(0, 0, 0)',
     );
   });
 });
@@ -38,25 +57,13 @@ test.describe('language switch', () => {
     await expect(page.getByRole('note')).toHaveCount(0);
     await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
     await expect(page.locator('link[hreflang="vi"]')).toHaveCount(1);
-    await expect(page.getByRole('heading', { name: 'Kinh nghiệm' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Kinh nghiệm' })).toBeVisible();
     await page.locator('.lang-switch a').click();
     await expect(page).toHaveURL(/\/experiences\/$/);
   });
 
-  test('untranslated pages show the English-only banner with English metadata', async ({
-    page,
-  }) => {
-    await page.goto('/vi/star/deploy-rollback-readiness/');
-    await expect(page.getByRole('note')).toHaveText('Nội dung này hiện chỉ có bằng tiếng Anh.');
-    // Content is English, so <html lang> says so; the UI chrome is marked as Vietnamese.
-    await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-    await expect(page.locator('header[data-nav]')).toHaveAttribute('lang', 'vi');
-    await expect(page.locator('link[hreflang="vi"]')).toHaveCount(0);
-    await expect(page.locator('link[rel=canonical]')).toHaveAttribute(
-      'href',
-      'https://jomatran97.github.io/star/deploy-rollback-readiness/',
-    );
-  });
+  // The EN-only banner has no e2e test: every STAR story is translated, so no such page exists.
+  // It is covered by tests/unit/star-render.test.ts.
 
   test('moves between translated posts without a banner', async ({ page }) => {
     await page.goto('/blog/neovim-setup-1-zero-to-editor/');
@@ -86,12 +93,11 @@ test.describe('hreflang agrees with the sitemap', () => {
       '/experiences/',
       '/projects/',
       '/star/',
-      '/star/talend-to-databricks-migration/',
-      '/star/deploy-rollback-readiness/',
+      '/star/emr-cost-optimization/',
       '/blog/',
     ]) {
       await page.goto(path);
-      const inSitemap = sitemap.includes(`<loc>https://jomatran97.github.io/vi${path}</loc>`);
+      const inSitemap = sitemap.includes(`<loc>https://ryanparker97.github.io/vi${path}</loc>`);
       const langs = await hreflangs(page);
       expect(langs.includes('vi'), `${path} hreflang=vi vs sitemap`).toBe(inSitemap);
       expect(langs).toContain('en');

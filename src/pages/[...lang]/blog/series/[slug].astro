@@ -1,10 +1,11 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import SeriesCard from '~/components/blog/SeriesCard.astro';
+import Hero from '~/components/tile/Hero.astro';
+import NewsTile from '~/components/tile/NewsTile.astro';
 import { getSeriesDetail, getSeriesList } from '~/lib/blog-content';
-import { render } from '~/lib/content';
 import { getLang, langStaticPaths, localePath, switchTarget } from '~/i18n/routes';
+import { blogNav } from '~/lib/localnav';
 import { useT } from '~/i18n';
 
 export const getStaticPaths = (async () => {
@@ -20,7 +21,6 @@ const lang = getLang(Astro.params.lang);
 const t = useT(lang);
 const detail = (await getSeriesDetail(Astro.params.slug!, lang))!;
 const { entry, parts, published } = detail;
-const { Content } = await render(entry);
 ---
 
 <BaseLayout
@@ -30,32 +30,33 @@ const { Content } = await render(entry);
   fallback={entry.contentLang !== lang}
   langs={entry.available}
   switchHref={switchTarget(entry.available, lang, `/blog/series/${entry.slug}/`, '/blog/series/')}
+  localNav={blogNav(lang, 'series')}
 >
-  <div class="container-page">
-    <header class="page-head">
-      <h1>{entry.data.title}</h1>
-      <p class="mt-3 max-w-[60ch] text-xl text-text-2">{entry.data.description}</p>
-      <p class="meta mt-3">{t('series.progress', { n: published, total: parts.length })}</p>
-      <div class="mt-4 max-w-[68ch]">
-        <Content />
-      </div>
-    </header>
-    <ol class="grid max-w-[68ch] gap-5 pb-8">
-      {parts.map((p) => (
-        <SeriesCard
-          {lang}
-          part={p.part}
+  <Hero
+    tight
+    eyebrow={t('series.title')}
+    title={entry.data.title}
+    subline={t('series.progress', { n: published, total: parts.length })}
+    copy={entry.data.description}
+  />
+  <section class="news-band">
+    <ol class="news-grid">
+      {parts.map((p, i) => (
+        <NewsTile
+          index={i}
+          href={p.post ? localePath(`/blog/${p.post.slug}/`, lang) : undefined}
           title={p.post?.data.title ?? p.title}
+          category={t('series.part', { n: p.part })}
           description={p.post?.data.description ?? p.description}
-          post={p.post}
-          minutes={p.post ? p.post.minutes : undefined}
-        />
+          meta={p.post ? t('blog.readingTime', { n: p.post.minutes }) : undefined}
+        >
+          {!p.post && (
+            <p class="news-meta">
+              <span class="chip">{t('series.soon')}</span>
+            </p>
+          )}
+        </NewsTile>
       ))}
     </ol>
-    <p class="pb-8">
-      <a href={localePath('/blog/', lang)} class="link-quiet">
-        ← {t('blog.back')}
-      </a>
-    </p>
-  </div>
+  </section>
 </BaseLayout>

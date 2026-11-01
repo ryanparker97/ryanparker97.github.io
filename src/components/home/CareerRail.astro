@@ -1,0 +1,129 @@
+---
+/**
+ * The Home Experiences visual (spec §4.1.3): a career rail. One row per company, newest first,
+ * with one graph bar (§5.10.9) per stint, placed by `--s` and `--w` as fractions of the career.
+ */
+import type { Rail } from '~/lib/home';
+import { useT, type Lang } from '~/i18n';
+
+interface Props {
+  lang: Lang;
+  rail: Rail;
+}
+const { lang, rail } = Astro.props;
+const t = useT(lang);
+const to = (v: string | null) => v ?? t('home.rail.now');
+---
+
+{rail.rows.length > 0 && (
+  <div class="rail-wrap">
+    <ol class="rail" aria-label={t('home.rail.label')} data-reveal-group>
+      {rail.rows.map((row, i) => (
+        <li class:list={{ now: row.current }} data-reveal style={`--i:${Math.min(i, 3)};--j:${i}`}>
+          <span class="rail__label" aria-hidden="true">
+            {row.company}
+          </span>
+          <span class="rail__years" aria-hidden="true">
+            {row.stints.map((s) => `${s.from}–${to(s.to)}`).join(' · ')}
+          </span>
+          <span class="rail__track" aria-hidden="true">
+            {row.stints.map((s) => (
+              <hr class:list={{ current: s.current }} style={`--s:${s.s};--w:${s.w}`} />
+            ))}
+          </span>
+          <span class="sr-only">
+            {row.company}:{' '}
+            {row.stints
+              .map((s) => t('home.rail.range', { from: s.from, to: to(s.to) }))
+              .join(`, ${t('home.rail.and')} `)}
+            .
+          </span>
+        </li>
+      ))}
+    </ol>
+    <p class="rail__ticks" aria-hidden="true" data-reveal style="--i:3">
+      <span>{rail.firstYear}</span>
+      <span>{rail.lastYear}</span>
+    </p>
+  </div>
+)}
+
+<style>
+  .rail-wrap {
+    width: min(692px, 100%);
+    margin-inline: auto;
+  }
+  .rail {
+    display: grid;
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 735px) {
+    .rail {
+      gap: 24px;
+    }
+  }
+  @media (min-width: 1069px) {
+    .rail {
+      gap: 32px;
+    }
+  }
+  .rail li {
+    display: grid;
+    justify-items: start;
+  }
+  .rail__label {
+    color: var(--text-2);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.4706;
+  }
+  .now .rail__label {
+    color: var(--text);
+  }
+  .rail__years {
+    margin-bottom: 5px;
+    color: var(--text-2);
+    font-size: 0.75rem;
+    line-height: 1.3334;
+  }
+  .rail__track {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 7px;
+    border-radius: 5px;
+    background: var(--fill);
+  }
+  @media (min-width: 735px) {
+    .rail__track {
+      height: 10px;
+    }
+  }
+  .rail__track hr {
+    position: absolute;
+    inset-block: 0;
+    height: 100%;
+    inset-inline-start: calc(var(--s) * 100%);
+    width: max(calc(var(--w) * 100%), 24px);
+    max-width: calc(100% - var(--s) * 100%);
+    margin: 0;
+    border: 0;
+    border-radius: 5px;
+    background: #86868b;
+    transform-origin: left;
+  }
+  .rail__track hr.current {
+    background: var(--accent);
+  }
+  .rail__ticks {
+    display: flex;
+    justify-content: space-between;
+    margin: 12px 0 0;
+    color: var(--text-2);
+    font-size: 0.75rem;
+    line-height: 1.3334;
+  }
+</style>

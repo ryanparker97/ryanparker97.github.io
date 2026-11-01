@@ -1,8 +1,11 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import Hero from '~/components/tile/Hero.astro';
+import NewsTile from '~/components/tile/NewsTile.astro';
 import { getSeriesDetail, getSeriesList } from '~/lib/blog-content';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
+import { blogNav } from '~/lib/localnav';
 import { useT } from '~/i18n';
 
 export const getStaticPaths = (() => langStaticPaths()) satisfies GetStaticPaths;
@@ -15,24 +18,31 @@ const details = (await Promise.all(series.map((s) => getSeriesDetail(s.slug, lan
 );
 ---
 
-<BaseLayout title={t('series.title')} description={t('series.description')} {lang} {fallback}>
-  <div class="container-page">
-    <header class="page-head">
-      <h1>{t('series.title')}</h1>
-      <p class="mt-3 text-xl text-text-2">{t('series.description')}</p>
-    </header>
-    <ul class="grid max-w-[68ch] gap-5 pb-8">
-      {details.map((d) => (
-        <li class="card p-6" data-reveal>
-          <h2 class="text-2xl">
-            <a href={localePath(`/blog/series/${d.entry.slug}/`, lang)} class="text-text">
-              {d.entry.data.title}
-            </a>
-          </h2>
-          <p class="mt-2 text-text-2">{d.entry.data.description}</p>
-          <p class="meta mt-3">{t('series.progress', { n: d.published, total: d.parts.length })}</p>
-        </li>
+<BaseLayout
+  title={t('series.title')}
+  description={t('series.description')}
+  {lang}
+  {fallback}
+  localNav={blogNav(lang, 'series')}
+>
+  <Hero
+    tight
+    eyebrow={t('blog.title')}
+    title={t('series.title')}
+    subline={t('series.description')}
+  />
+  <section class="news-band">
+    <ul class="news-grid">
+      {details.map((d, i) => (
+        <NewsTile
+          index={i}
+          href={localePath(`/blog/series/${d.entry.slug}/`, lang)}
+          title={d.entry.data.title}
+          category={t('series.title')}
+          description={d.entry.data.description}
+          meta={t('series.progress', { n: d.published, total: d.parts.length })}
+        />
       ))}
     </ul>
-  </div>
+  </section>
 </BaseLayout>

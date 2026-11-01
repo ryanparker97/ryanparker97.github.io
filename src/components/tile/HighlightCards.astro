@@ -1,0 +1,25 @@
+---
+/** Labelled highlight cards (spec §4.2.1): the label is the H3, the rest the body. */
+import Card from './Card.astro';
+import Spans from './Spans.astro';
+import type { Highlight } from '~/lib/cv';
+
+interface Props {
+  cards: Highlight[];
+  /** Heading level of the labels. */
+  level?: 3 | 4;
+}
+const { cards, level = 3 } = Astro.props;
+const H = level === 3 ? 'h3' : 'h4';
+---
+
+<ul class="hl-cards" data-reveal-group>
+  {cards.map((c, i) => (
+    <Card tag="li" class="hl-card" index={i}>
+      {c.label && <H class="t-card">{c.label}</H>}
+      <p class="card-body">
+        <Spans spans={c.body} />
+      </p>
+    </Card>
+  ))}
+</ul>

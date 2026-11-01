@@ -1,76 +1,141 @@
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it } from 'vitest';
-import FeaturedStories from '../../src/components/home/FeaturedStories.astro';
-import WorkWriting from '../../src/components/home/WorkWriting.astro';
-import { homeSections } from '../../src/lib/home';
+import CertificationsTile from '../../src/components/home/CertificationsTile.astro';
+import StatStrip from '../../src/components/tile/StatStrip.astro';
+import StoryTile from '../../src/components/home/StoryTile.astro';
+import WritingTile from '../../src/components/home/WritingTile.astro';
+import { highlightStats } from '../../src/lib/home';
 import { t } from '../../src/i18n';
 
-const story = (n: number) =>
+const render = async (component: never, props: Record<string, unknown>) =>
+  (await AstroContainer.create()).renderToString(component, { props });
+
+const cert = (n: number, extra: Record<string, unknown> = {}) =>
   ({
-    slug: `story-${n}`,
-    data: {
-      title: `Story ${n}`,
-      question: `Question ${n}?`,
-      competencies: [],
-      metrics: [],
-      sample: false,
-    },
-    rendered: {
-      html: ['Situation', 'Task', 'Action', 'Result']
-        .map((h) => `<h2>${h}</h2><p>${h} text ${n}</p>`)
-        .join(''),
-    },
+    data: { name: `Cert ${n}`, issuer: 'Issuer', year: '2024', monogram: `C${n}`, ...extra },
   }) as never;
 
-async function stories(count: number) {
-  const container = await AstroContainer.create();
-  return container.renderToString(FeaturedStories, {
-    props: { lang: 'en', stories: Array.from({ length: count }, (_, i) => story(i + 1)) },
+describe('WritingTile', () => {
+  it('shows the empty state with no actions when there are no posts', async () => {
+    const html = await render(WritingTile as never, { lang: 'en' });
+    expect(html).toContain(t('en', 'home.writing.empty'));
+    expect(html).not.toContain('class="btn');
+    expect(html).toContain('id="writing"');
   });
-}
 
-describe('FeaturedStories', () => {
-  for (const [count, cls] of [
-    [3, 'n-3'],
-    [2, 'n-2'],
-  ] as const) {
-    it(`renders ${count} compact cards with the ${cls} layout class`, async () => {
-      const html = await stories(count);
-      expect(html).toContain(`stories ${cls}`);
-      expect(html.match(/<li class="card/g)).toHaveLength(count);
-      expect(html).not.toContain('Question 1?');
-      expect(html).not.toContain(t('en', 'home.stories.situation'));
+  it('shows a short headline, the date and two actions for a post', async () => {
+    const post = {
+      slug: 'p',
+      minutes: 7,
+      data: {
+        title: 'Neovim setup guide, Part 1: from zero to a working editor',
+        pubDate: new Date('2026-10-30'),
+        series: 'neovim-setup-guide',
+        seriesPart: 1,
+      },
+    };
+    const html = await render(WritingTile as never, {
+      lang: 'en',
+      post,
+      seriesTitle: 'Neovim setup guide',
     });
-  }
-
-  it('renders one wide card with the question and the Situation summary', async () => {
-    const html = await stories(1);
-    expect(html).toContain('stories n-1');
-    expect(html.match(/<li class="card/g)).toHaveLength(1);
-    expect(html).toContain('Question 1?');
-    expect(html).toContain(t('en', 'home.stories.situation'));
-    expect(html).toContain('Situation text 1');
-    expect(html).not.toContain('Task text 1');
+    expect(html).toMatch(/<h2[^>]*>Neovim setup guide, Part 1<\/h2>/);
+    expect(html.match(/class="btn /g)).toHaveLength(2);
+    expect(html).toContain('/blog/series/neovim-setup-guide/');
   });
 });
 
-describe('homeSections', () => {
-  it('omits the stories section and its index link when there are no stories', () => {
-    expect(homeSections(0)).toEqual(['skills', 'work', 'contact']);
-    expect(homeSections(1)).toEqual(['skills', 'work', 'stories', 'contact']);
+describe('CertificationsTile', () => {
+  it('shows 3 rows, "+N more", a monogram fallback and Verify only with a URL', async () => {
+    const certs = [
+      cert(1, { credentialUrl: 'https://example.com/v' }),
+      cert(2),
+      cert(3),
+      cert(4),
+      cert(5),
+    ];
+    const html = await render(CertificationsTile as never, { lang: 'en', certs });
+    expect(html.match(/\sdata-cert(?=[\s>])/g)).toHaveLength(3);
+    expect(html).toContain('+2 more');
+    expect(html).toContain('data-monogram');
+    expect(html.match(/>\s*Verify\s*</g)).toHaveLength(1);
+    expect(html).toContain('rel="noopener"');
+    expect(html).not.toContain('class="btn');
+  });
+
+  it('shows the issuer logo instead of the monogram when one is set', async () => {
+    const html = await render(CertificationsTile as never, {
+      lang: 'en',
+      certs: [cert(1, { logo: 'logos:aws' })],
+    });
+    expect(html).toContain('data-logo');
+    expect(html).toContain('<svg');
+    expect(html).not.toContain('data-monogram');
+  });
+
+  it('omits "+N more" at three or fewer', async () => {
+    const html = await render(CertificationsTile as never, {
+      lang: 'en',
+      certs: [cert(1), cert(2)],
+    });
+    expect(html).not.toContain('more');
+    expect(html).not.toContain('tile--span');
+  });
+
+  it('adds the span class for an odd-count grid', async () => {
+    const html = await render(CertificationsTile as never, {
+      lang: 'en',
+      certs: [cert(1)],
+      span: true,
+    });
+    expect(html).toContain('grid-tile--span');
   });
 });
 
-describe('WorkWriting', () => {
-  it('shows the empty-state line for each empty list instead of an empty card body', async () => {
-    const container = await AstroContainer.create();
-    const html = await container.renderToString(WorkWriting, {
-      props: { lang: 'en', posts: [], certs: [], seriesTitle: () => undefined },
+describe('StoryTile', () => {
+  const story = (metrics: { label: string; value: string }[]) =>
+    ({
+      slug: 's',
+      data: {
+        title: 'A story',
+        question: 'Tell me about a time?',
+        competencies: ['leadership', 'ownership', 'technical-depth', 'communication'],
+        metrics,
+      },
+    }) as never;
+
+  it('shows the super stat, max 3 chips and two actions', async () => {
+    const html = await render(StoryTile as never, {
+      lang: 'en',
+      story: story([{ label: 'jobs migrated', value: '120' }]),
     });
-    expect(html).toContain(t('en', 'home.work.projectEmpty'));
-    expect(html).toContain(t('en', 'home.work.postsEmpty'));
-    expect(html).toContain(t('en', 'home.work.certsEmpty'));
-    expect(html).not.toContain('<ul class="mt-4');
-    expect(html).not.toContain(t('en', 'home.posts.all'));
+    expect(html).toContain('stat--super');
+    expect(html).toContain('jobs migrated');
+    expect(html.match(/class="chip"/g)).toHaveLength(3);
+    expect(html.match(/class="btn /g)).toHaveLength(2);
+    expect(html).toContain('/star/s/');
+  });
+
+  it('has no super stat when no metric has a digit', async () => {
+    const html = await render(StoryTile as never, {
+      lang: 'en',
+      story: story([{ label: 'x', value: 'unchanged' }]),
+    });
+    expect(html).not.toContain('stat--super');
+  });
+});
+
+describe('StatStrip', () => {
+  it('renders one lockup per stat, with the caption above and below', async () => {
+    const stats = highlightStats({
+      years: '5+',
+      yearsLabel: 'years of experience',
+      metric: { value: '7', label: 'engineers' },
+      metricPrefix: 'Led',
+    });
+    const html = await render(StatStrip as never, { stats, label: 'At a glance' });
+    expect(html.match(/class="stat-value"/g)).toHaveLength(2);
+    expect(html).toContain('Led');
+    expect(html).toContain('stat-strip--compact');
   });
 });

@@ -44,9 +44,25 @@ test('without JavaScript the content is still visible', async ({ browser }) => {
   const context = await browser.newContext({ javaScriptEnabled: false });
   const page = await context.newPage();
   await page.goto('/experiences/');
-  await expect(page.getByRole('heading', { name: 'Experience' })).toBeVisible();
-  await expect(page.locator('section[aria-labelledby="experience"] ol > li').first()).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+  await expect(page.locator('.hl-card').first()).toBeVisible();
+  await expect(page.locator('.local-nav')).toBeVisible();
   await page.goto('/projects/');
   await expect(page.locator('[data-project="agentic-coding-workflow"]')).toBeVisible();
   await context.close();
+});
+
+test.describe('blank-page guard (spec 5.11)', () => {
+  for (const route of ['/', '/experiences/', '/projects/', '/blog/', '/does-not-exist/']) {
+    test(`reveal items stay visible when the JS module is blocked: ${route}`, async ({ page }) => {
+      await page.route('**/_astro/*.js', (r) => r.abort());
+      await page.goto(route);
+      const items = page.locator('[data-reveal]');
+      const count = await items.count();
+      for (let i = 0; i < count; i++) {
+        const opacity = await items.nth(i).evaluate((el) => getComputedStyle(el).opacity);
+        expect(opacity).toBe('1');
+      }
+    });
+  }
 });

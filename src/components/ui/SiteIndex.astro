@@ -1,0 +1,29 @@
+---
+/** Apple's end-of-page Index (spec §5.10.10): grouped links in a `<nav>`, one H2 per group. */
+interface Group {
+  title: string;
+  links: { href: string; label: string; external?: boolean }[];
+}
+interface Props {
+  label: string;
+  groups: Group[];
+}
+const { label, groups } = Astro.props;
+---
+
+<nav class="site-index" aria-label={label}>
+  {groups.map((g, gi) => (
+    <div class="si-group">
+      <h2>{g.title}</h2>
+      <ul>
+        {g.links.map((l, k) => (
+          <li style={`--g:${gi};--k:${k}`}>
+            <a href={l.href} rel={l.external ? 'noopener' : undefined}>
+              {l.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </div>
+  ))}
+</nav>

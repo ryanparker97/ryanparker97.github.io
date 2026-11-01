@@ -1,0 +1,29 @@
+---
+/**
+ * Newsroom tile (spec §5.10.3): a rounded --bg tile with a category, title, description and
+ * timestamp. The whole tile is one link (a stretched `::after` on the title link).
+ */
+interface Props {
+  title: string;
+  href?: string;
+  category: string;
+  description?: string;
+  meta?: string;
+  level?: 2 | 3;
+  index?: number;
+}
+const { title, href, category, description, meta, level = 2, index = 0 } = Astro.props;
+const H = level === 2 ? 'h2' : 'h3';
+---
+
+<li
+  class:list={['news-tile', { lift: !!href, 'is-soon': !href }]}
+  data-reveal
+  style={`--i:${Math.min(index, 3)}`}
+>
+  <p class="t-news-cat">{category}</p>
+  <H class="t-news-title">{href ? <a href={href}>{title}</a> : title}</H>
+  {description && <p class="news-desc">{description}</p>}
+  {meta && <p class="news-meta">{meta}</p>}
+  <slot />
+</li>

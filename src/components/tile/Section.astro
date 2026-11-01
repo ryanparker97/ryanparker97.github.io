@@ -1,0 +1,24 @@
+---
+/** Full section (spec §5.10.2): full-width background, `--section-pad`, content in `--content`. */
+interface Props {
+  id?: string;
+  tone?: 'bg' | 'surface';
+  /** Use `--content-wide` (card grids). */
+  wide?: boolean;
+  labelledby?: string;
+  class?: string;
+  /** Smaller padding (80 / 64 / 48px) when a grid or gallery follows. */
+  tight?: boolean;
+}
+const { id, tone = 'bg', wide = false, labelledby, class: cls, tight = false } = Astro.props;
+---
+
+<section
+  id={id}
+  class:list={['section', { 'section--surface': tone === 'surface', 'section--tight': tight }, cls]}
+  aria-labelledby={labelledby}
+>
+  <div class:list={['section-inner', { 'section-inner--wide': wide }]}>
+    <slot />
+  </div>
+</section>

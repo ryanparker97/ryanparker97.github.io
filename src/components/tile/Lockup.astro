@@ -1,0 +1,107 @@
+---
+/**
+ * Lockup (spec §5.10.4): eyebrow, headline, subhead, lockup copy and actions, centred by default.
+ * Shared by the hero, Home units, grid tiles and section headers. `intro` runs the load animation
+ * on everything but the headline; `reveal` fades the parts in as a group when scrolled into view.
+ */
+import { boldHtml, clampSubline } from '~/lib/home';
+
+interface Props {
+  id?: string;
+  level?: 1 | 2;
+  size: 'hero' | 'unit' | 'section' | 'promo';
+  title: string;
+  eyebrow?: string;
+  subline?: string;
+  /** Lockup copy (21px/600, grey with `**bold**` phrases in --text). */
+  copy?: string;
+  /** Copy longer than 120 characters: start-aligned as a whole at S. */
+  long?: boolean;
+  start?: boolean;
+  intro?: boolean;
+  reveal?: boolean;
+}
+const {
+  id,
+  level = 2,
+  size,
+  title,
+  eyebrow,
+  subline,
+  copy,
+  long = false,
+  start = false,
+  intro = false,
+  reveal = false,
+} = Astro.props;
+const H = level === 1 ? 'h1' : 'h2';
+const item = (i: number, on = true) => ({
+  class: intro && on ? 'intro' : undefined,
+  style: `--i:${i}`,
+  'data-reveal': reveal && on ? '' : undefined,
+});
+// Slots forwarded through a wrapper are always registered, so test the rendered content.
+const eyebrowSlot = Astro.slots.has('eyebrow') ? (await Astro.slots.render('eyebrow')).trim() : '';
+const actionsSlot = Astro.slots.has('actions') ? (await Astro.slots.render('actions')).trim() : '';
+// Revealed lockups put the headline at step 1, so the later parts shift by one (spec §5.11).
+const k = reveal && !intro ? 1 : 0;
+const hasEyebrow = !!eyebrowSlot || !!eyebrow;
+---
+
+<div
+  class:list={['lockup', { 'lockup--long': long, 'lockup--start': start }]}
+  data-reveal-group={reveal ? '' : undefined}
+>
+  {hasEyebrow && (
+    <p
+      class:list={['t-eyebrow', item(0).class]}
+      style={item(0).style}
+      data-reveal={item(0)['data-reveal']}
+    >
+      {eyebrowSlot ? <Fragment set:html={eyebrowSlot} /> : eyebrow}
+    </p>
+  )}
+  <H
+    id={id}
+    class={`t-${size}`}
+    style={reveal ? '--i:1' : undefined}
+    data-reveal={reveal ? '' : undefined}
+  >
+    {title}
+  </H>
+  {subline && (
+    <p
+      class:list={['t-subhead', item(1 + k).class]}
+      style={item(1 + k).style}
+      data-reveal={item(1 + k)['data-reveal']}
+    >
+      {Astro.slots.has('subline') ? <slot name="subline" /> : clampSubline(subline)}
+    </p>
+  )}
+  {copy && (
+    <p
+      class:list={['t-lockup', item(2 + k).class]}
+      style={item(2 + k).style}
+      data-reveal={item(2 + k)['data-reveal']}
+      set:html={boldHtml(copy)}
+    />
+  )}
+  {Astro.slots.has('extra') && (
+    <div
+      class:list={['lockup-extra', item(2 + k).class]}
+      style={item(2 + k).style}
+      data-reveal={item(2 + k)['data-reveal']}
+    >
+      <slot name="extra" />
+    </div>
+  )}
+  {actionsSlot && (
+    <div
+      class:list={['actions', item(3 + k).class]}
+      style={item(3 + k).style}
+      data-reveal={item(3 + k)['data-reveal']}
+    >
+      <Fragment set:html={actionsSlot} />
+    </div>
+  )}
+</div>

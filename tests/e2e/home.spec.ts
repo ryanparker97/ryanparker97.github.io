@@ -8,24 +8,52 @@ const SKILLS = [
   'AI Engineering',
   'Methodologies',
 ];
+const ANCHORS = ['experience', 'skills', 'work', 'stories', 'writing', 'certifications', 'contact'];
 
 // Layout is measured without the reveal animation (its translate would skew the numbers).
 test.use({ reducedMotion: 'reduce' });
 
 const size = (width: number, height = 900) => ({ width, height });
 
-/** Vertical gaps between consecutive content blocks of the canvas. */
-const blockGaps = (page: Page) =>
-  page.locator('.canvas [data-block]').evaluateAll((els) => {
-    const boxes = els
-      .map((e) => e.getBoundingClientRect())
-      .filter((r) => r.height > 0)
-      .sort((a, b) => a.top - b.top);
-    return boxes.slice(1).map((b, i) => Math.round(b.top - boxes[i].bottom));
+/** Units and grid tiles, with their geometry. */
+const blocks = (page: Page) =>
+  page.locator('main .unit, main .grid-tile').evaluateAll((els) =>
+    els.map((e) => {
+      const r = e.getBoundingClientRect();
+      return {
+        id: e.id,
+        tile: e.classList.contains('grid-tile'),
+        left: r.left,
+        right: r.right,
+        top: r.top + scrollY,
+        bottom: r.bottom + scrollY,
+        height: r.height,
+      };
+    }),
+  );
+
+test.describe('Home structure', () => {
+  test('units run Hero, Experiences, Skills, tile grid, Contact', async ({ page }) => {
+    await page.goto('/');
+    const ids = await page
+      .locator('main .unit, main .grid-tile')
+      .evaluateAll((els) => els.map((e) => e.id));
+    expect(ids).toEqual([
+      'top',
+      'experience',
+      'skills',
+      'work',
+      'stories',
+      'writing',
+      'certifications',
+      'contact',
+    ]);
+    await expect(page.locator('main .tiles-2up .grid-tile')).toHaveCount(4);
   });
 
-test.describe('Home layout', () => {
-  test('is one page with exactly one H1 and no skipped heading levels', async ({ page }) => {
+  test('one H1, an H2 per unit and tile, H3 for skills and certifications, no skipped levels', async ({
+    page,
+  }) => {
     await page.goto('/');
     await expect(page.locator('h1')).toHaveCount(1);
     await expect(page.locator('h1')).toHaveText('Ryan Parker');
@@ -34,217 +62,170 @@ test.describe('Home layout', () => {
       .evaluateAll((els) => els.map((e) => Number(e.tagName[1])));
     expect(levels[0]).toBe(1);
     levels.slice(1).forEach((level, i) => expect(level).toBeLessThanOrEqual(levels[i] + 1));
-    await expect(page.locator('main h2')).toHaveText([
-      'Technical skills',
-      'Work & writing',
-      'Featured STAR stories',
-      "Let's talk",
-    ]);
+    await expect(page.locator('main h2')).toHaveCount(7);
+    await expect(page.locator('main h3')).toHaveCount(SKILLS.length + 2);
+    // Every unit headline is at most 6 words; the Writing headline follows its own 8-word rule.
+    const words = await page
+      .locator('main :is(h1,h2)')
+      .evaluateAll((els) =>
+        els.map((e) => ({ id: e.id, n: (e.textContent ?? '').trim().split(/\s+/).length })),
+      );
+    for (const w of words)
+      expect(w.n, w.id).toBeLessThanOrEqual(
+        ['writing-title', 'stories-title', 'work-title'].includes(w.id) ? 8 : 6,
+      );
   });
 
-  test('uses a container of at least 1520px at 1920px and shows the sticky rail', async ({
+  test('unit text is centred at L and no unit has more than two actions', async ({ page }) => {
+    await page.setViewportSize(size(1440));
+    await page.goto('/');
+    for (const unit of await page.locator('main .unit, main .grid-tile').all()) {
+      await expect(unit).toHaveCSS('text-align', 'center');
+      expect(await unit.locator('.actions > a').count()).toBeLessThanOrEqual(2);
+    }
+    for (const id of ['top', 'experience', 'stories', 'writing', 'contact'])
+      expect(await page.locator(`#${id} .actions > a`).count()).toBe(2);
+    await expect(page.locator('#certifications .btn')).toHaveCount(0);
+    await expect(page.locator('#work .actions > a')).toHaveCount(2);
+  });
+
+  test('exactly one .text-gradient, the hero role; the hero holds only its parts', async ({
     page,
   }) => {
-    await page.setViewportSize(size(1920, 1080));
-    await page.goto('/');
-    const grid = await page.locator('.home-grid').boundingBox();
-    expect(grid!.width).toBeGreaterThanOrEqual(1520);
-    const rail = page.locator('aside.rail');
-    await expect(rail).toBeVisible();
-    expect((await rail.boundingBox())!.width).toBeCloseTo(360, 0);
-    expect(grid!.x).toBeLessThanOrEqual(200);
+    for (const path of ['/', '/vi/']) {
+      await page.goto(path);
+      await expect(page.locator('.text-gradient')).toHaveCount(1);
+      await expect(page.locator('#top .text-gradient')).toHaveText(
+        'Senior Data Engineer & Team Lead',
+      );
+    }
   });
 
-  test('the rail stays in view while the canvas scrolls (>= 1280px)', async ({ page }) => {
-    await page.setViewportSize(size(1440, 900));
+  test('at 375px every .lockup--long is start-aligned', async ({ page }) => {
+    await page.setViewportSize(size(375, 812));
     await page.goto('/');
-    await expect(page.locator('aside.rail')).toHaveCSS('position', 'sticky');
-    const before = (await page.locator('aside.rail').boundingBox())!.y;
-    await page.evaluate(() => window.scrollTo(0, 1600));
-    await page.waitForTimeout(200);
-    const box = (await page.locator('aside.rail').boundingBox())!;
-    expect(box.y).toBeGreaterThanOrEqual(52);
-    expect(box.y).toBeLessThan(120);
-    expect(box.y + box.height).toBeLessThanOrEqual(900);
-    expect(before).toBeGreaterThan(0);
-    // Nothing is clipped: the whole rail fits in the viewport at 1440 x 900.
-    expect(
-      await page.locator('aside.rail').evaluate((el) => el.scrollHeight - el.clientHeight),
-    ).toBeLessThanOrEqual(1);
+    const longs = page.locator('.lockup--long');
+    expect(await longs.count()).toBeGreaterThan(0);
+    for (const el of await longs.all()) await expect(el).toHaveCSS('text-align', 'start');
   });
 
-  for (const width of [1440, 1920]) {
-    test(`no vertical gap between content blocks is taller than 160px at ${width}px`, async ({
-      page,
-    }) => {
-      await page.setViewportSize(size(width, 1080));
-      await page.goto('/');
-      const gaps = await blockGaps(page);
-      expect(gaps.length).toBeGreaterThan(5);
-      for (const gap of gaps) expect(gap).toBeLessThanOrEqual(160);
-    });
-  }
+  test('no Home-specific script, rail or section index', async ({ page }) => {
+    await page.goto('/');
+    const scripts = await page
+      .locator('script[src]')
+      .evaluateAll((els) => els.map((e) => (e as HTMLScriptElement).src));
+    for (const src of scripts) expect(src).not.toMatch(/rail|section-index|home/i);
+    await expect(page.locator('aside, [data-section-index]')).toHaveCount(0);
+  });
+});
 
-  test('1024-1279px: a non-sticky two-column profile header, no section index', async ({
+test.describe('Hero and stats', () => {
+  test('shows location, name, headline, positioning, two pills and 3 numeric stats', async ({
     page,
   }) => {
-    await page.setViewportSize(size(1100));
     await page.goto('/');
-    await expect(page.locator('aside.rail')).toHaveCSS('position', 'static');
-    const identity = (await page.locator('.rail .identity').boundingBox())!;
-    const side = (await page.locator('.rail .side').boundingBox())!;
-    expect(side.x).toBeGreaterThan(identity.x + identity.width - 1);
-    expect(Math.abs(side.y - identity.y)).toBeLessThan(80);
-    await expect(page.locator('[data-section-index]')).toBeHidden();
-    const canvas = (await page.locator('.canvas').boundingBox())!;
-    expect(canvas.x).toBeLessThan(identity.x + 1);
-    expect(canvas.y).toBeGreaterThan(identity.y + identity.height);
-  });
-
-  test('below 1024px everything stacks in one column', async ({ page }) => {
-    await page.setViewportSize(size(375, 800));
-    await page.goto('/');
-    const parts = await Promise.all(
-      ['.rail .identity', '.rail .stats', '.rail .langs', '.canvas'].map((s) =>
-        page.locator(s).boundingBox(),
-      ),
+    const hero = page.locator('#top');
+    await expect(hero).toContainText('Ho Chi Minh City, Vietnam');
+    await expect(hero).toContainText(
+      'Senior Data Engineer & Team Lead — DBT, Airflow, PySpark, AWS & GitLab CI/CD',
     );
-    for (let i = 1; i < parts.length; i++)
-      expect(parts[i]!.y).toBeGreaterThanOrEqual(parts[i - 1]!.y + parts[i - 1]!.height - 1);
-    for (const p of parts) expect(p!.x).toBeLessThan(40);
-    await expect(page.locator('aside.rail')).toHaveCSS('position', 'static');
-    const cols = await page
-      .locator('[data-skill-card]')
-      .evaluateAll((els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().x))).size);
-    expect(cols).toBe(1);
+    await expect(hero).toContainText('I design, build and run data pipelines');
+    await expect(
+      hero.getByRole('link', { name: 'Learn more about my experience' }),
+    ).toHaveAttribute('href', '/experiences/');
+    const pdf = hero.getByRole('link', { name: 'Download PDF' });
+    await expect(pdf).toHaveAttribute('href', '/cv.pdf');
+    await expect(pdf).toHaveAttribute('download', 'Ryan-Parker-CV.pdf');
+    const stats = hero.locator('.stat-strip > li');
+    await expect(stats).toHaveCount(3);
+    await expect(stats.nth(0)).toContainText('5+');
+    await expect(stats.nth(0)).toContainText('years of experience');
+    await expect(stats.nth(1)).toHaveText(/Led\s*7\s*engineers/);
+    await expect(stats.nth(2)).toHaveText(/Cut\s*>50%\s*EMR costs/);
+    for (const v of await hero.locator('.stat-value').allTextContents()) expect(v).toMatch(/\d/);
+    await expect(hero.getByLabel('At a glance')).toBeVisible();
   });
 
-  test('has no horizontal scroll at 320px', async ({ page }) => {
-    await page.setViewportSize(size(320, 700));
+  test('stats sit in one row at 1440px and stay three across at 375px (compact)', async ({
+    page,
+  }) => {
+    await page.setViewportSize(size(1440));
     await page.goto('/');
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      ),
-    ).toBeLessThanOrEqual(0);
+    const tops = () =>
+      page
+        .locator('#top .stat-strip > li')
+        .evaluateAll(
+          (els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().top))).size,
+        );
+    expect(await tops()).toBe(1);
+    await page.setViewportSize(size(375, 812));
+    await expect(page.locator('#top .stat-strip')).toHaveClass(/stat-strip--compact/);
+    expect(await tops()).toBe(1);
   });
 
-  test('every section and card is visible with JavaScript off', async ({ browser }) => {
-    const context = await browser.newContext({ javaScriptEnabled: false, viewport: size(1440) });
+  test('hero H1 is not animated and the intro runs on the other parts', async ({ browser }) => {
+    const context = await browser.newContext({ reducedMotion: 'no-preference' });
     const page = await context.newPage();
-    await page.goto('/');
-    for (const id of ['skills', 'work', 'stories', 'contact', 'certifications'])
-      await expect(page.locator(`#${id}`)).toBeVisible();
-    for (const card of await page.locator('[data-skill-card]').all())
-      await expect(card).toBeVisible();
-    await expect(page.locator('[data-cert-card]').first()).toBeVisible();
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    const r = await page.evaluate(() => {
+      const h1 = document.querySelector('h1')!;
+      const own = document
+        .getAnimations()
+        .filter((a) => (a.effect as KeyframeEffect).target === h1).length;
+      const intro = document
+        .getAnimations()
+        .filter((a) => (a.effect as KeyframeEffect).target?.classList?.contains('intro')).length;
+      return { own, intro };
+    });
+    expect(r.own).toBe(0);
+    expect(r.intro).toBeGreaterThan(0);
     await context.close();
   });
-});
 
-test.describe('Profile rail', () => {
-  test('shows identity, actions, stats, languages and contact', async ({ page }) => {
-    await page.goto('/');
-    const rail = page.locator('aside.rail');
-    await expect(rail).toContainText(
-      'Senior Data Engineer — Data Pipelines, ETL/ELT & Cloud Data Platforms',
-    );
-    await expect(rail).toContainText('Ho Chi Minh City, Vietnam');
-    await expect(rail.getByRole('link', { name: 'View experiences' })).toHaveAttribute(
-      'href',
-      '/experiences/',
-    );
-    await expect(rail.getByRole('link', { name: 'Download PDF' })).toHaveAttribute(
-      'href',
-      '/cv.pdf',
-    );
-    await expect(rail.getByRole('link', { name: 'Download PDF' })).toHaveAttribute(
-      'download',
-      'Ryan-Parker-CV.pdf',
-    );
-    await expect(rail.getByRole('link', { name: 'Read the blog' })).toHaveAttribute(
-      'href',
-      '/blog/',
-    );
-    const stats = rail.locator('.stats');
-    await expect(stats).toContainText('5+');
-    await expect(stats).toContainText('Senior Data Engineer (Team Lead)');
-    await expect(stats).toContainText('FPT Software · Since Aug 2026');
-    await expect(stats).toContainText('7');
-    await expect(stats).toContainText('engineers led');
-    // Spoken languages live in the rail; there is no Languages card in the canvas.
-    await expect(rail.locator('.langs')).toContainText(
-      'English — Professional working proficiency',
-    );
-    await expect(page.locator('.canvas')).not.toContainText('Languages');
-    await expect(rail.getByRole('link', { name: 'Email' })).toHaveAttribute(
-      'href',
-      'mailto:ryanparker.p.97@gmail.com',
-    );
-    await expect(rail.getByRole('link', { name: 'Mobile' })).toHaveAttribute(
-      'href',
-      'tel:+84963378831',
-    );
-    await expect(rail.getByRole('link', { name: 'LinkedIn' })).toBeVisible();
-    await expect(rail.getByRole('link', { name: 'GitHub' })).toBeVisible();
-  });
-
-  test('the section index highlights the section in view', async ({ page }) => {
-    await page.setViewportSize(size(1440, 900));
-    await page.goto('/');
-    const index = page.locator('[data-section-index]');
-    await expect(index).toBeVisible();
-    await expect(index.locator('a')).toHaveText([
-      'Skills',
-      'Work & writing',
-      'STAR stories',
-      'Contact',
-    ]);
-    await expect(index.locator('a').first()).toHaveAttribute('href', '#skills');
-    for (const [id, label] of [
-      ['work', 'Work & writing'],
-      ['contact', 'Contact'],
-      ['skills', 'Skills'],
+  test('peek rule: at least 64px of the next band shows at 1440x900 and 375x812', async ({
+    page,
+  }) => {
+    for (const [w, h] of [
+      [1440, 900],
+      [375, 812],
     ]) {
-      await page.evaluate((i) => document.getElementById(i)!.scrollIntoView(), id);
-      await expect(index.locator('a[aria-current="location"]')).toHaveText(label);
+      await page.setViewportSize(size(w, h));
+      await page.goto('/');
+      const next = (await page.locator('#experience').boundingBox())!;
+      expect(h - next.y, `${w}x${h}`).toBeGreaterThanOrEqual(64);
     }
-    await index.getByRole('link', { name: 'STAR stories' }).click();
-    await expect(page).toHaveURL(/#stories$/);
-  });
-
-  test('hides the section index, then the languages, on short viewports', async ({ page }) => {
-    await page.setViewportSize(size(1440, 700));
-    await page.goto('/');
-    await expect(page.locator('[data-section-index]')).toBeHidden();
-    await expect(page.locator('.rail .langs')).toBeVisible();
-    await page.setViewportSize(size(1440, 600));
-    await expect(page.locator('.rail .langs')).toBeHidden();
   });
 });
 
-test.describe('Technical skills', () => {
-  test('one card per category in order, with icon, description and chips', async ({ page }) => {
+test.describe('Experiences and skills', () => {
+  test('Experiences shows the current role, company line and two actions', async ({ page }) => {
     await page.goto('/');
-    const cards = page.locator('#skills [data-skill-card]');
-    await expect(cards).toHaveCount(SKILLS.length);
-    await expect(cards.locator('h3')).toHaveText(SKILLS); // DOM order is the `order` field
-    for (const card of await cards.all()) {
-      await expect(card.locator('svg[data-skill-icon]')).toBeVisible();
-      expect(((await card.locator('p').first().textContent()) ?? '').length).toBeGreaterThan(20);
-      expect(await card.locator('ul li').count()).toBeGreaterThan(1);
+    const unit = page.locator('#experience');
+    await expect(unit.locator('h2')).toHaveText('Senior Data Engineer (Team Lead)');
+    await expect(unit).toContainText('FPT Software · since Aug 2026 · 5+ years of experience');
+    await expect(unit.locator('.rail > li')).toHaveCount(3);
+    await expect(unit.locator('.rail > li .sr-only').first()).toHaveText(
+      'FPT Software: 2020 to 2021, and 2026 to now.',
+    );
+    await expect(unit.getByRole('link', { name: 'Download PDF' })).toBeVisible();
+  });
+
+  test('one skill cell per category in order with at most 5 names plus "+N more"', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const cells = page.locator('#skills [data-skill]');
+    await expect(cells.locator('h3')).toHaveText(SKILLS);
+    for (const cell of await cells.all()) {
+      await expect(cell.locator('svg[data-skill-icon]')).toBeVisible();
+      const text = (await cell.locator('[data-skill-items]').textContent()) ?? '';
+      const names = text.replace(/\s*·\s*\+\d+ more$/, '').split(' · ');
+      expect(names.length).toBeLessThanOrEqual(5);
     }
-    const cloud = cards.filter({ hasText: 'Cloud Platform' });
-    await expect(cloud.locator('li.chip:not(.chip-sm)')).toHaveText(['AWS', 'Azure']);
-    await expect(cloud.locator('li.chip-sm')).toHaveText([
-      'EMR',
-      'S3',
-      'Athena',
-      'Redshift',
-      'Lake Formation',
-      'Databricks',
-    ]);
-    await expect(page.getByRole('link', { name: 'See where I used them →' })).toHaveAttribute(
+    await expect(
+      cells.filter({ hasText: 'Data Engineering' }).locator('[data-skill-items]'),
+    ).toContainText('+9 more');
+    await expect(page.getByRole('link', { name: 'See where I used them' })).toHaveAttribute(
       'href',
       '/experiences/',
     );
@@ -255,216 +236,294 @@ test.describe('Technical skills', () => {
     [800, 2],
     [400, 1],
   ] as const) {
-    test(`balances into ${columns} column(s) at ${width}px`, async ({ page }) => {
-      await page.setViewportSize(size(width));
-      await page.goto('/');
-      const xs = await page
-        .locator('#skills [data-skill-card]')
-        .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().x)));
-      const distinct = [...new Set(xs)];
-      if (columns === 3) expect(distinct.length).toBeGreaterThanOrEqual(3);
-      else expect(distinct.length).toBe(columns);
-    });
-  }
-
-  test('wide cards (2x1, 2x2) span about two columns on desktop and one on tablet', async ({
-    page,
-  }) => {
-    await page.setViewportSize(size(1440));
-    await page.goto('/');
-    const width = (name: string) =>
-      page
-        .locator('[data-skill-card]', { hasText: name })
-        .first()
-        .evaluate((e) => e.getBoundingClientRect().width);
-    const wide = await width('Data Engineering');
-    const narrow = await width('Cloud Platform');
-    expect(wide).toBeGreaterThan(narrow * 1.8);
-    await page.setViewportSize(size(800));
-    expect(
-      Math.abs((await width('Data Engineering')) - (await width('Cloud Platform'))),
-    ).toBeLessThan(2);
-  });
-
-  for (const width of [375, 800, 1100, 1440, 1920]) {
-    test(`no skill card is more than 24px taller than its content at ${width}px`, async ({
+    test(`skill grid has ${columns} column(s) at ${width}px, with no card chrome`, async ({
       page,
     }) => {
       await page.setViewportSize(size(width));
       await page.goto('/');
-      const slack = await page.locator('[data-skill-card]').evaluateAll((els) =>
-        els.map((card) => {
-          const cs = getComputedStyle(card);
-          const first = card.firstElementChild!.getBoundingClientRect();
-          const last = card.lastElementChild!.getBoundingClientRect();
-          const inner = last.bottom - first.top;
-          return (
-            card.getBoundingClientRect().height -
-            inner -
-            parseFloat(cs.paddingTop) -
-            parseFloat(cs.paddingBottom)
-          );
-        }),
-      );
-      for (const s of slack) expect(s).toBeLessThanOrEqual(24);
-    });
-  }
-
-  test('cards lift on hover with a pointer', async ({ page, browserName }) => {
-    test.skip(browserName !== 'chromium', 'hover media query support differs in WebKit automation');
-    await page.setViewportSize(size(1440));
-    await page.goto('/');
-    const card = page.locator('#skills [data-skill-card]').nth(1);
-    await card.scrollIntoViewIfNeeded();
-    await expect(card).toHaveCSS('opacity', '1');
-    await card.hover();
-    await expect(card).toHaveCSS('scale', '1.01');
-  });
-});
-
-test.describe('Work & writing', () => {
-  test('lists the featured project, latest writing and certifications side by side', async ({
-    page,
-  }) => {
-    await page.setViewportSize(size(1440));
-    await page.goto('/');
-    const work = page.locator('#work');
-    await expect(work.locator('h3')).toHaveText([
-      'Featured project',
-      'Latest writing',
-      'Certifications',
-    ]);
-    await expect(work.getByRole('link', { name: 'Agentic Coding Workflow' })).toHaveAttribute(
-      'href',
-      '/projects/#agentic-coding-workflow',
-    );
-    await expect(work.getByRole('link', { name: 'All projects →' })).toHaveAttribute(
-      'href',
-      '/projects/',
-    );
-    await expect(work.locator('.chip', { hasText: 'Personal' })).toBeVisible();
-    await expect(
-      work.getByRole('link', { name: /Neovim setup guide, Part 1/ }).first(),
-    ).toBeVisible();
-    await expect(work.getByRole('link', { name: 'Neovim setup guide · Part 1' })).toHaveAttribute(
-      'href',
-      '/blog/series/neovim-setup-guide/',
-    );
-    await expect(work.getByRole('link', { name: 'All posts →' })).toHaveAttribute('href', '/blog/');
-    await work.scrollIntoViewIfNeeded();
-    await page.waitForTimeout(900); // let the reveal animation finish
-    const boxes = await work
-      .locator('article.card')
-      .evaluateAll((els) => els.map((e) => e.getBoundingClientRect()));
-    expect(new Set(boxes.map((b) => Math.round(b.top))).size).toBeLessThanOrEqual(2); // aligned at the top
-    expect(boxes[0].right).toBeLessThan(boxes[1].left);
-    expect(boxes[1].right).toBeLessThan(boxes[2].left);
-    // Cards are not stretched to equal height.
-    expect(new Set(boxes.map((b) => Math.round(b.height))).size).toBeGreaterThan(1);
-  });
-
-  test('2 columns on tablet with the project spanning both, 1 column on mobile', async ({
-    page,
-  }) => {
-    await page.setViewportSize(size(800));
-    await page.goto('/');
-    const cards = page.locator('#work article.card');
-    const [a, b, c] = await cards.evaluateAll((els) => els.map((e) => e.getBoundingClientRect()));
-    expect(a.width).toBeGreaterThan(b.width * 1.8);
-    expect(Math.abs(b.top - c.top)).toBeLessThan(2);
-    await page.setViewportSize(size(400));
-    const xs = await cards.evaluateAll(
-      (els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().x))).size,
-    );
-    expect(xs).toBe(1);
-  });
-
-  test('lists certifications newest first with monogram fallbacks and no Verify link without a URL', async ({
-    page,
-  }) => {
-    await page.goto('/');
-    const certs = page.locator('#certifications [data-cert-card]');
-    await expect(page.locator('#certifications')).toBeVisible();
-    await expect(certs).toHaveCount(2);
-    await expect(certs.locator('.name')).toHaveText([
-      'Datadog Certified: Datadog Fundamentals',
-      'AWS Certified Solutions Architect – Associate',
-    ]);
-    await expect(certs.locator('[data-monogram]')).toHaveText(['DD', 'AWS']);
-    await expect(certs.locator('.chip')).toHaveText(['2023', '2022']);
-    await expect(certs.getByRole('link')).toHaveCount(0);
-  });
-});
-
-test.describe('Featured STAR stories and contact', () => {
-  test('3 stories use 3 columns; each links to its story and is marked Sample', async ({
-    page,
-  }) => {
-    await page.setViewportSize(size(1440));
-    await page.goto('/');
-    const stories = page.locator('#stories li.card');
-    await expect(stories).toHaveCount(3);
-    const lefts = await stories.evaluateAll(
-      (els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().x))).size,
-    );
-    expect(lefts).toBe(3);
-    await expect(stories.first().getByRole('link')).toHaveAttribute('href', /\/star\/.+\//);
-    await expect(stories.first().locator('.chip-butter')).toHaveText('Sample');
-    await expect(page.getByRole('link', { name: 'All stories →' })).toHaveAttribute(
-      'href',
-      '/star/',
-    );
-  });
-
-  test('stories go to 2 columns on tablet and 1 on mobile', async ({ page }) => {
-    const columns = () =>
-      page
-        .locator('#stories li.card')
+      const xs = await page
+        .locator('#skills [data-skill]')
         .evaluateAll(
           (els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().x))).size,
         );
-    await page.setViewportSize(size(800));
-    await page.goto('/');
-    expect(await columns()).toBe(2);
-    await page.setViewportSize(size(400));
-    expect(await columns()).toBe(1);
-  });
+      expect(xs).toBe(columns);
+      const cell = page.locator('#skills [data-skill]').first();
+      await expect(cell).toHaveCSS('box-shadow', 'none');
+      await expect(cell).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    });
+  }
+});
 
-  test('the contact band is compact at 1440px and a centred block with icons below 1280px', async ({
+test.describe('Backgrounds and grid geometry', () => {
+  for (const width of [375, 1440, 1920]) {
+    test(`units span the viewport and 12px of white separates them at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(size(width, 1000));
+      await page.goto('/');
+      const all = await blocks(page);
+      const units = all.filter((b) => !b.tile);
+      for (const u of units) {
+        expect(u.left).toBe(0);
+        expect(u.right).toBe(width);
+      }
+      const bg = await page
+        .locator('main .unit')
+        .evaluateAll((els) => els.map((e) => getComputedStyle(e).borderRadius));
+      for (const r of bg) expect(r).toBe('0px');
+      for (let i = 1; i < units.length; i++) {
+        const prev = all[all.indexOf(units[i]) - 1];
+        const gap = units[i].top - prev.bottom;
+        // Neighbouring units touch the grid through its own 12px padding.
+        expect(Math.round(gap), `${prev.id} -> ${units[i].id}`).toBe(12);
+      }
+    });
+  }
+
+  for (const width of [1440, 1920]) {
+    test(`the tile grid is two-up, fills the viewport minus 24px and has equal rows at ${width}px`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(size(width, 1000));
+      await page.goto('/');
+      const t = (await blocks(page)).filter((b) => b.tile);
+      expect(t).toHaveLength(4);
+      expect(t[0].left).toBe(12);
+      expect(t[1].right).toBe(width - 12);
+      expect(t[0].top).toBe(t[1].top);
+      expect(t[0].height).toBeCloseTo(t[1].height, 0);
+      expect(t[0].height).toBeGreaterThanOrEqual(380);
+      expect(t[2].top - t[0].bottom).toBeCloseTo(12, 0);
+    });
+  }
+
+  test('tiles stack in one column with no side padding at 375px, min-height 340px', async ({
     page,
   }) => {
+    await page.setViewportSize(size(375, 812));
+    await page.goto('/');
+    const t = (await blocks(page)).filter((b) => b.tile);
+    for (const tile of t) {
+      expect(tile.left).toBe(0);
+      expect(tile.right).toBe(375);
+      expect(tile.height).toBeGreaterThanOrEqual(340);
+    }
+  });
+
+  test('unit min-height is 692px on a tall L viewport and 650px on a tall M viewport', async ({
+    page,
+  }) => {
+    await page.setViewportSize(size(1440, 900));
+    await page.goto('/');
+    expect((await blocks(page))[0].height).toBeGreaterThanOrEqual(692);
+    await page.setViewportSize(size(900, 800));
+    expect((await blocks(page))[0].height).toBeGreaterThanOrEqual(650);
+  });
+
+  test('no pastel or gradient backgrounds on large elements, no shadows or borders', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const bad = await page.locator('main *').evaluateAll((els) =>
+      els
+        .filter((e) => {
+          const r = e.getBoundingClientRect();
+          const s = getComputedStyle(e);
+          const big = r.width > 64 && r.height > 64;
+          const clip = (s as unknown as { webkitBackgroundClip: string }).webkitBackgroundClip;
+          return (
+            (big && s.backgroundImage !== 'none' && clip !== 'text') ||
+            s.boxShadow !== 'none' ||
+            (s.borderTopWidth !== '0px' &&
+              s.borderTopStyle !== 'none' &&
+              !e.classList.contains('btn'))
+          );
+        })
+        .map((e) => e.className),
+    );
+    expect(bad).toEqual([]);
+  });
+
+  test('a grid tile darkens by 2% on hover with a pointer', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'WebKit does not apply :hover through Playwright here');
     await page.setViewportSize(size(1440));
     await page.goto('/');
-    const band = (await page.locator('#contact [data-block]').boundingBox())!;
-    expect(band.height).toBeLessThanOrEqual(160);
-    await expect(page.locator('#contact').getByRole('link', { name: 'Email me' })).toHaveAttribute(
+    const tile = page.locator('#work');
+    const before = await tile.evaluate((e) => getComputedStyle(e).backgroundColor);
+    await tile.hover({ position: { x: 20, y: 20 } });
+    await expect
+      .poll(() => tile.evaluate((e) => getComputedStyle(e).backgroundColor))
+      .not.toBe(before);
+  });
+
+  test('has no horizontal scroll from 320px', async ({ page }) => {
+    for (const width of [320, 375, 768, 1440]) {
+      await page.setViewportSize(size(width, 700));
+      await page.goto('/');
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        ),
+      ).toBeLessThanOrEqual(0);
+    }
+  });
+});
+
+test.describe('Grid tile content', () => {
+  test('project tile', async ({ page }) => {
+    await page.goto('/');
+    const tile = page.locator('#work');
+    await expect(tile.locator('h2')).toHaveText('Multi-Agent Coding System');
+    await expect(tile).toContainText('Personal');
+    await expect(tile.locator('[data-tech]')).toContainText('Claude · Gemini · Codex · tmux');
+    await expect(
+      tile.getByRole('link', { name: 'Learn more about Multi-Agent Coding System' }),
+    ).toHaveAttribute('href', '/projects/#agentic-coding-workflow');
+    await expect(tile.getByRole('link', { name: 'All projects' })).toHaveAttribute(
       'href',
-      'mailto:ryanparker.p.97@gmail.com',
+      '/projects/',
     );
-    await expect(page.locator('#contact .social')).toBeHidden();
-    await page.setViewportSize(size(1100));
-    await expect(page.locator('#contact .social')).toBeVisible();
+  });
+
+  test('STAR story tile shows chips, the super stat and two actions', async ({ page }) => {
+    await page.goto('/');
+    const tile = page.locator('#stories');
+    await expect(tile.locator('h2')).toHaveText('Cutting EMR costs by more than half');
+    await expect(tile.locator('[data-competencies] .chip')).toHaveCount(3);
+    await expect(tile.locator('.stat--super .stat-value')).toHaveText('>50%');
+    await expect(tile.getByRole('link', { name: /Read the story/ })).toHaveAttribute(
+      'href',
+      '/star/emr-cost-optimization/',
+    );
+    await expect(tile.getByRole('link', { name: 'All stories' })).toHaveAttribute('href', '/star/');
+  });
+
+  test('writing tile shows the newest post, series chip, progress and two actions', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const tile = page.locator('#writing');
+    await expect(tile.locator('h2')).toHaveText('Neovim setup guide, Part 1');
+    await expect(tile).toContainText('10 min read');
+    await expect(tile.locator('a.chip')).toHaveText('Neovim setup guide · Part 1');
+    await expect(tile.locator('[data-series-progress] li')).toHaveCount(5);
+    await expect(tile.locator('[data-series-progress]')).toContainText('Part 1 of 5');
+    await expect(tile.locator('.actions > a')).toHaveCount(2);
+  });
+
+  test('certifications: newest first, issuer logos, no Verify link without a URL', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    const tile = page.locator('#certifications');
+    await expect(tile.locator('h2')).toHaveText('Certified on the platforms I use.');
+    const rows = tile.locator('[data-cert]');
+    await expect(rows).toHaveCount(2);
+    await expect(rows.locator('.cert-name')).toHaveText([
+      'Datadog Certified: Datadog Fundamentals',
+      'AWS Certified Solutions Architect – Associate',
+    ]);
+    await expect(rows.locator('[data-logo] svg')).toHaveCount(2);
+    await expect(rows.locator('[data-monogram]')).toHaveCount(0);
+    await expect(tile.getByRole('link')).toHaveCount(0);
+    await expect(tile.locator('[data-cert-more]')).toHaveCount(0);
+  });
+});
+
+test.describe('Contact', () => {
+  test('has the closing line, two actions, social icons and spoken languages', async ({ page }) => {
+    await page.goto('/');
+    const unit = page.locator('#contact');
+    await expect(unit.locator('h2')).toHaveText("Let's talk.");
+    await expect(unit.getByRole('link', { name: 'Email me' })).toHaveAttribute('href', /^mailto:/);
+    await expect(unit.getByRole('link', { name: 'Download PDF' })).toBeVisible();
+    await expect(unit.getByRole('list', { name: 'Social links' }).locator('a')).toHaveCount(4);
+    await expect(unit.locator('[data-spoken-languages]')).toContainText(
+      'English — Professional working proficiency',
+    );
+    await expect(unit.locator('[data-real-name]')).toHaveText('Legal name: Tran Thanh Hai');
+    await expect(page.locator('#top')).not.toContainText('Tran Thanh Hai');
+  });
+
+  test('footer sits flush under Contact and has no breadcrumbs', async ({ page }) => {
+    await page.goto('/');
+    const contact = (await page.locator('#contact').boundingBox())!;
+    const footer = (await page.locator('footer').boundingBox())!;
+    expect(Math.abs(footer.y - (contact.y + contact.height))).toBeLessThanOrEqual(1);
+    await expect(page.locator('footer .crumbs')).toHaveCount(0);
+  });
+
+  test('skill descriptions are hidden below 735px', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto('/');
+    await expect(page.locator('#skills .skill-desc').first()).toBeHidden();
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await expect(page.locator('#skills .skill-desc').first()).toBeVisible();
+  });
+});
+
+test.describe('Anchors and motion', () => {
+  for (const id of ANCHORS) {
+    test(`/#${id} lands below the global nav`, async ({ page }) => {
+      await page.goto(`/#${id}`);
+      await page.waitForTimeout(300);
+      const top = (await page.locator(`#${id}`).boundingBox())!.y;
+      expect(top).toBeGreaterThanOrEqual(0);
+      if (!['contact', 'certifications'].includes(id)) expect(top).toBeLessThan(80);
+    });
+  }
+
+  test('every unit is visible with JavaScript off', async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false, viewport: size(1440) });
+    const page = await context.newPage();
+    await page.goto('/');
+    for (const id of ['top', ...ANCHORS]) await expect(page.locator(`#${id}`)).toBeVisible();
+    for (const el of await page.locator('main [data-reveal]').all())
+      await expect(el).toHaveCSS('opacity', '1');
+    await context.close();
+  });
+
+  test('reveal: 900ms fade, 30px rise, 150ms stagger; backgrounds never animate', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      reducedMotion: 'no-preference',
+      viewport: size(1440),
+    });
+    const page = await context.newPage();
+    await page.goto('/');
+    expect(
+      await page.locator('main .unit[data-reveal], main .grid-tile[data-reveal]').count(),
+    ).toBe(0);
+    await expect(page.locator('html')).toHaveClass(/\breveal\b/);
+    const item = page.locator('#skills [data-skill]').nth(1);
+    // The hidden state fades in over 900ms from the visible server render; wait for it to settle.
+    await expect.poll(() => item.evaluate((e) => getComputedStyle(e).opacity)).toBe('0');
+    const css = await item.evaluate((e) => {
+      const s = getComputedStyle(e);
+      return {
+        dur: s.transitionDuration,
+        delay: s.transitionDelay,
+        t: s.transform,
+        o: s.opacity,
+      };
+    });
+    expect(css.o).toBe('0');
+    expect(css.dur).toBe('0.9s, 0.7s');
+    expect(css.delay).toBe('0.15s');
+    expect(css.t).toContain('30');
+    await item.scrollIntoViewIfNeeded();
+    await page.evaluate(() => window.scrollBy(0, 200));
+    await expect
+      .poll(() => item.evaluate((e) => getComputedStyle(e).opacity), {
+        timeout: 2500,
+      })
+      .toBe('1');
+    await context.close();
   });
 });
 
 test.describe('Deep links and metadata', () => {
-  for (const id of ['skills', 'certifications']) {
-    test(`/#${id} scrolls below the sticky nav`, async ({ page }) => {
-      await page.goto(`/#${id}`);
-      await page.waitForTimeout(300);
-      const top = (await page.locator(`#${id}`).boundingBox())!.y;
-      expect(top).toBeGreaterThanOrEqual(52);
-      expect(top).toBeLessThan(130);
-    });
-  }
-
-  test('Experiences "Skills & certifications →" lands on #skills', async ({ page }) => {
-    await page.goto('/experiences/');
-    await page.getByRole('link', { name: 'Skills & certifications →' }).click();
-    await expect(page).toHaveURL(/\/#skills$/);
-    await expect(page.locator('#skills')).toBeInViewport();
-  });
-
   test('has Person JSON-LD on Home and Experiences and Open Graph tags', async ({ page }) => {
     for (const path of ['/', '/experiences/']) {
       await page.goto(path);
@@ -475,7 +534,7 @@ test.describe('Deep links and metadata', () => {
       expect(ld.telephone).toBe('+84963378831');
       await expect(page.locator('meta[property="og:image"]')).toHaveAttribute(
         'content',
-        'https://jomatran97.github.io/og-default.png',
+        'https://ryanparker97.github.io/og-default.png',
       );
       await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
         'content',
@@ -499,23 +558,15 @@ test.describe('Deep links and metadata', () => {
     await expect(page.getByRole('note')).toHaveCount(0);
     await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
     await expect(page.locator('h1')).toHaveCount(1);
-    await expect(page.locator('main h2')).toHaveText([
-      'Kỹ năng chuyên môn',
-      'Công việc & bài viết',
-      'Câu chuyện STAR nổi bật',
-      'Cùng trò chuyện',
-    ]);
-    await expect(page.locator('#skills [data-skill-card] h3').first()).toHaveText(
-      'Kỹ thuật dữ liệu',
+    await expect(page.locator('main h2')).toHaveCount(7);
+    await expect(page.locator('#skills h2')).toHaveText('Những công cụ tôi dùng để xây dựng.');
+    await expect(page.locator('#contact h2')).toHaveText('Cùng trò chuyện nhé.');
+    await expect(page.locator('#skills [data-skill] h3').first()).toHaveText('Kỹ thuật dữ liệu');
+    await expect(page.locator('#contact [data-spoken-languages]')).toContainText('Tiếng Anh');
+    await expect(page.getByRole('link', { name: 'Tải PDF' }).first()).toHaveAttribute(
+      'href',
+      '/vi/cv.pdf',
     );
-    await expect(page.locator('aside.rail .langs')).toContainText('Tiếng Anh');
-    await expect(page.getByRole('link', { name: 'Tải PDF' })).toHaveAttribute('href', '/vi/cv.pdf');
-    await expect(page.locator('[data-section-index] a')).toHaveText([
-      'Kỹ năng',
-      'Công việc & bài viết',
-      'Câu chuyện STAR',
-      'Liên hệ',
-    ]);
     await expect(page.locator('link[hreflang="vi"]')).toHaveCount(1);
   });
 });

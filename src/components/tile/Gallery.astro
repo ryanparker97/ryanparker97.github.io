@@ -1,0 +1,71 @@
+---
+/**
+ * Scroll gallery (spec §5.10.7): a horizontally scrolling, snapping row of cards with two paddles.
+ * Without JavaScript there are no paddles; swipe, scroll and the tab order still work.
+ */
+import { useT, type Lang } from '~/i18n';
+
+interface Props {
+  lang: Lang;
+  labelledby: string;
+  id: string;
+  /** Three cards or fewer: they share the row at L and do not scroll. */
+  few?: boolean;
+}
+const { lang, labelledby, id, few = false } = Astro.props;
+const t = useT(lang);
+---
+
+<section
+  class:list={['gallery', { 'gallery--few': few }]}
+  role="region"
+  aria-labelledby={labelledby}
+  data-gallery
+>
+  <ul class="gallery-track" role="list" id={id} data-reveal-group>
+    <slot />
+  </ul>
+  <div class="paddles" hidden>
+    <button
+      type="button"
+      class="paddle"
+      aria-label={t('gallery.prev')}
+      aria-controls={id}
+      disabled
+      data-prev
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path
+          d="M10 2 4 8l6 6"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+    <button
+      type="button"
+      class="paddle"
+      aria-label={t('gallery.next')}
+      aria-controls={id}
+      data-next
+    >
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path
+          d="m6 2 6 6-6 6"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </svg>
+    </button>
+  </div>
+</section>
+
+<script>
+  import '~/scripts/gallery';
+</script>

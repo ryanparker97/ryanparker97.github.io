@@ -1,8 +1,40 @@
 ---
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import Hero from '~/components/tile/Hero.astro';
+import SiteIndex from '~/components/ui/SiteIndex.astro';
+import { getPosts } from '~/lib/blog-content';
+import { getProfile } from '~/lib/content';
 import { useT } from '~/i18n';
 
 const t = useT('en');
+const { posts } = await getPosts('en');
+const { data: p } = await getProfile('en');
+const groups = [
+  {
+    title: t('footer.explore'),
+    links: [
+      { href: '/experiences/', label: t('nav.cv') },
+      { href: '/projects/', label: t('nav.projects') },
+      { href: '/star/', label: t('star.title') },
+      { href: '/blog/', label: t('nav.blog') },
+    ],
+  },
+  {
+    title: t('footer.writing'),
+    links: posts
+      .slice(0, 3)
+      .map((post) => ({ href: `/blog/${post.slug}/`, label: post.data.title })),
+  },
+  {
+    title: t('footer.connect'),
+    links: [
+      { href: `mailto:${p.email}`, label: t('cv.email') },
+      { href: p.socials.linkedin, label: t('cv.linkedin'), external: true },
+      { href: p.socials.github, label: t('cv.github'), external: true },
+      { href: '/cv.pdf', label: t('nav.pdf') },
+    ],
+  },
+].filter((g) => g.links.length > 0);
 ---
 
 <BaseLayout
@@ -12,11 +44,17 @@ const t = useT('en');
   switchHref="/vi/"
   noindex
 >
-  <div class="container-page page-head">
-    <h1>{t('notFound.title')}</h1>
-    <p class="mt-3 text-xl text-text-2">{t('notFound.text')}</p>
-    <a href="/" class="btn btn-primary mt-8">
-      {t('common.backHome')}
-    </a>
-  </div>
+  <Hero title={t('notFound.hero')} subline={t('notFound.text')}>
+    <Fragment slot="actions">
+      <a href="/" class="btn btn-primary">
+        {t('common.goHome')}
+      </a>
+      <button type="button" class="btn btn-secondary" data-search-open aria-haspopup="dialog">
+        {t('search.open')}
+      </button>
+    </Fragment>
+  </Hero>
+  <section class="section section--surface" aria-label={t('notFound.index')}>
+    <SiteIndex label={t('notFound.index')} {groups} />
+  </section>
 </BaseLayout>

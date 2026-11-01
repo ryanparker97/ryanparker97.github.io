@@ -1,0 +1,93 @@
+---
+/**
+ * One role chapter (spec §4.2.1): header, highlight cards, tech chips and the STAR link. With one
+ * or more cards, the header, chips and pill form a sticky left column at L (sticky storytelling).
+ */
+import type { Localized } from '~/lib/content';
+import HighlightCards from '~/components/tile/HighlightCards.astro';
+import SectionHeader from '~/components/tile/SectionHeader.astro';
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+import {
+  buildTechVocab,
+  companyLabel,
+  foldChips,
+  formatDateRange,
+  markTech,
+  parseHighlights,
+} from '~/lib/cv';
+
+interface Props {
+  role: Localized<'experience'>;
+  lang: Lang;
+  tone: 'bg' | 'surface';
+  /** Slugs of the role's STAR stories. */
+  stories: string[];
+  /** Skill item and child names (EN) that join the role's own `tech` in the highlight vocabulary. */
+  skillTerms?: { name: string; children?: string[] }[];
+}
+const { role, lang, tone, stories, skillTerms = [] } = Astro.props;
+const t = useT(lang);
+const d = role.data;
+const vocab = buildTechVocab(d.tech, skillTerms);
+const cards = parseHighlights(role.body ?? '').map((c) => ({
+  ...c,
+  body: markTech(c.body, vocab),
+}));
+// Keep the city together: the subhead never wraps inside "Ho Chi Minh City".
+const place = d.location.replace(/^[^,]*/, (city) => city.replace(/ /g, '\u00a0'));
+const current = !d.end;
+const fold = foldChips(d.tech);
+---
+
+<section
+  id={role.slug}
+  class:list={[
+    'section',
+    'chapter',
+    { 'section--surface': tone === 'surface', 'chapter--sticky': cards.length >= 1 },
+  ]}
+  aria-labelledby={`${role.slug}-title`}
+>
+  <div class="chapter-grid">
+    <div class="chapter-side">
+      <SectionHeader
+        id={`${role.slug}-title`}
+        title={d.role}
+        subline={`${companyLabel(d.company, d.client)} · ${place}`}
+      >
+        <Fragment slot="eyebrow">
+          {current && <span class="current-chip">{t('exp.current')}</span>}
+          <span class="date-range">{formatDateRange(d.start, d.end, lang)}</span>
+        </Fragment>
+      </SectionHeader>
+      {(d.tech.length > 0 || stories.length > 0) && (
+        <div class="chapter-meta" data-reveal>
+          {d.tech.length > 0 && (
+            <ul class="tech-stack" aria-label={t('exp.techStack')}>
+              {d.tech.map((tech, i) => (
+                <li class:list={['chip chip-mint', { 'is-folded': i >= fold.shown }]}>{tech}</li>
+              ))}
+              {fold.more > 0 && <li class="chip chip-mint more-chip">+{fold.more}</li>}
+            </ul>
+          )}
+          {stories.length > 0 && (
+            <a
+              href={
+                stories.length === 1
+                  ? localePath(`/star/${stories[0]}/`, lang)
+                  : localePath(`/star/#${role.slug}`, lang)
+              }
+              class="btn btn-secondary"
+            >
+              {stories.length === 1 ? t('exp.star.one') : t('exp.star.many', { n: stories.length })}
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+    <div class="chapter-cards">
+      <HighlightCards {cards} />
+    </div>
+  </div>
+</section>

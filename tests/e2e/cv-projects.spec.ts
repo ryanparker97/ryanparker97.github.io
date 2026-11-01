@@ -1,14 +1,11 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('Experiences', () => {
-  test('has header contacts, no projects/skills/certifications, and separate entries for repeated companies', async ({
-    page,
-  }) => {
+  test('no hero, summary/projects/skills/certifications', async ({ page }) => {
     await page.goto('/experiences/');
-    await expect(page.locator('a[href="mailto:ryanparker.p.97@gmail.com"]').first()).toBeVisible();
-    await expect(page.locator('a[href="tel:+84963378831"]').first()).toBeVisible();
     for (const name of [
-      'Selected Projects',
+      'Summary',
+      'AI Engineering & Agentic Coding',
       'Technical Skills',
       'Certifications',
       'Projects',
@@ -16,25 +13,7 @@ test.describe('Experiences', () => {
     ]) {
       await expect(page.getByRole('heading', { name, exact: true })).toHaveCount(0);
     }
-    await expect(page.locator('section[aria-labelledby="experience"] ol > li')).toHaveCount(5);
-    await expect(page.getByRole('heading', { name: 'FPT Software', exact: true })).toHaveCount(2);
-    await expect(page.getByRole('heading', { name: 'Datum / Security Bank' })).toBeVisible();
-    // Month and year-only dates.
-    await expect(page.getByText('Aug 2026 – Present')).toBeVisible();
-    await expect(page.getByText('2024 – Mar 2026')).toBeVisible();
-    await expect(page.getByText('2021 – 2024')).toBeVisible();
-  });
-
-  test('links to Projects and Skills & certifications', async ({ page }) => {
-    await page.goto('/experiences/');
-    await expect(page.getByRole('link', { name: 'Projects →' })).toHaveAttribute(
-      'href',
-      '/projects/',
-    );
-    await expect(page.getByRole('link', { name: 'Skills & certifications →' })).toHaveAttribute(
-      'href',
-      '/#skills',
-    );
+    await expect(page.locator('#summary, #skills, #certifications')).toHaveCount(0);
   });
 
   for (const [path, pdf] of [
@@ -43,7 +22,7 @@ test.describe('Experiences', () => {
   ] as const) {
     test(`Download PDF on ${path} points to a real PDF`, async ({ page, request }) => {
       await page.goto(path);
-      const link = page.locator('a[download="Ryan-Parker-CV.pdf"]');
+      const link = page.locator('a[download="Ryan-Parker-CV.pdf"]').first();
       await expect(link).toHaveAttribute('href', pdf);
       const res = await request.get(pdf);
       expect(res.status()).toBe(200);
@@ -55,28 +34,61 @@ test.describe('Experiences', () => {
     await page.goto('/experiences/print/');
     await expect(page.locator('meta[name=robots]')).toHaveAttribute('content', 'noindex');
     await expect(page.locator('header[data-nav]')).toHaveCount(0);
-    await expect(page.getByRole('heading', { name: 'Selected Projects' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'AI Engineering & Agentic Coding' }),
+    ).toBeVisible();
   });
 });
 
 test.describe('Projects', () => {
-  test('shows the project card with Details closed, and Expand all / Collapse all', async ({
-    page,
-  }) => {
+  const tile = (page: import('@playwright/test').Page) =>
+    page.locator('[data-project="agentic-coding-workflow"]');
+
+  test('hero, tile grid and Expand all in the local nav', async ({ page }) => {
     await page.goto('/projects/');
-    const details = page.locator('[data-project="agentic-coding-workflow"] details');
+    await expect(page.locator('h1')).toHaveText("Things I've built.");
+    await expect(page.locator('.tiles-2up .grid-tile')).toHaveCount(1);
+    const details = tile(page).locator('details');
     await expect(details).not.toHaveAttribute('open', '');
-    await page.getByRole('button', { name: 'Expand all' }).click();
+    const expand = page.locator('[data-local-nav] button[data-expand]').first();
+    await expect(expand).toHaveAttribute('aria-expanded', 'false');
+    await expect(expand).toHaveText(/^Expand all\s*›?$/, { useInnerText: true });
+    await expand.click();
     await expect(details).toHaveAttribute('open', '');
-    await expect(page.getByText('Orchestrated Specialist Flows:')).toBeVisible();
-    await page.getByRole('button', { name: 'Collapse all' }).click();
+    await expect(page.getByText('Orchestrated Specialist Flows')).toBeVisible();
+    await expect(expand).toHaveAttribute('aria-expanded', 'true');
+    await expect(expand).toHaveText(/^Collapse all\s*›?$/, { useInnerText: true });
+    await expand.click();
     await expect(details).not.toHaveAttribute('open', '');
+    await expect(expand).toHaveAttribute('aria-expanded', 'false');
+    await expect(expand).toHaveText(/^Expand all\s*›?$/, { useInnerText: true });
+    // Opening the tile by hand also flips the control.
+    await tile(page).locator('summary').click();
+    await expect(expand).toHaveAttribute('aria-expanded', 'true');
   });
 
-  test('Details toggles with Enter and Space', async ({ page }) => {
+  test('the single tile spans both columns and reads as a feature (380px)', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/projects/');
-    const summary = page.locator('[data-project="agentic-coding-workflow"] summary');
-    const details = page.locator('[data-project="agentic-coding-workflow"] details');
+    const box = (await tile(page).boundingBox())!;
+    expect(box.width).toBe(1416);
+    expect(box.height).toBeGreaterThanOrEqual(380);
+  });
+
+  test('plus-disc summary is at least 44x44 and named "Learn more about ..."', async ({ page }) => {
+    await page.goto('/projects/');
+    const summary = tile(page).locator('summary');
+    const b = (await summary.boundingBox())!;
+    expect(b.width).toBeGreaterThanOrEqual(44);
+    expect(b.height).toBeGreaterThanOrEqual(44);
+    await expect(summary).toHaveAttribute('aria-label', /^Learn more about /);
+    await expect(summary.locator('.plus-label')).toHaveText('Learn more');
+  });
+
+  test('Details toggles with Enter and Space and announces its state', async ({ page }) => {
+    await page.goto('/projects/');
+    const summary = tile(page).locator('summary');
+    const details = tile(page).locator('details');
     await summary.focus();
     await page.keyboard.press('Enter');
     await expect(details).toHaveAttribute('open', '');
@@ -84,12 +96,14 @@ test.describe('Projects', () => {
     await expect(details).not.toHaveAttribute('open', '');
   });
 
-  test('/projects/#<slug> opens that card', async ({ page }) => {
+  test('an open tile shows bullet cards and the "At ..." link; no per-project route', async ({
+    page,
+    request,
+  }) => {
     await page.goto('/projects/#agentic-coding-workflow');
-    await expect(page.locator('[data-project="agentic-coding-workflow"] details')).toHaveAttribute(
-      'open',
-      '',
-    );
+    await expect(tile(page).locator('details')).toHaveAttribute('open', '');
+    await expect(tile(page).locator('.hl-card')).toHaveCount(5);
+    expect((await request.get('/projects/agentic-coding-workflow/')).status()).toBe(404);
   });
 
   test('?kind= filters, shows the empty state, resets, and works with Back/Forward', async ({
@@ -97,25 +111,30 @@ test.describe('Projects', () => {
   }) => {
     await page.goto('/projects/?kind=work');
     await expect(page.getByText('No projects here yet.')).toBeVisible();
-    await expect(page.locator('[data-project="agentic-coding-workflow"]')).toBeHidden();
+    await expect(tile(page)).toBeHidden();
     await page.getByRole('button', { name: 'Show all projects' }).click();
     await expect(page).toHaveURL(/\/projects\/$/);
-    await expect(page.locator('[data-project="agentic-coding-workflow"]')).toBeVisible();
+    await expect(tile(page)).toBeVisible();
     await page.goBack();
     await expect(page.getByText('No projects here yet.')).toBeVisible();
     await page.goForward();
-    await expect(page.locator('[data-project="agentic-coding-workflow"]')).toBeVisible();
-    // With a single kind the segmented control is hidden altogether.
-    await expect(page.locator('[data-kind-filter]')).toHaveCount(0);
+    await expect(tile(page)).toBeVisible();
     await page.goto('/projects/?kind=personal');
-    await expect(page.locator('[data-project="agentic-coding-workflow"]')).toBeVisible();
+    await expect(tile(page)).toBeVisible();
   });
 
-  test('a deep link to a hidden card resets the filter and keeps the URL in sync', async ({
+  test('a deep link to a hidden tile resets the filter and keeps the URL in sync', async ({
     page,
   }) => {
     await page.goto('/projects/?kind=work#agentic-coding-workflow');
-    await expect(page.locator('[data-project="agentic-coding-workflow"]')).toBeVisible();
+    await expect(tile(page)).toBeVisible();
     await expect(page).not.toHaveURL(/kind=/);
+  });
+
+  test('peek rule at 375x812: the tile starts below the hero', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/projects/');
+    const y = (await tile(page).boundingBox())!.y;
+    expect(812 - y).toBeGreaterThanOrEqual(64);
   });
 });

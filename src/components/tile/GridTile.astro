@@ -1,0 +1,46 @@
+---
+/** One square tile of a `TileGrid` (spec §5.10.3): lockup on top, an optional visual below. */
+interface Props {
+  id?: string;
+  /** Wrap the whole tile in a link. */
+  href?: string;
+  tag?: 'section' | 'article';
+  /** Spans both columns (Blog feature, expanded project). */
+  span?: boolean;
+  /** A visual under 120px is not split: lockup and visual are centred together (spec §5.10.2). */
+  stack?: boolean;
+  labelledby?: string;
+  ariaLabel?: string;
+  [attr: string]: unknown;
+}
+const {
+  id,
+  href,
+  tag = 'section',
+  span = false,
+  stack = false,
+  labelledby,
+  ariaLabel,
+  ...rest
+} = Astro.props;
+const Tag = href ? 'a' : tag;
+---
+
+<Tag
+  id={id}
+  href={href}
+  class:list={['grid-tile', { 'grid-tile--span': span, 'grid-tile--stack': stack }]}
+  aria-labelledby={href ? undefined : labelledby}
+  aria-label={ariaLabel}
+  {...rest}
+>
+  <div class="unit__lockup">
+    <slot />
+  </div>
+  {Astro.slots.has('visual') && (
+    <div class="unit__visual" data-reveal style="--i:4">
+      <slot name="visual" />
+    </div>
+  )}
+  <slot name="after" />
+</Tag>

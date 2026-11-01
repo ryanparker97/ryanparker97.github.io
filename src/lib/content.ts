@@ -1,5 +1,6 @@
 import { getCollection, render, type CollectionEntry, type CollectionKey } from 'astro:content';
 import type { Lang } from '../i18n';
+import { localize } from './localize';
 
 export type Localized<K extends CollectionKey> = CollectionEntry<K> & {
   /** Entry slug shared by translations (the filename without extension). */
@@ -10,8 +11,6 @@ export type Localized<K extends CollectionKey> = CollectionEntry<K> & {
   available: Lang[];
 };
 
-const slugOf = (id: string) => id.split('/').slice(1).join('/');
-
 /**
  * Entries of a collection for `lang`. Entries with no translation fall back to the English file,
  * and `fallback` is true when any did, so the page can show the "English only" banner.
@@ -20,22 +19,10 @@ export async function getLocalized<K extends CollectionKey>(
   name: K,
   lang: Lang,
 ): Promise<{ items: Localized<K>[]; fallback: boolean }> {
-  const all = (await getCollection(name)) as CollectionEntry<K>[];
-  const available = new Map<string, Lang[]>();
-  for (const entry of all) {
-    const slug = slugOf(entry.id);
-    available.set(slug, [...(available.get(slug) ?? []), entry.id.split('/')[0] as Lang]);
-  }
-  const items = new Map<string, Localized<K>>();
-  for (const entry of all) {
-    const entryLang = entry.id.split('/')[0] as Lang;
-    const slug = slugOf(entry.id);
-    const base = { ...entry, slug, available: available.get(slug)! };
-    if (entryLang === 'en' && !items.has(slug)) items.set(slug, { ...base, contentLang: 'en' });
-    if (entryLang === lang) items.set(slug, { ...base, contentLang: lang });
-  }
-  const list = [...items.values()];
-  return { items: list, fallback: lang !== 'en' && list.some((i) => i.contentLang !== lang) };
+  return localize((await getCollection(name)) as CollectionEntry<K>[], lang) as {
+    items: Localized<K>[];
+    fallback: boolean;
+  };
 }
 
 export async function getProfile(lang: Lang) {

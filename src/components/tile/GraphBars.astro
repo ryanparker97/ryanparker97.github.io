@@ -1,0 +1,29 @@
+---
+/**
+ * Graph bars (spec §5.10.9): one bar per `compare` entry, next to a stat lockup. The widths are
+ * set at build time; a visually hidden sentence carries the meaning.
+ */
+import { graphBars } from '~/lib/star';
+import { useT, type Lang } from '~/i18n';
+
+interface Props {
+  compare: { label: string; value: number }[];
+  lang: Lang;
+}
+const { compare, lang } = Astro.props;
+const t = useT(lang);
+const bars = graphBars(compare);
+const sentence = compare.map((c) => `${c.label}: ${c.value}`).join(', ');
+---
+
+<ul class="graph-bars" data-reveal-group>
+  {bars.map((b, i) => (
+    <li data-reveal style={`--i:${i};--j:${i}`}>
+      <span class="bar-label" aria-hidden="true">
+        {b.label}
+      </span>
+      <hr aria-hidden="true" style={`--w:${b.w}`} />
+    </li>
+  ))}
+  <li class="sr-only">{t('star.graph', { values: sentence })}</li>
+</ul>
