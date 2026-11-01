@@ -1,7 +1,22 @@
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import StarCard from '../../src/components/star/StarCard.astro';
 import BaseLayout from '../../src/layouts/BaseLayout.astro';
+
+// The footer reads the profile collection, whose data store only exists after `astro build`
+// (not after `astro check` or `astro sync`), so CI's unit-test job gets a fixture instead.
+vi.mock('../../src/lib/content', async (original) => ({
+  ...(await original<typeof import('../../src/lib/content')>()),
+  getProfile: async () => ({
+    entry: {},
+    fallback: false,
+    data: {
+      email: 'me@example.com',
+      phone: '+10000000000',
+      socials: { linkedin: 'https://example.com/in', github: 'https://example.com/gh' },
+    },
+  }),
+}));
 
 const story = (sample: boolean) =>
   ({
