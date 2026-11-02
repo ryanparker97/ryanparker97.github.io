@@ -504,7 +504,7 @@ test.describe('Anchors and motion', () => {
       return {
         dur: s.transitionDuration,
         delay: s.transitionDelay,
-        t: s.transform,
+        t: s.translate,
         o: s.opacity,
       };
     });

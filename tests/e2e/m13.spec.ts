@@ -399,19 +399,28 @@ test.describe('Part B: Experiences, STAR, Projects, Blog (R6, R8)', () => {
     expect(m.gap).toBeLessThanOrEqual(16);
   });
 
-  test('the spanning Projects tile puts the disc at the lockup column edge (R8)', async ({
+  test("the Projects disc is the tile's last row, at the lockup column edge (R8)", async ({
     page,
   }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/projects/');
     const m = await page.evaluate(() => {
       const tile = document.querySelector('[data-project]')!;
       const disc = tile.querySelector('summary')!.getBoundingClientRect();
       const lock = tile.querySelector('.unit__lockup')!.getBoundingClientRect();
       const chips = tile.querySelector('.chips')!.getBoundingClientRect();
-      const summary = tile.querySelector('.summary')!.getBoundingClientRect();
-      return { disc: disc.right, col: lock.right, gap: chips.top - summary.bottom };
+      const t = tile.getBoundingClientRect();
+      return {
+        disc: disc.right,
+        col: lock.right,
+        discTop: disc.top,
+        chipsBottom: chips.bottom,
+        tail: t.bottom - disc.bottom,
+      };
     });
-    expect(m.disc).toBeLessThanOrEqual(m.col + 2);
+    expect(Math.abs(m.disc - m.col)).toBeLessThanOrEqual(2);
+    expect(m.discTop).toBeGreaterThanOrEqual(m.chipsBottom + 16);
+    expect(m.tail).toBeLessThanOrEqual(41);
   });
 
   test('topic page parts-list shows every part published, with no Coming soon chips (R8)', async ({

@@ -287,21 +287,11 @@
   line-height: 1.2105;
   letter-spacing: 0.012em;
 }
-.grid-tile .lockup .t-promo {
-  font-size: 2rem;
-  line-height: 1.125;
-  letter-spacing: 0.002em;
-}
 @media (min-width: 735px) {
   .grid-tile .lockup .t-subhead {
     font-size: 1.3125rem;
     line-height: 1.1905;
     letter-spacing: 0.011em;
-  }
-  .grid-tile .lockup .t-promo {
-    font-size: 2.5rem;
-    line-height: 1.1;
-    letter-spacing: 0;
   }
   /* Tiles in a 2-up row are always split, so their headlines start at the same line (§5.10.2). */
   .grid-tile.grid-tile--stack {
@@ -482,7 +472,8 @@ a.grid-tile:hover {
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.003em;
-  white-space: nowrap;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
 }
 @media (min-width: 735px) {
   .stat-value {
@@ -567,17 +558,23 @@ a.grid-tile:hover {
 /* At S, a strip of short values stays three across; captions wrap to two lines. */
 @media (max-width: 734px) {
   .stat-strip--compact {
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
+    display: flex;
+    flex-wrap: wrap;
   }
   .stat-strip--compact > li {
+    flex: 1 1 0;
+    min-width: min-content;
     padding-inline: 8px;
   }
   .stat-strip--compact > li + li {
     border-top: 0;
     border-left: 1px solid var(--border);
   }
+  .stat-strip--compact .stat-value {
+    overflow-wrap: break-word;
+  }
   .stat-strip--compact .stat-cap {
+    overflow-wrap: anywhere;
     text-wrap: balance;
   }
   .lockup--long ~ .stat-strip,
@@ -826,8 +823,9 @@ a.grid-tile:hover {
 /* Reduced variant: the STAR story question, centred as one block with inline quote marks. */
 .quote--reduced {
   width: fit-content;
-  max-inline-size: 760px;
+  max-inline-size: min(760px, 100%);
   margin-inline: auto;
+  overflow-wrap: anywhere;
   text-align: center;
 }
 .quote--reduced blockquote > p:first-child::before {
@@ -884,6 +882,11 @@ a.grid-tile:hover {
 }
 .site-index .si-group {
   width: 25%;
+}
+@media (min-width: 735px) {
+  .site-index .si-group {
+    padding-inline-end: 24px;
+  }
 }
 .site-index .si-group:first-child {
   width: 50%;
@@ -1010,20 +1013,36 @@ details[open] > .plus-row .plus-disc::after,
      item) gets `.is-in` from reveal.ts. */
   .reveal [data-reveal] {
     opacity: 0;
-    transform: translateY(30px);
+    translate: 0 30px;
     transition:
       opacity 900ms var(--ease-card),
-      transform 700ms var(--ease-card);
+      translate 700ms var(--ease-card);
     transition-delay: calc(min(var(--i, 0), 3) * 150ms);
   }
   .reveal [data-reveal].is-in,
   .reveal .is-in [data-reveal] {
     opacity: 1;
-    transform: none;
+    translate: none;
   }
   .reveal .is-now,
   .reveal .is-now [data-reveal] {
     transition: none !important;
+  }
+  /* The reveal uses `translate`, so the hover lift's `transform` is free to run. */
+  @media (hover: hover) and (pointer: fine) {
+    .reveal .lift[data-reveal] {
+      transition:
+        opacity 900ms var(--ease-card) calc(min(var(--i, 0), 3) * 150ms),
+        translate 700ms var(--ease-card) calc(min(var(--i, 0), 3) * 150ms),
+        transform 300ms var(--ease-card),
+        background-color 344ms ease;
+    }
+    .reveal .is-now .lift[data-reveal],
+    .reveal .lift[data-reveal].is-now {
+      transition:
+        transform 300ms var(--ease-card),
+        background-color 344ms ease !important;
+    }
   }
   /* Effect 2: hero intro, on load, pure CSS. The H1 is never animated. */
   .intro {
@@ -1085,6 +1104,15 @@ details[open] > .plus-row .plus-disc::after,
   }
   .intro {
     animation-delay: calc(min(var(--i, 0), 3) * 150ms);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .reveal .lift[data-reveal] {
+      transition:
+        opacity 900ms var(--ease-card) calc(min(var(--i, 0), 2) * 150ms),
+        translate 700ms var(--ease-card) calc(min(var(--i, 0), 2) * 150ms),
+        transform 300ms var(--ease-card),
+        background-color 344ms ease;
+    }
   }
 }
 
@@ -1264,9 +1292,15 @@ mark.tech.tech--start {
   }
 }
 
-/* `·`-separated lists (§5.4): items never split, and the separator trails its item. */
+/* `·`-separated lists (§5.4): items stay whole and the separator trails its item; items wrap
+   inside only when one item is wider than the line (WCAG 1.4.10). */
 .nw {
-  white-space: nowrap;
+  display: inline-block;
+}
+@layer base {
+  :where(h1, h2, h3, h4, .t-subhead):not(:where(.card, .prose, article) *) {
+    overflow-wrap: anywhere;
+  }
 }
 
 /* Centred lockups balance their eyebrow, subhead and copy; start-aligned ones keep `pretty`. */

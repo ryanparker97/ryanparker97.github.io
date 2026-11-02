@@ -278,6 +278,85 @@ test.describe('footer', () => {
   });
 });
 
+async function footerBox(page: Page) {
+  return page.evaluate(() => {
+    const f = document.querySelector('.site-footer')!.getBoundingClientRect();
+    const row = document.querySelector('.site-footer > .chrome-row')!.getBoundingClientRect();
+    const sy = window.scrollY;
+    return {
+      top: f.top + sy,
+      bottom: f.bottom + sy,
+      left: f.left,
+      width: f.width,
+      scrollY: sy,
+      mainBottom: document.querySelector('main')!.getBoundingClientRect().bottom + sy,
+      docH: document.documentElement.scrollHeight,
+      vh: window.innerHeight,
+      vw: document.documentElement.clientWidth,
+      innerW: row.width,
+      innerL: row.left,
+    };
+  });
+}
+
+test.describe('footer placement and width (§5.9)', () => {
+  test('the footer ends at the viewport bottom on short pages at 1440×1600', async ({ page }) => {
+    for (const path of ['/blog/series/', '/404.html', '/blog/tags/', '/vi/blog/topics/']) {
+      await page.setViewportSize({ width: 1440, height: 1600 });
+      await page.goto(path);
+      const b = await footerBox(page);
+      expect(b.docH, `${path}: page fits the viewport`).toBeLessThanOrEqual(1600);
+      expect(Math.abs(b.bottom - 1600), path).toBeLessThanOrEqual(1);
+      expect(b.docH, path).toBe(1600);
+    }
+  });
+
+  test('the footer is flush on long pages and never leaves a gap below it', async ({ page }) => {
+    for (const [w, h] of [
+      [375, 812],
+      [1440, 1600],
+    ]) {
+      await page.setViewportSize({ width: w, height: h });
+      for (const path of ALL) {
+        await page.goto(path);
+        const b = await footerBox(page);
+        const msg = `${path} @${w}`;
+        expect(Math.abs(b.bottom - Math.max(b.docH, b.vh)), msg).toBeLessThanOrEqual(1);
+        expect(b.top, msg).toBeGreaterThanOrEqual(b.mainBottom - 1);
+        if (b.docH > b.vh + 1) expect(b.top - b.mainBottom, msg).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  test('the footer band spans the viewport at 1920 and its content keeps the 980px edge', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1920, height: 1080 });
+    for (const path of ALL) {
+      await page.goto(path);
+      const b = await footerBox(page);
+      expect(Math.abs(b.left), path).toBeLessThanOrEqual(1);
+      expect(Math.abs(b.width - b.vw), path).toBeLessThanOrEqual(1);
+      expect(Math.abs(b.innerW - 1024), path).toBeLessThanOrEqual(1);
+      expect(Math.abs(b.innerL - (b.vw - 1024) / 2), path).toBeLessThanOrEqual(1);
+    }
+    await page.goto('/blog/series/');
+    const rule = await page.evaluate(
+      () => getComputedStyle(document.querySelector('.site-footer')!).borderTopWidth,
+    );
+    expect(rule).toBe('1px');
+  });
+
+  test('print is unaffected', async ({ page }) => {
+    await page.goto('/experiences/print/');
+    expect(await page.evaluate(() => getComputedStyle(document.body).display)).toBe('block');
+    await page.goto('/blog/series/');
+    await page.emulateMedia({ media: 'print' });
+    expect(await page.evaluate(() => getComputedStyle(document.body).display)).toBe('block');
+    await expect(page.locator('.site-footer')).toBeHidden();
+  });
+});
+
 test.describe('search panel', () => {
   test('Quick links show before typing; results replace them; Esc restores focus', async ({
     page,
@@ -598,7 +677,6 @@ test.describe('footer density (§5.9)', () => {
     expect(v.pitch).toBeGreaterThanOrEqual(24);
     expect(v.pitch).toBeLessThanOrEqual(28);
     expect(v.phone).toContain('Phone');
-    await expect(page.locator('footer .reach a')).toHaveCount(2);
   });
 
   test('compact footer: no doubled hairlines, none between a title and its links', async ({
@@ -612,9 +690,8 @@ test.describe('footer density (§5.9)', () => {
       summary: getComputedStyle(document.querySelector('footer summary')!).borderBottomWidth,
       weight: getComputedStyle(document.querySelector('footer summary')!).fontWeight,
       legal: getComputedStyle(document.querySelector('footer .legal')!).borderTopWidth,
-      reach: getComputedStyle(document.querySelector('footer .reach')!).borderBottomWidth,
     }));
-    expect(v).toEqual({ summary: '0px', weight: '400', legal: '0px', reach: '0px' });
+    expect(v).toEqual({ summary: '0px', weight: '400', legal: '0px' });
   });
 });
 
@@ -774,14 +851,12 @@ test.describe('Part A regressions (M11 review r2)', () => {
     ).toBe(true);
   });
 
-  for (const [path, text] of [
-    ['/', 'More ways to reach me: email me or find me on LinkedIn.'],
-    ['/vi/', 'Các cách khác để liên hệ: gửi email cho tôi hoặc tìm tôi trên LinkedIn.'],
-  ] as const) {
-    test(`footer reach line has spaces (${path})`, async ({ page }) => {
+  for (const path of ['/', '/vi/']) {
+    test(`footer has no reach line (${path})`, async ({ page }) => {
       await page.goto(path);
-      const t = (await page.locator('.site-footer .reach').textContent())!.replace(/\s+/g, ' ');
-      expect(t.trim()).toBe(text);
+      await expect(page.locator('.site-footer .reach')).toHaveCount(0);
+      await expect(page.locator('.site-footer')).not.toContainText('More ways to reach me');
+      await expect(page.locator('.site-footer')).not.toContainText('Các cách khác để liên hệ');
     });
   }
 

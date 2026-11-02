@@ -88,7 +88,7 @@ test.describe('STAR', () => {
     const link = page.getByRole('link', { name: /Permalink to this story: Cutting EMR costs/ });
     await link.scrollIntoViewIfNeeded();
     // The card fades up as it enters view; click once it has settled.
-    await expect(page.locator('[data-story]').first()).toHaveCSS('transform', 'none');
+    await expect(page.locator('[data-story]').first()).toHaveCSS('translate', 'none');
     await link.click();
     await expect(page).toHaveURL(/\/star\/emr-cost-optimization\/$/);
     await expect(page.locator('h1')).toHaveText('Cutting EMR costs by more than half');

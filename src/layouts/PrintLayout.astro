@@ -20,6 +20,8 @@ const { title, lang, fallback = false } = Astro.props;
     <title>{title}</title>
   </head>
   <body data-pagefind-ignore>
-    <slot />
+    <main>
+      <slot />
+    </main>
   </body>
 </html>

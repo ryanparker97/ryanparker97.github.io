@@ -409,7 +409,7 @@ A main-nav page with **all** projects (personal, work and open source). There ar
 - **Grid:** a tile grid (§5.10.3), one tile per project, 2-up at M and L, 1 column at S.
   - **Sort:** featured first, then `start` descending, with ongoing projects before finished ones that started in the same year.
   - **Tile (centred):** the kind as the eyebrow, title (H2 at Promo size), subtitle (subhead), date range (`formatCvDate()`, "Present" when ongoing), the one-line summary, up to 6 tech chips then "+N", optional cover image (16:9, 18px radius, lazy-loaded), and links **Repo ↗** / **Live ↗** when set.
-  - The native `<details>` summary is a **plus disc** (§5.6) in the tile's bottom-right corner (in a tile spanning both columns, at the right edge of the 980px lockup column instead, 60px† from the tile bottom; tech chips sit 32px below the summary, not pushed to the bottom) with the visible text "Learn more" beside it at M and L (accessible name "Learn more about <title>"). **Expanded**, the tile spans both columns (`:has(details[open])`), and the details show the labelled bullets as left-aligned cards in the opposite colour (2-up at M and L), plus **At <company> ›** (→ `/experiences/#<role-slug>`) when `role` is set. The height animates over 320ms only under `@supports (interpolate-size: allow-keywords)` (with `::details-content`); elsewhere it opens instantly. No JS; off under reduced motion. Several tiles can be open at once.
+  - The native `<details>` summary is a **plus disc** (§5.6) that is always the **last row of the tile**, in normal flow, right-aligned at the right edge of the lockup column (`--content`, or the tile's content box when narrower), and never overlapping other tile content. Closed, it follows the chips and links (24px, the tile gap) and sits at the tile's bottom padding (`margin-top: auto`, so it drops to the bottom of a taller row). Open, it moves below the cards and **At <company> ›** (32px) and stays the toggle (`<details>` is a flex column and the summary has `order: 1`). Tech chips sit 38px below the one-line summary text at M and L (24px at S), not pushed to the bottom. The disc has the visible text "Learn more" beside it at M and L (accessible name "Learn more about <title>"). **Expanded**, the tile spans both columns (`:has(details[open])`), and the details show the labelled bullets as left-aligned cards in the opposite colour (2-up at M and L), plus **At <company> ›** (→ `/experiences/#<role-slug>`) when `role` is set. The height animates over 320ms only under `@supports (interpolate-size: allow-keywords)` (with `::details-content`); elsewhere it opens instantly. No JS; off under reduced motion. Several tiles can be open at once.
   - Filtering hides non-matching tiles and the grid closes up (odd-count rule).
 - **Empty state:** if a filter matches nothing (e.g. a hand-edited URL), the grid shows *"No projects here yet."* and a **Show all** button.
 
@@ -480,8 +480,9 @@ The default theme is **light (white)**, whatever the system setting (§5.12).
 | `--border` | `#D2D2D7`† | `#424245`† | Hairlines, separators |
 | `--keyline` | `rgba(0,0,0,.16)`† | `rgba(255,255,255,.24)`† | Bottom line of the nav bars |
 | `--accent` | `#0071E3`† | `#0071E3`† | Primary pill fill (white text), focus ring |
-| `--accent-hover` / `--accent-active` | `#0077ED`† / `#006EDB`† | same | Primary pill states |
+| `--accent-hover` / `--accent-active` | `#0073E6` / `#006EDB`† | same | Primary pill states (Apple's #0077ED is 4.32:1 with white) |
 | `--link` | `#0066CC`† | `#2997FF`† | Text links, chevron links, secondary pill |
+| `--on-link` | `#FFFFFF` | `#000000` | Text on a `--link` fill (secondary pill hover); black on #2997FF is 6.96:1 |
 | `--nav-glass` | `rgba(250,250,252,.8)`† | `rgba(22,22,23,.8)`† | Global and local nav, with blur |
 | `--nav-solid` | `#FAFAFC`† | `#161617`† | Mobile menu and search panel; `.92` opacity fallback when blur is not supported† |
 | `--curtain` | `rgba(232,232,237,.4)`† | `rgba(0,0,0,.4)` | Blurred page curtain behind the search panel |
@@ -544,7 +545,7 @@ The default theme is **light (white)**, whatever the system setting (§5.12).
 | **Text link** (in prose) | `--link`, underlined in article bodies and cards, no underline elsewhere; underline on hover. |
 | **Chip** | 28px tall, padding 0 12px, radius 980px, Caption size at 500 weight. **Neutral** chips (kind, competency, tag, series, "Coming soon") use `--fill` + `--text`. **Mint** chips (tech stack, "Current") use `--mint-tint` + `--text`. Interactive chips (filters, tags) have a 44px tap area and show their selected state with `--text` fill and `--bg` text. |
 | **Icon button** | 16px icon in a 44 × 44px target, `--text` at 80% opacity, 100% on hover. |
-| **Plus disc** (expanders) | A **36px**† circle in a 44 × 44px† target, 16px† from the bottom-right corner of its tile or card (13px† at M and S), fill `--fill`†, a 2px "+" glyph in `--text` at 56%† (≥ 3:1 on `--fill`). Open: the "+" rotates 45° into "×" over 320ms `--ease`; background transition 100ms linear†. |
+| **Plus disc** (expanders) | A **36px**† circle in a 44 × 44px† target, 16px† from the bottom-right corner of its tile or card (13px† at M and S; a Projects tile's disc is in flow as its last row instead, §4.6), fill `--fill`†, a 2px "+" glyph in `--text` at 56%† (≥ 3:1 on `--fill`). Open: the "+" rotates 45° into "×" over 320ms `--ease`; background transition 100ms linear†. |
 | **Paddle** (gallery) | A **36px**† circle in a 44 × 44px target; fill `rgba(210,210,215,.64)`† (hover `.70`†, active `rgba(193,193,198,.65)`†), arrow `rgba(0,0,0,.56)`†; dark: fill `rgba(66,66,69,.72)`†, arrow `rgba(255,255,255,.8)`†. Disabled: opacity .42† and `disabled`. |
 | **Focus ring** | 2px solid `--accent`, offset 1px† (3px on cards and tiles), on every interactive element. |
 | **Hover lift** | Rounded whole-card links (gallery cards, Newsroom tiles) scale to **1.0161**† on hover with `transform .3s var(--ease-card)`† and `background-color .344s ease`†, only under `(hover: hover) and (pointer: fine)`†. Square full-bleed tiles never scale. |
@@ -596,9 +597,9 @@ Every inner page has one (§4.0); Home and 404 do not.
 
 ### 5.9 Footer
 
-The same footer on every page, flush under the last section, modelled on Apple's global footer†.
+The same footer on every page, modelled on Apple's global footer†. It sits flush under the last section. On a page shorter than the viewport it sits at the bottom of the viewport instead, with `--bg` filling the space above it: on screen only, the body is a `min-height: 100dvh` flex column and the footer takes `margin-top: auto` (no fixed positioning, no JS). The band (background and any top line) spans the full viewport width; the content keeps the 980px column.
 
-- `--surface-2` background, Caption size (12px/1.3334†). Colours: text `--ft-text` (`rgba(0,0,0,.56)`† / dark `rgba(255,255,255,.56)`), links `--ft-link` (`rgba(0,0,0,.72)`† / dark `.8`†) with no underline (underline on hover), column titles `--ft-title` (`rgba(0,0,0,.88)`† / dark `.92`†), pipes and separators `--ft-pipe` (`rgba(0,0,0,.48)`† / dark `rgba(255,255,255,.4)`†). Content row `--chrome` (§5.2), plus the bottom safe area. When the last page band is also `--surface-2`, a 1px `--border` line sits above the footer.
+- `--surface-2` background, Caption size (12px/1.3334†). Colours: text `--ft-text` (`rgba(0,0,0,.56)`† / dark `rgba(255,255,255,.56)`), links `--ft-link` (`rgba(0,0,0,.72)`† / dark `.8`†) with no underline (underline on hover), column titles `--ft-title` (`rgba(0,0,0,.88)`† / dark `.92`†), pipes and separators `--ft-pipe` (`rgba(0,0,0,.48)`† / dark `rgba(255,255,255,.4)`†). Content row `--chrome` (§5.2; the 980px content edge, while the band itself is full-bleed), plus the bottom safe area. When the last page band is also `--surface-2`, a 1px `--border` line sits above the footer.
 - **Density:** at compact chrome every footer link is at least 44px tall. Above compact chrome (pointer layouts) the footer uses Apple's density†: a 25.6px link pitch (16px line + 0.8em†), which meets WCAG 2.2 SC 2.5.8 target spacing (§9).
 - **1. Breadcrumbs** (every page except Home): a home link (the brand initials "RP"), then 6 × 11px chevron separators in `--ft-pipe` with 11px† after them and items 7px† apart, the current section and the current page, e.g. *RP › Blog › Neovim setup guide, Part 1*; 17px† vertical padding (about 56px† tall). **No hairline under it** above compact chrome†; one hairline at compact chrome†.
 - **2. Directory:** four columns (25% each†), each with a 600-weight `--ft-title` title and 0.8em† below it:
@@ -608,10 +609,9 @@ The same footer on every page, flush under the last section, modelled on Apple's
   - **Resources:** Download PDF · Search
   
   At compact chrome each column becomes an accordion (native `<details>`): the title at **400**†, a chevron on the right (about 11px, rotating `.3s ease`†), **one hairline under the whole section**† (never between the title and its links, and never doubled against the legal row), and links indented 14px† (`padding: 6px 14px`†) with 5px / 16px† list padding.
-- **3. Reach line** (Apple's "More ways to shop" line†): *"More ways to reach me: [email me] or find me on [LinkedIn]."* (i18n). Links in `--link`, **underlined**† (the only underlined footer links); 37px† above, 19px† below, then a 1px `--border` line and 16px†. At compact chrome 8px / 8px and no line†.
-- **4. Legal row** (17px†/11px† padding, about 26px† tall above compact chrome): *"Copyright © <year> Ryan Parker. All rights reserved."*, then, 30px† later, only when analytics is on, *Privacy-friendly analytics, no cookies* (no pipe, since it is the only item). The language link (*Tiếng Việt* / *English*) sits at the far end†. At compact chrome the row stacks, left-aligned.
+- **3. Legal row** (37px† below the directory, a 1px `--border` line on top, then 17px†/11px† padding, about 26px† tall above compact chrome; no line and no gap at compact chrome): *"Copyright © <year> Ryan Parker. All rights reserved."*, then, 30px† later, only when analytics is on, *Privacy-friendly analytics, no cookies* (no pipe, since it is the only item). The language link (*Tiếng Việt* / *English*) sits at the far end†. At compact chrome the row stacks, left-aligned. There is no separate reach line; the Connect column carries email and LinkedIn.
 - Links to other sites open in a new tab (`target="_blank" rel="noopener noreferrer"`). mailto/tel and same-site links do not. Markdown links get this from `src/lib/rehype-external-links.ts`.
-- No social **icons** in the footer; the Connect column and the reach line list the links as text. The Phone link reads "Phone" (not "Mobile"). Home's Contact unit shows the icons (§4.1.7).
+- No social **icons** in the footer; the Connect column lists the links as text. The Phone link reads "Phone" (not "Mobile"). Home's Contact unit shows the icons (§4.1.7).
 
 ### 5.10 Page building blocks
 
@@ -929,7 +929,7 @@ topic: ""                       # optional, id of an entry in the `topics` colle
 
 The schema checks that `series` exists, that `seriesPart` is unique within the series and language, and that `seriesPart` matches a part listed in the series entry. A post in a series takes the series' topic, and a `topic` that conflicts with it fails the build; an unknown topic fails the build. A post with no topic falls under the "Notes" group.
 
-The Neovim setup guide covers (`src/assets/blog/neovim-setup/part-N.svg`) reuse the Neovim logo mark by Jason Long, licensed CC BY 3.0, modified (dark tile with the part number); `heroImageCredit` carries the attribution.
+The Neovim setup guide covers (`src/assets/blog/neovim-setup/part-N.svg`) reuse the Neovim logo mark by Jason Long, licensed CC BY 3.0, modified (dark tile with the part number). The posts show no visible credit (owner's decision); `heroImageCredit` stays available for covers that need one.
 
 ### 6.8 `series`
 
@@ -1748,9 +1748,9 @@ y=0    Ryan Parker                      ⌕   ≡     48
 
 **Order:** local nav → hero (white) → tile grid (white band, `--surface-2` tiles) → footer.
 - **Hero:** centred; eyebrow "Projects" → H1 80 "Things I've built." → subhead 28 grey. Padding top 144 / 120 / 112, **bottom 80 / 64 / 48** (a grid follows; tiles are their own space).
-- **Tiles:** split composition. Top: kind eyebrow → H2 Promo 40† → subhead 21† (3†) → date range (Body-reduced 14/600 grey) → one-line summary (17, ≤68ch). Bottom: tech chips (≤6, centred) and Repo ↗ · Live ↗ chevron links 17px, 24px apart; plus disc bottom-right†.
+- **Tiles:** split composition. Top: kind eyebrow → H2 Promo 40† → subhead 21† (3†) → date range (Body-reduced 14/600 grey) → one-line summary (17, ≤68ch). Bottom: tech chips (≤6, centred) and Repo ↗ · Live ↗ chevron links 17px, 24px apart; plus disc as the last row, right-aligned at the lockup column edge (§4.6).
 - **n=1 (today):** the single tile spans both columns (odd-count rule). Cap the lockup at `--content` (980) inside the 1416px tile and raise min-height to **380** so it reads as a feature unit, not a stretched card. Hide the local-nav kind links (one kind) → the local nav shows "Projects" + "Expand all ›" (single-link layout).
-- **Expanded:** the details open under the lockup; bullet cards white (the opposite of the tile), 2-up in `--content-wide` minus 2×32px, 16px gap, start-aligned. "At Datum / Security Bank ›" link 32px below the cards.
+- **Expanded:** the details open under the lockup; bullet cards white (the opposite of the tile), 2-up in `--content-wide` minus 2×32px, 16px gap, start-aligned. "At Datum / Security Bank ›" link 32px below the cards. The plus disc follows, 32px below them.
 
 **1440×900:**
 ```
@@ -1768,7 +1768,7 @@ y=0    nav 44
 636   │  │                         Mar 2026 – Present                             │  │ 14/600 grey
 668   │  │     One-line summary of the project, at most one line at 17px.        │  │
        │  │                                                                        │  │ ← space
-900   ┴  (tile continues; chips, links and the (+) plus disc sit at y≈990–1050)  peek: n/a (the tile is the band)
+900   ┴  (tile continues; chips, links and the (+) plus disc follow below)  peek: n/a (the tile is the band)
 ```
 **375×812:** bars 96 → hero eyebrow at 208 → H1 40 "Things I've built." (1 line, 248–290) → subhead 19 (2 lines, 296–340) → pad 48 → tile from 388, **full bleed** (no side padding†), padding 39/43†, start-aligned if >120 characters of copy; first viewport shows the eyebrow, H2, subhead and date (424px of tile visible).
 

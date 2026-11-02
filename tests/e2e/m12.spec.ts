@@ -111,6 +111,31 @@ test.describe('motion: reduced', () => {
       expect(bad, path).toEqual([]);
     }
   });
+
+  test('no element has a transition', async ({ page }) => {
+    for (const path of [
+      '/',
+      '/experiences/',
+      '/projects/',
+      '/blog/',
+      '/blog/neovim-setup-3-data-engineering/',
+    ]) {
+      await page.goto(path);
+      if (path === '/') await page.locator('.grid-tile').first().hover();
+      const bad = await page.evaluate(() => {
+        const zero = (v: string) => v.split(',').every((x) => x.trim() === '0s');
+        const out: string[] = [];
+        for (const e of document.querySelectorAll('*'))
+          for (const pseudo of [null, '::before', '::after']) {
+            const s = getComputedStyle(e, pseudo);
+            if (!zero(s.transitionDuration) || !zero(s.transitionDelay))
+              out.push(`${e.tagName}.${e.className}${pseudo ?? ''}`);
+          }
+        return out;
+      });
+      expect(bad, path).toEqual([]);
+    }
+  });
 });
 
 test('Vietnamese pages use the new strings', async ({ page }) => {
@@ -122,4 +147,21 @@ test('Vietnamese pages use the new strings', async ({ page }) => {
   await expect(page.locator('h1')).toHaveText('Ghi chú về dữ liệu và công cụ.');
   await page.goto('/vi/experiences/');
   await expect(page.locator('#highlights h2')).toHaveText('Những điểm nổi bật.');
+});
+
+test.describe('secondary button hover contrast', () => {
+  test.use({ reducedMotion: 'reduce' });
+  for (const [theme, fg] of [
+    ['dark', 'rgb(0, 0, 0)'],
+    ['light', 'rgb(255, 255, 255)'],
+  ] as const) {
+    test(`${theme}: hovered .btn-secondary text stays legible`, async ({ page }) => {
+      await page.addInitScript((t) => localStorage.setItem('theme', t), theme);
+      await page.goto('/');
+      await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+      const btn = page.locator('.btn-secondary').first();
+      await btn.hover();
+      await expect(btn).toHaveCSS('color', fg);
+    });
+  }
 });
