@@ -1,0 +1,47 @@
+---
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+import { formatDate } from '~/lib/format';
+import type { ListItem } from '~/lib/topics';
+import PartRows from './PartRows.astro';
+
+interface Props {
+  lang: Lang;
+  items: ListItem[];
+}
+const { lang, items } = Astro.props;
+const t = useT(lang);
+---
+
+<ul class="hl-list post-list">
+  {items.map((item) =>
+    item.kind === 'post' ? (
+      <li data-item="post">
+        <a class="hl-row" href={localePath(`/blog/${item.post.slug}/`, lang)}>
+          <span>
+            <span class="hl-title">{item.post.title}</span>
+            <span class="hl-desc">{item.post.description}</span>
+          </span>
+          <span class="hl-meta">
+            <time datetime={item.post.pubDate.toISOString()}>
+              {formatDate(item.post.pubDate, lang)}
+            </time>
+            {' · '}
+            {t('blog.readingTime', { n: item.post.minutes })}
+          </span>
+        </a>
+      </li>
+    ) : (
+      <li data-item="series">
+        <a class="hl-row" href={localePath(`/blog/series/${item.series.slug}/`, lang)}>
+          <span>
+            <span class="hl-title">{item.series.title}</span>
+            <span class="hl-desc">{item.series.description}</span>
+          </span>
+          <span class="hl-meta">{t('series.meta', { n: item.parts.length })}</span>
+        </a>
+        <PartRows lang={lang} parts={item.parts} nested label={item.series.title} />
+      </li>
+    ),
+  )}
+</ul>

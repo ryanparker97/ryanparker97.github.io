@@ -403,11 +403,11 @@ test.describe('Grid tile content', () => {
   }) => {
     await page.goto('/');
     const tile = page.locator('#writing');
-    await expect(tile.locator('h2')).toHaveText('Neovim setup guide, Part 1');
-    await expect(tile).toContainText('10 min read');
-    await expect(tile.locator('a.chip')).toHaveText('Neovim setup guide · Part 1');
+    await expect(tile.locator('h2')).toHaveText('Neovim setup guide, Part 5');
+    await expect(tile).toContainText('12 min read');
+    await expect(tile.locator('a.chip')).toHaveText('Neovim setup guide · Part 5');
     await expect(tile.locator('[data-series-progress] li')).toHaveCount(5);
-    await expect(tile.locator('[data-series-progress]')).toContainText('Part 1 of 5');
+    await expect(tile.locator('[data-series-progress]')).toContainText('Part 5 of 5');
     await expect(tile.locator('.actions > a')).toHaveCount(2);
   });
 

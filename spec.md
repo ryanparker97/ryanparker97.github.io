@@ -124,7 +124,7 @@ Every page is built from the shared design system in §5: the global nav (§5.7)
 | Projects `/projects/` | All · Personal · Work · Open source · Expand all | "Things I've built." | Tile grid of projects (§4.6) | — |
 | STAR `/star/` | One link per role group | "Stories from the work." + competency chips | One chapter per role group (§4.4) | — |
 | STAR story `/star/<slug>/` | Role name · "All stories ›" | Story title + question | Four-panel grid | "All stories ›" · "Read the role ›" |
-| Blog index, tag, series pages | All posts · Series · Tags · **RSS** pill | "Notes on data and tools." | Feature unit + tile grid (§4.5) | — |
+| Blog index, topic, tag, series pages | All posts · Topics · Series · **RSS** pill | "Notes on data and tools." | Topic-grouped hairline list (§4.5) | — |
 | Blog post `/blog/<slug>/` | Series name (or "Blog") · "All posts ›" | Newsroom-style header | Reading column (§4.5) | More in this series / More posts |
 | 404 | — | "Page not found." + Go home · Search | — | — |
 
@@ -199,7 +199,7 @@ Four grid tiles (§5.10.3), in this order. A tile with no content is left out an
 | **Featured project** | `work` | Eyebrow "Project", project title (H2), subtitle as subhead, kind chip, up to 4 tech names as the tile's visual: one centred, wrapping line at Card headline size (28/600) in `--text-2`, at most 2 lines | **Learn more** (primary → `/projects/#<slug>`) · **All projects** (secondary) |
 | **Featured STAR story** | `stories` | Eyebrow "STAR story", story title (H2), up to 3 competency chips, and the result metric as the tile's **super stat** visual (§5.10.5) at the bottom | **Read the story** (primary) · **All stories** (secondary) |
 | **Latest writing** | `writing` | Eyebrow "Blog", newest published post title (H2), date · reading time, series chip if any; for a post in a series, the visual is the part numerals *1 2 3 4 5* at Promo size, 24px apart, the current part `--text` and the rest `--border` (`aria-hidden`), under a Caption line "Part 1 of 5 · Neovim setup guide" | **Read the post** (primary) · **All posts** (secondary) |
-| **Certifications** | `certifications` | Eyebrow "Certifications", H2 *"Certified on the platforms I use."*, up to 3 rows (badge 56px, else the issuer logo on a white 56px disc, else monogram, name as H3 at 21/600, issuer · year at 14px, 20px between rows), then "+N more". The rows form one fit-content block centred in the tile, with badges and text **left-aligned inside it** so they line up | **Verify ›** per row when `credentialUrl` is set (`target="_blank" rel="noopener"`). No tile-level action |
+| **Certifications** | `certifications` | Eyebrow "Certifications", H2 *"Certified on the platforms I use."*, up to 3 rows (badge 56px, else the issuer logo on a white 56px disc, else monogram, name as H3 at 21/600, issuer · year at 14px, 20px between rows), then "+N more". The rows form one fit-content block centred in the tile, with badges and text **left-aligned inside it** so they line up | **Verify ›** per row when `credentialUrl` is set (`target="_blank" rel="noopener noreferrer"`). No tile-level action |
 
 - **Which item is shown:** the first `featured` project; the newest `featured` STAR story by `date`, else the newest story; the newest published post.
 - **Writing headline:** when the post title is longer than 8 words, it is cut at the first colon (e.g. "Neovim setup guide, Part 1"), else at 8 words with "…". The full title is the accessible name of the post link.
@@ -348,23 +348,25 @@ One full section per role, sorted with the current role first, then `start` desc
 
 ### 4.5 Blog
 
-**Index (`/blog/`), tag pages (`/blog/tags/<tag>/`) and series pages (`/blog/series/…`)**
-- **Hero:** eyebrow "Blog", **H1** *"Notes on data and tools."*, subhead (i18n). Tag page: H1 "#<tag>", subhead "<n> posts". Series page: H1 the series title, subhead "<x> of <y> published", then the series description.
-- **Local nav:** title "Blog"; links All posts · Series · Tags; small pill **RSS**.
-- **Feature unit:** the newest post as a full-width grid tile (spanning both columns; a parts list inside it uses rows of `grid-template-columns: 1fr auto`, so "Coming soon" chips form a right-aligned column and never wrap onto their own line): series chip, title (H2), description, date · reading time, **Read ›**.
-- **Other posts:** **Newsroom tiles** (§5.10.3, Newsroom variant) on a `--surface-2` band: category (the series name or *ARTICLE*), title (H2 at Newsroom tile size), description, date · reading time. The whole tile is one link. With no other posts, the grid is left out.
-- **Series index** (`/blog/series/`): one Newsroom tile per series with "<x> of <y> published". **Series page:** every part as a tile with part number (eyebrow), title, description, reading time and status; unpublished parts show a "Coming soon" chip and are not links.
+**Index (`/blog/`), topics (`/blog/topics/…`), tag pages (`/blog/tags/<tag>/`) and series pages (`/blog/series/…`)**
+- **Hero:** eyebrow "Blog", **H1** *"Notes on data and tools."*, subhead (i18n). Tag page: H1 "#<tag>", subhead "<n> posts". Series page: H1 the series title, subhead "<x> of <y> published", then the series description. Topic page: eyebrow "Topics", H1 the topic title, then the topic intro (plain text, from the `topics` body, §6.9).
+- **Local nav:** title "Blog"; links All posts · Topics · Series; small pill **RSS**. Tags are not in the local nav; the footer "Writing" column links to `/blog/tags/`.
+- **Index list:** one flat hairline list (`.hl-list.post-rows`) of every published post, newest first. It is not grouped by topic and has no newest line or jump links. Each series part is its own row; a standalone post is one row.
+- **Row:** a square thumbnail (112px, 72px at S) and the text side by side at every width. The text is the "Part N · Series" kicker for series posts, the title (the short part title for a series part), a description (clamped to two lines, hidden below 735px) and "date · reading time". The whole row is one link, at least 44px tall. The thumbnail is `heroImage` (decorative, `alt=""`) or a generated token cover (`.post-cover`: series name or "Article" label, large part number or the title's first letter, `aria-hidden`). When any row has a `heroImageCredit`, one deduplicated "Cover art: …" line (Caption size, `--text-2`, underlined new-tab links) appears under the list.
+- **Topics index** (`/blog/topics/`): one hairline row per topic (title, description, post count), ordered by `order`. **Topic page** (`/blog/topics/<slug>/`): the hero above, then a hairline list without group headings in which a series is one row with its parts nested beneath it (short part titles, each a link with date · minutes; unpublished parts show a "Coming soon" chip and are not links). Empty topics get no page.
+- **Series index** (`/blog/series/`): one Newsroom tile per series with "<x> of <y> published". **Series page:** the same hairline list for one series, every part in reading order, with part number, title, description, reading time and status; unpublished parts show a "Coming soon" chip and are not links.
 - **Tags** (`/blog/tags/`): all tags as chips with counts. Tag slugs are lowercase kebab-case.
 - `draft: true` posts are hidden in production builds and shown in `astro dev`.
 
 **Post (`/blog/<slug>/`), Apple Newsroom style**
 - **Local nav:** title = the series name (or "Blog"); link **All posts ›**.
 - **Header** (on `--bg`, left-aligned in the article column, like Newsroom†; category → headline 20px†, date 4px† below the category, and a 1px `--border` keyline 653px wide 44px† below the meta line, 36† at M, 32† at S):
-  - eyebrow in Newsroom style (12px, 600, uppercase, `--text-2`): *"PART 1 · NEOVIM SETUP GUIDE"* or *"ARTICLE"*;
+  - eyebrow in Newsroom style (12px, 600, uppercase, `--text-2`): *"DEVELOPER TOOLS · PART 1 · NEOVIM SETUP GUIDE"* (topic, then series), or just the topic, or *"ARTICLE"*;
   - the date (and "Updated <date>" if set) in Body-reduced 600;
   - **H1** in Article headline size (§5.4, 700 as Newsroom†);
   - the description as the Article subhead (24px / 500 / 28px line-height / 0.009em†, `--text`†, 20px† below the H1);
   - a meta line: reading time · tag links.
+- **Hero:** when `heroImage` is set, a decorative (`alt=""`) square image (200px, 144px at S, radius 18, 1px keyline outline) sits below the header keyline and above the series box, at 44 / 36 / 32px spacing, with the `heroImageCredit` as a Caption-size `--text-2` caption ("Cover art: …"). It is excluded from search (`data-pagefind-ignore`). The OG image stays `og-default.png`.
 - **Series box** under the header: *"Part 1 of 5 · Neovim setup guide"*, then the ordered list of all parts. The current part is bold, published parts are links, and unpublished parts are `--text-2` with a "Coming soon" chip and are not links. At S it collapses to a single "Part 1 of 5 ⌄" `<details>` line.
 - **Body:** the article column (§5.2), Article body size, `--text`. Paragraphs are 1.4211em† apart. H2s in Article section size (700†) with 52 / 48 / 44px† above and 16px† below. Images and diagrams may break out to the content width.
 - **Quote:** an MDX `<Quote by="…" role="…">` renders as a Newsroom pull quote (§5.10.8). **Drop cap:** with `dropcap: true` in frontmatter (§6.7), the first paragraph opens with a drop cap (§5.10.8).
@@ -378,7 +380,8 @@ One full section per role, sorted with the current role first, then `start` desc
 
 **Series (content)**
 - A post joins a series through `series` + `seriesPart` frontmatter (§6.7). The series itself is defined in the `series` collection (§6.8), which lists **every planned part**, including unwritten ones.
-- A post in a series shows a small chip "Neovim setup guide · Part 1" on the index, linking to the series page.
+- On the blog index each part is its own row; the topic and series pages nest the parts under the series row, linking to the series page.
+- A series or a standalone post can belong to a topic (`topic`, §6.7, §6.8); posts in a series inherit the series topic.
 
 #### 4.5.1 Inline SVG diagrams
 
@@ -391,7 +394,7 @@ One full section per role, sorted with the current role first, then `start` desc
 **RSS:** `@astrojs/rss` at `/rss.xml` (EN) and `/vi/rss.xml` (VI), published posts only, with title, description, date and link.
 
 **Acceptance criteria (Blog)**
-- The series box lists every part; unpublished ones are not links. Previous/next parts skip unpublished parts. `/blog/series/neovim-setup-guide/` shows "1 of 5 published".
+- The series box lists every part; unpublished ones are not links. Previous/next parts skip unpublished parts. `/blog/series/neovim-setup-guide/` shows "5 of 5 published".
 - The TOC highlights the active section at ≥ 1280px and is a collapsed `<details>` below.
 - The Copy button copies the code without `$` prompts.
 - Diagrams have `role="img"` and a title, and switch layout between S and M.
@@ -600,13 +603,14 @@ The same footer on every page, flush under the last section, modelled on Apple's
 - **1. Breadcrumbs** (every page except Home): a home link (the brand initials "RP"), then 6 × 11px chevron separators in `--ft-pipe` with 11px† after them and items 7px† apart, the current section and the current page, e.g. *RP › Blog › Neovim setup guide, Part 1*; 17px† vertical padding (about 56px† tall). **No hairline under it** above compact chrome†; one hairline at compact chrome†.
 - **2. Directory:** four columns (25% each†), each with a 600-weight `--ft-title` title and 0.8em† below it:
   - **Explore:** Experiences · Projects · STAR stories · Blog
-  - **Writing:** All posts · Series · Tags · RSS
+  - **Writing:** All posts · Topics · Series · Tags · RSS
   - **Connect:** Email · LinkedIn · GitHub · Phone
   - **Resources:** Download PDF · Search
   
   At compact chrome each column becomes an accordion (native `<details>`): the title at **400**†, a chevron on the right (about 11px, rotating `.3s ease`†), **one hairline under the whole section**† (never between the title and its links, and never doubled against the legal row), and links indented 14px† (`padding: 6px 14px`†) with 5px / 16px† list padding.
 - **3. Reach line** (Apple's "More ways to shop" line†): *"More ways to reach me: [email me] or find me on [LinkedIn]."* (i18n). Links in `--link`, **underlined**† (the only underlined footer links); 37px† above, 19px† below, then a 1px `--border` line and 16px†. At compact chrome 8px / 8px and no line†.
-- **4. Legal row** (17px†/11px† padding, about 26px† tall above compact chrome): *"Copyright © <year> Ryan Parker. All rights reserved."*, then, 30px† later, links separated by 1px × 10px `--ft-pipe` pipes with `0 9px`† link padding: *Built with Astro* | *Privacy-friendly analytics, no cookies*. The language link (*Tiếng Việt* / *English*) sits at the far end†. At compact chrome the row stacks, left-aligned.
+- **4. Legal row** (17px†/11px† padding, about 26px† tall above compact chrome): *"Copyright © <year> Ryan Parker. All rights reserved."*, then, 30px† later, only when analytics is on, *Privacy-friendly analytics, no cookies* (no pipe, since it is the only item). The language link (*Tiếng Việt* / *English*) sits at the far end†. At compact chrome the row stacks, left-aligned.
+- Links to other sites open in a new tab (`target="_blank" rel="noopener noreferrer"`). mailto/tel and same-site links do not. Markdown links get this from `src/lib/rehype-external-links.ts`.
 - No social **icons** in the footer; the Connect column and the reach line list the links as text. The Phone link reads "Phone" (not "Mobile"). Home's Contact unit shows the icons (§4.1.7).
 
 ### 5.10 Page building blocks
@@ -914,14 +918,18 @@ description: "Why I built this site and what I'll write about."
 pubDate: 2026-11-01
 updatedDate:                    # optional
 tags: ["meta", "astro"]
-heroImage: "./hero.jpg"         # optional
+heroImage: "./hero.jpg"         # optional; blog index thumbnail and the post-page hero image
+heroImageCredit: ""           # optional; attribution for heroImage, [text](url) links allowed; shown under the blog list and as the post hero caption
 dropcap: false                  # optional; Newsroom drop cap on the first paragraph (§5.10.8)
 draft: false
 series: ""                      # optional, id of an entry in the `series` collection
 seriesPart:                     # required when `series` is set; integer ≥ 1, unique within the series
+topic: ""                       # optional, id of an entry in the `topics` collection (§6.9)
 ```
 
-The schema checks that `series` exists, that `seriesPart` is unique within the series and language, and that `seriesPart` matches a part listed in the series entry.
+The schema checks that `series` exists, that `seriesPart` is unique within the series and language, and that `seriesPart` matches a part listed in the series entry. A post in a series takes the series' topic, and a `topic` that conflicts with it fails the build; an unknown topic fails the build. A post with no topic falls under the "Notes" group.
+
+The Neovim setup guide covers (`src/assets/blog/neovim-setup/part-N.svg`) reuse the Neovim logo mark by Jason Long, licensed CC BY 3.0, modified (dark tile with the part number); `heroImageCredit` carries the attribution.
 
 ### 6.8 `series`
 
@@ -930,6 +938,7 @@ The schema checks that `series` exists, that `seriesPart` is unique within the s
 ```yaml
 title: "Neovim setup guide"
 description: "Build a fast, minimal Neovim 0.12 setup for web, data engineering and SRE work, one step at a time."
+topic: developer-tools          # optional, id of an entry in the `topics` collection (§6.9)
 parts:
   - part: 1
     title: "From zero to a working editor"
@@ -945,12 +954,23 @@ parts:
 ```
 Body: optional series intro, shown on the series index page. A part counts as **published** when a non-draft blog post has a matching `series` + `seriesPart`. Otherwise it shows as "Coming soon".
 
+### 6.9 `topics`
+
+`src/content/topics/en/developer-tools.md` (one file per language, same slug)
+
+```yaml
+title: "Developer tools"
+description: "Editors, terminals and the setup behind day-to-day work."   # one line
+order: 1                        # number; breaks ties between topic groups dated the same
+```
+Body: the topic intro, 2 to 4 sentences of plain text, shown on the topic page. Seeded topics: `developer-tools`, `data-engineering`, `platforms-sre`, `java`. The slug `other` is reserved for the fallback group ("Notes") and fails the build if used. The index lists only topics that have at least one published post.
+
 ---
 
 ## 7. Internationalisation
 
 - Astro i18n routing: `defaultLocale: 'en'`, `locales: ['en', 'vi']`, `prefixDefaultLocale: false`. English lives at `/`, Vietnamese at `/vi/`.
-- **UI strings** (nav, buttons, labels, dates) live in `src/i18n/en.json` and `src/i18n/vi.json`, read through a typed `t(key)` helper. A missing key fails `astro check`.
+- **UI strings** (nav, buttons, labels, dates) live in `src/i18n/en.json` and `src/i18n/vi.json`, read through a typed `t(key)` helper. A missing key fails `astro check`. The key `blog.read` is kept because the untracked duplicate `FeatureTile 2.astro` still uses it, and `blog.more` is kept alongside it; drop both once the duplicate is gone.
 - **Dates** use `Intl.DateTimeFormat` with `en-GB` / `vi-VN`.
 - **Language switch** in the nav goes to the same page in the other language when a translation exists, otherwise to that language's section index.
 - **Missing translations:** when a `vi/` content file does not exist, the `/vi/` page shows the English content with a small banner: *"Nội dung này hiện chỉ có bằng tiếng Anh."* (`<html lang>` and `hreflang` reflect the real content language.)
@@ -1562,7 +1582,7 @@ init.lua ──▶ vim.loader.enable()
 ### B.5 Acceptance criteria
 
 - The EN and VI posts build and share the slug. The language switch moves between them, and neither shows the "English only" banner.
-- The series box reads "Part 1 of 5" with parts 2–5 marked "Coming soon". `/blog/series/neovim-setup-guide/` shows "1 of 5 published".
+- The series box reads "Part 1 of 5" with parts 2–5 marked "Coming soon". `/blog/series/neovim-setup-guide/` shows "5 of 5 published".
 - The TOC lists the H2 sections from B.2 in both languages.
 - Every code block has a language and a filename title (where it comes from a file). Copying a shell block leaves out the `$` prompt.
 - The diagram passes axe, is readable in light and dark mode, and switches layout between S and M (734 / 735px).
@@ -1744,7 +1764,7 @@ y=0    nav 44
 471   ┌12┬─ TILE · #F5F5F7 · spans 2 cols · min-h 380 · pad 36/40 ──────────────────┬12┐
 524   │  │                                   Personal                             │  │
 553   │  │                           Agentic Coding Workflow                      │  │ 40/600
-603   │  │          Claude Code + Codex as a disciplined engineering team.        │  │ 21
+603   │  │          Multi-model Orchestration & Developer Tooling                 │  │ 21
 636   │  │                         Mar 2026 – Present                             │  │ 14/600 grey
 668   │  │     One-line summary of the project, at most one line at 17px.        │  │
        │  │                                                                        │  │ ← space
@@ -1788,31 +1808,33 @@ y=0    nav 44
 
 ### D.5 Blog index (`/blog/`) and post (`/blog/<slug>/`)
 
-**Index order:** local nav (All posts · Series · Tags · RSS pill) → hero (white) → **feature tile** (white band, grey tile, full width, 12px side padding) → Newsroom-tile band (`--surface-2`; omitted while there is only one post) → footer.
+**Index order:** local nav (All posts · Topics · Series · RSS pill) → hero (white) → post list → footer.
 - **Hero:** centred; eyebrow "Blog" → H1 80 "Notes on data and tools." → subhead → pad-bottom 80.
-- **Feature tile (n=1 composition):** min-height 380, padding 36/40, **two columns at L** (60/40, 80px gap, both start-aligned inside `--content`): left = series chip → 16 → H2 Promo 40 (full title, balanced) → 12 → description 21 grey → 17 → meta 14/600 grey → 17 → "Read ›" 17. Right = the **series parts list** as a hairline list (Newsroom "More from" style): "Part 1 of 5 · Neovim setup guide" Caption grey, then 5 rows of 17px, 12px vertical padding, `--border` hairlines; part 1 bold link, others `--text-2` + "Coming soon" chip. At M/S: one column, list below the lockup.
+- **Post list:** one flat hairline list (`--border`), newest first, 980px wide. Each row is a 112px square thumbnail (generated token cover or `heroImage`) with the text beside it: "Part N · Series" kicker, title, description, "date · min read". At 375 the thumbnail is 72px and the description is hidden (below 735px; otherwise clamped to two lines). When any row has a `heroImageCredit`, one deduplicated "Cover art: …" line (Caption size, `--text-2`, underlined new-tab links) appears under the list.
 
 **1440×900 (index):**
 ```
 y=0    nav 44
- 44    Blog                                       All posts   Series   Tags   (RSS)    52
- 96   ┌─ HERO · #FFF ─────────────────────────────────────────────────────────────────┐
-240   │                                     Blog                                      │
-269   │                           Notes on data and tools.                            │ 80
-359   │            Field notes on pipelines, platforms and the tools I use.           │ 28 grey
-471   └───────────────────────────────────────────────────────────────────────────────┘
-471   ┌12┬─ FEATURE TILE · #F5F5F7 · min-h 380 ───────────────────────────────────┬12┐
-524   │  │     [Neovim setup guide · Part 1]            Part 1 of 5 · Neovim setup │  │
-556   │  │     Neovim setup guide, Part 1:              ────────────────────────── │  │
-      │  │     from zero to a working editor            1  Zero to editor        › │  │ bold
-      │  │     description 21 grey, ≤2 lines            ────────────────────────── │  │
-      │  │     Oct 2026 · 12 min read                   2  Plugins      [Coming soon] │
-      │  │     Read ›                                   … 3, 4, 5                  │  │
-900   ┴  (the tile ends ≈1051; the footer follows)
+ 44    Blog                                  All posts  Topics  Series  (RSS)    52
+ 96   ┌─ HERO · #FFF ─────────────────────────────────────────────────────────────┐
+240   │                                   Blog                                    │
+269   │                         Notes on data and tools.                          │ 80
+359   │          Field notes on pipelines, platforms and the tools I use.         │ 28 grey
+      └───────────────────────────────────────────────────────────────────────────┘
+      ┌─────┐  Part 5 · Neovim setup guide
+      │  5  │  Debugging, testing and the daily workflow
+      └─────┘  <description, max 2 lines>
+               2 Nov 2026 · 12 min read
+      ───────────────────────────────────────────────────────────────────────────
+      ┌─────┐  Part 4 · Neovim setup guide
+      │  4  │  …
+      └─────┘
+      … parts 3, 2, 1 (5 rows)
 ```
-**375×812 (index):** hero eyebrow 208 → H1 40 (2 lines) → subhead 19 (2 lines) → pad 48 → tile full-bleed from ≈420: chip, H2 32 (3 lines), description 17 (3 lines), meta, Read › → the parts list starts below the fold.
 
-**Post:** local nav (series title + "All posts ›") → **header** (white, start-aligned in the 653†/576†/87.5% column, padding-top 80 / 64 / 48): Newsroom eyebrow 12/700 uppercase grey → date 14/600, 4px† below → **20px†** → H1 48/40/32 at 700† → 16 → subhead 24/21/21 → 16 → meta line (reading time · tags) → **keyline 653px†, 1px `--border`, 44/36/32† below** (§4.5) → series box (`--surface-2`, radius 18, padding 24) → body 19/1.4211† with paragraph spacing 1.4211em† → H2 24 (21† at M) / 700 with 52/48/44† above → TOC fixed right at ≥1280: `left: calc(50% + 653px/2 + 64px)`, width 220, Caption 12 links at 26px pitch, current item `--text`, the rest `--text-2`.
+**375×812 (index):** hero eyebrow 208 → H1 40 (2 lines) → subhead 19 (2 lines) → pad 48 → rows with a 72px thumbnail beside the kicker, title and meta (no description).
+
+**Post:** local nav (series title + "All posts ›") → **header** (white, start-aligned in the 653†/576†/87.5% column, padding-top 80 / 64 / 48): Newsroom eyebrow 12/700 uppercase grey → date 14/600, 4px† below → **20px†** → H1 48/40/32 at 700† → 16 → subhead 24/21/21 → 16 → meta line (reading time · tags) → **keyline 653px†, 1px `--border`, 44/36/32† below** (§4.5) → hero image when `heroImage` is set (200px, 144px at S, radius 18, credit caption, 44/36/32 above) → series box (`--surface-2`, radius 18, padding 24) → body 19/1.4211† with paragraph spacing 1.4211em† → H2 24 (21† at M) / 700 with 52/48/44† above → TOC fixed right at ≥1280: `left: calc(50% + 653px/2 + 64px)`, width 220, Caption 12 links at 26px pitch, current item `--text`, the rest `--text-2`.
 
 ```
 1440×900 (post):

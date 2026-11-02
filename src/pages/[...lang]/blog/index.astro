@@ -1,14 +1,11 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import FeatureTile from '~/components/blog/FeatureTile.astro';
+import PostRows from '~/components/blog/PostRows.astro';
+import CoverCredit from '~/components/blog/CoverCredit.astro';
 import Hero from '~/components/tile/Hero.astro';
-import NewsTile from '~/components/tile/NewsTile.astro';
-import SectionHeader from '~/components/tile/SectionHeader.astro';
-import TileGrid from '~/components/tile/TileGrid.astro';
-import { getPosts, getSeriesDetail, getSeriesList } from '~/lib/blog-content';
-import { formatDate } from '~/lib/format';
-import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
+import { getPostRows } from '~/lib/blog-content';
+import { getLang, langStaticPaths } from '~/i18n/routes';
 import { blogNav } from '~/lib/localnav';
 import { useT } from '~/i18n';
 
@@ -16,13 +13,8 @@ export const getStaticPaths = (() => langStaticPaths()) satisfies GetStaticPaths
 
 const lang = getLang(Astro.params.lang);
 const t = useT(lang);
-const { posts, fallback } = await getPosts(lang);
-const { series } = await getSeriesList(lang);
-const seriesTitle = (id?: string) => series.find((s) => s.slug === id)?.data.title;
-const [feature, ...others] = posts;
-const featureSeries = feature?.data.series
-  ? await getSeriesDetail(feature.data.series, lang)
-  : undefined;
+const { rows, fallback } = await getPostRows(lang);
+const credits = [...new Set(rows.map((r) => r.post.imageCredit).filter((c): c is string => !!c))];
 ---
 
 <BaseLayout
@@ -33,20 +25,17 @@ const featureSeries = feature?.data.series
   localNav={blogNav(lang, 'all')}
 >
   <Hero tight eyebrow={t('blog.title')} title={t('blog.hero')} subline={t('blog.subline')} />
-  {feature ? (
-    <TileGrid dense>
-      <FeatureTile
-        {lang}
-        post={feature}
-        series={
-          featureSeries && {
-            slug: featureSeries.entry.slug,
-            title: featureSeries.entry.data.title,
-            parts: featureSeries.parts,
-          }
-        }
-      />
-    </TileGrid>
+  {rows.length > 0 ? (
+    <section class="section section--tight">
+      <div class="section-inner">
+        <PostRows {lang} {rows} />
+        {credits.map((c) => (
+          <p class="t-caption cover-credits">
+            <CoverCredit {lang} credit={c} />
+          </p>
+        ))}
+      </div>
+    </section>
   ) : (
     <section class="section section--tight">
       <p class="section-inner t-subhead" style="text-align:center">
@@ -54,22 +43,11 @@ const featureSeries = feature?.data.series
       </p>
     </section>
   )}
-  {others.length > 0 && (
-    <section class="news-band" aria-labelledby="more-posts-title">
-      <SectionHeader id="more-posts-title" align="start" title={t('blog.more')} />
-      <ul class="news-grid">
-        {others.map((post, i) => (
-          <NewsTile
-            level={3}
-            index={i}
-            href={localePath(`/blog/${post.slug}/`, lang)}
-            title={post.data.title}
-            category={seriesTitle(post.data.series) ?? t('blog.article')}
-            description={post.data.description}
-            meta={`${formatDate(post.data.pubDate, lang)} · ${t('blog.readingTime', { n: post.minutes })}`}
-          />
-        ))}
-      </ul>
-    </section>
-  )}
 </BaseLayout>
+
+<style>
+  .cover-credits {
+    margin: 24px 0 0;
+    color: var(--text-2);
+  }
+</style>

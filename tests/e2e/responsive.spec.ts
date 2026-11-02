@@ -8,6 +8,7 @@ const ROUTES = [
   '/blog/',
   '/blog/neovim-setup-1-zero-to-editor/',
   '/blog/series/neovim-setup-guide/',
+  '/blog/topics/developer-tools/',
 ];
 
 test.describe('320px', () => {

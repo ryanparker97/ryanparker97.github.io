@@ -1,0 +1,331 @@
+---
+title: 'Neovim setup guide, Part 5: debugging, testing and the daily workflow'
+description: 'Set breakpoints, run and debug tests from the editor, and learn the keys I use every day, to finish the Neovim 0.12 setup series.'
+pubDate: 2026-11-02T12:00:00Z
+tags: ['neovim', 'dotfiles', 'debugging', 'testing', 'developer-tools']
+series: 'neovim-setup-guide'
+seriesPart: 5
+heroImage: '../../../assets/blog/neovim-setup/part-5.svg'
+heroImageCredit: 'Neovim logo by [Jason Long](http://x.com/jasonlong), [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/), modified'
+---
+
+import Callout from '~/components/blog/Callout.astro';
+
+The first four parts got you an editor that understands your code. This last part covers the loop around writing it: running it under a debugger, running its tests, and moving around a whole project without leaving Neovim. Most of this is about speed. Each piece saves a few seconds, and the seconds add up over a day.
+
+This part finishes the series, so it also looks back at what we built. The full list of parts is on the [series page](/blog/series/neovim-setup-guide/), and the last section links them all.
+
+<Callout type="note">
+  **Tested with:** Neovim 0.12, macOS, dotfiles commit `64351ec`. **Source:**
+  [github.com/ryanparker97/dotfiles](https://github.com/ryanparker97/dotfiles) (folder `nvim/`).
+</Callout>
+
+## What you'll have at the end
+
+When you finish this part, you'll have:
+
+- **nvim-dap** with **dap-ui** for debugging Python and Java.
+- **neotest** for running and debugging tests in Python and Java.
+- **trouble**, **grug-far** and **todo-comments** for work that spans the whole project.
+- **Sessions**, **flash**, **lazygit** and **overseer** for the daily loop.
+- A habit of keeping the config healthy.
+
+The debugger, the test runner and the project tools load on a key or a command. The small helpers load with the first file you open or shortly after startup, and snacks loads at startup. The first time you press a key that loads a plugin there is a short pause. After that it is instant.
+
+## Before you start
+
+You need the setup from the earlier parts:
+
+- A working config from [Part 1](/blog/neovim-setup-1-zero-to-editor/).
+- The language servers and Mason tools from [Part 2](/blog/neovim-setup-2-languages/).
+- For Java, the debug bundles from [Part 4](/blog/neovim-setup-4-java/).
+- `lazygit`, which Part 1 listed as an optional install.
+
+Mason must have installed three packages for debugging and testing: `debugpy`, `java-debug-adapter` and `java-test`. They are in the tool list in `lsp.lua`. Run `:Mason` and check that all three are marked as installed.
+
+For Java tests there is one extra step. neotest-java only loads together with neotest, so press `<leader>ts` once (or run `:Lazy load neotest`) first. Then run this:
+
+```vim
+:NeotestJava setup
+```
+
+It downloads the JUnit console jar that neotest-java uses to run tests. You only do this once per machine.
+
+## Step 1: the debugger
+
+nvim-dap does not load at startup. It loads on the first key that starts with `<leader>D`. Here is the part of its spec that wires everything together:
+
+```lua title="lua/ryanparker/plugins/dev.lua" {4-15,17-18}
+    config = function()
+      local dap, dapui = require("dap"), require("dapui")
+      dapui.setup()
+      dap.listeners.before.attach.dapui_config = function()
+        dapui.open()
+      end
+      dap.listeners.before.launch.dapui_config = function()
+        dapui.open()
+      end
+      dap.listeners.before.event_terminated.dapui_config = function()
+        dapui.close()
+      end
+      dap.listeners.before.event_exited.dapui_config = function()
+        dapui.close()
+      end
+
+      local debugpy = vim.fn.stdpath("data") .. "/mason/packages/debugpy/venv/bin/python"
+      require("dap-python").setup(vim.uv.fs_stat(debugpy) and debugpy or "python3")
+    end,
+```
+
+Two things happen here. First, dap-ui opens its panels right before a session launches or attaches, and closes them when the session ends. The listeners are named `dapui_config`, and each one is a function that takes no arguments. I wrote them as small closures on purpose: a bare function reference would receive the debug session as its argument, and dap-ui would treat that as options.
+
+Second, the Python adapter uses the `debugpy` that Mason installed. If that file isn't there, it falls back to `python3` from your PATH, which only works if `debugpy` is installed in that Python.
+
+### Debug a Python file
+
+Open a Python file and try it:
+
+```sh
+$ nvim app.py
+```
+
+Move to a line you want to stop on and press `<leader>Db` to set a breakpoint. Then press `<leader>Dc` to start. nvim-dap-python offers its launch configurations, so pick the one that runs the current file. The dap-ui panels open, and the program stops on your breakpoint.
+
+From there you step with three keys:
+
+- `<leader>Di` steps into a call.
+- `<leader>Do` steps over it.
+- `<leader>DO` steps out of the current function.
+
+`<leader>Dr` opens the REPL, where you can evaluate expressions in the paused program. `<leader>Dt` ends the session, and dap-ui closes with it.
+
+### Debug Java
+
+Java uses the same keys, but the adapter comes from Part 4. When the debug bundles are present at start, nvim-jdtls adds a debug configuration for each class that has a `main` method. Open such a class and press `<leader>Dc`. If you add a new `main` class later, run `:JdtUpdateDebugConfig` so the list refreshes. Hot code replace is set to `auto`, so jdtls tries to apply small edits to the running program.
+
+<Callout type="warning">
+  The Java debug bundles are read when the language server starts. If you installed `java-debug-adapter` or `java-test` after opening a Java file, restart Neovim before you try to debug.
+</Callout>
+
+## Step 2: run tests with neotest
+
+neotest loads on the first key that starts with `<leader>t`. Its config passes the two adapters as tables. They are not called:
+
+```lua title="lua/ryanparker/plugins/dev.lua"
+    config = function()
+      require("neotest").setup({
+        adapters = {
+          require("neotest-python"),
+          require("neotest-java"),
+        },
+      })
+    end,
+```
+
+Python tests go through neotest-python, and Java tests go through neotest-java once you have run `:NeotestJava setup`. Open a test file and use these:
+
+- `<leader>tt` runs the nearest test.
+- `<leader>tf` runs every test in the file.
+- `<leader>tl` runs the last test again.
+- `<leader>ts` toggles the summary tree, which lists your tests with their results.
+- `<leader>to` opens the output of a test and moves the cursor into it.
+
+The sixth key is the one I reach for when a test fails and I don't know why:
+
+```lua title="lua/ryanparker/plugins/dev.lua"
+      {
+        "<leader>td",
+        function()
+          require("neotest").run.run({ strategy = "dap" })
+        end,
+        desc = "Debug nearest test",
+      },
+```
+
+`strategy = "dap"` runs the nearest test under the debugger. That only works if Step 1 works, so if `<leader>td` does nothing useful, fix the debugger first. For Java it also needs the debug bundles from Part 4.
+
+<Callout type="tip">
+  Set a breakpoint with `<leader>Db` inside the code under test, then press `<leader>td` in the test. You land in the debugger at exactly the line you care about.
+</Callout>
+
+## Step 3: work across the whole project
+
+Some jobs are not about one file. These plugins deal with the whole project, and each one sits behind a single key.
+
+**trouble** shows lists in a panel. `<leader>xx` shows diagnostics for the workspace and `<leader>xX` for the current buffer. `<leader>xs` shows the symbols in the file, `<leader>xr` shows LSP references and definitions on the right, and `<leader>xq` shows the quickfix list. `quicker.nvim` makes the quickfix window itself nicer, and it loads only for that file type.
+
+**grug-far** is project-wide search and replace. The one detail I like is in the key itself:
+
+```lua title="lua/ryanparker/plugins/dev.lua"
+      {
+        "<leader>sr",
+        function()
+          require("grug-far").open({ prefills = { search = vim.fn.expand("<cword>") } })
+        end,
+        desc = "Search and replace (project)",
+      },
+```
+
+Press `<leader>sr` on a word and grug-far opens with that word already filled in as the search. In visual mode the same key uses your selection instead.
+
+**todo-comments** highlights `TODO` and similar markers. `<leader>ft` finds them all in Telescope, and `]t` and `[t` jump to the next and previous one.
+
+**refactoring.nvim** gives you `<leader>cr` for refactorings such as extracting a function. It is only enabled on newer Neovim, and the config says so:
+
+```lua title="lua/ryanparker/plugins/extras.lua"
+    enabled = function()
+      return vim.fn.has("nvim-0.12.5") == 1
+    end,
+```
+
+On Neovim 0.12.4 or older the plugin is simply left out, so `<leader>cr` isn't there. I did that on purpose, instead of letting the key throw an error.
+
+## Step 4: the daily workflow
+
+The last group is small helpers. None of them is exciting on its own, but together they are most of how the editor feels.
+
+**Sessions.** persistence.nvim records your session in the background and loads when a file is opened. It does not restore anything by itself: I wanted a clean start, so restoring is manual. `<leader>Ss` restores the session for the current folder, `<leader>Sl` restores the last one, and `<leader>Sd` stops saving for this session.
+
+**Jumping.** flash gives you two jump keys. `<leader>j` labels every match you type, and you press the label to land there. `<leader>J` labels Treesitter nodes, which is handy for selecting a whole argument or block.
+
+**snacks.** This is the one eager plugin besides Treesitter, and I keep it small:
+
+```lua title="lua/ryanparker/plugins/extras.lua"
+    opts = {
+      -- Telescope stays the picker; only the non-overlapping modules are on.
+      notifier = { enabled = true },
+      indent = { enabled = true },
+      lazygit = { enabled = true },
+    },
+```
+
+Only the notifier, indent guides and lazygit are on. Telescope stays the picker, and I left out the dashboard and the explorer. `<leader>gg` opens lazygit in a floating window, and `<leader>un` shows the history of notifications, which helps when a message vanished before you could read it.
+
+**Tasks.** overseer runs tasks from inside the editor. `<leader>or` asks which task to run and `<leader>ot` toggles the task list. What it offers depends on the project, so see the overseer docs for the kinds of tasks it detects.
+
+**Smaller helpers.** A few more keys:
+
+- `<leader>uc` toggles a bar that shows the code context above your cursor.
+- `<leader>uu` opens the undo tree from Part 1.
+- `<S-h>` and `<S-l>` move between buffers. `<leader>bd` closes one and `<leader>bo` closes all the others.
+- `<Esc><Esc>` leaves terminal mode.
+- `<C-d>`, `<C-u>`, `n` and `N` keep the cursor centered on the screen.
+
+Here is how those keys chain together on an ordinary day. I open Neovim and press `<leader>Sl` to get yesterday's windows back. `<leader>ff` finds the file I want and `gd` takes me to a definition. I run `<leader>tt` on the test next to it, and when it fails I set a breakpoint with `<leader>Db` and press `<leader>Dc`. When a rename touches many files I use `<leader>sr`, and `<leader>xx` shows what is left to fix. At the end `<leader>gg` opens lazygit for the commit.
+
+## Step 5: check that everything works
+
+Press `<leader>Db` once. That loads nvim-dap. Then run this:
+
+```vim
+:lua print(require("dap").adapters.python ~= nil)
+```
+
+It should print `true`, which means dap-python registered its adapter. Next, check the rest:
+
+- Press `<leader>ts`. The neotest summary opens, and for a project with tests it shows the tree.
+- Run `:Trouble diagnostics toggle` and see the panel open.
+- Run `:GrugFar` and see the search and replace window.
+- Run `:OverseerRun` and see the task prompt.
+- Run `:Lazy profile` to see what loaded at startup. You should find very little, because almost everything waits for a key.
+
+If a command is unknown, the plugin has not loaded or did not install. Open `:Lazy` and look for it.
+
+## Keymaps for every day
+
+Debug and test:
+
+| Key | Action |
+| --- | --- |
+| `<leader>Db` | toggle breakpoint |
+| `<leader>Dc` | continue / start |
+| `<leader>Di` | step into |
+| `<leader>Do` | step over |
+| `<leader>DO` | step out |
+| `<leader>Dr` | toggle REPL |
+| `<leader>Dt` | terminate |
+| `<leader>Du` | toggle debug UI |
+| `<leader>tt` | run nearest test |
+| `<leader>tf` | run file tests |
+| `<leader>td` | debug nearest test |
+| `<leader>ts` | toggle summary |
+| `<leader>to` | show output |
+| `<leader>tl` | run last test |
+
+Everything else:
+
+| Key | Action |
+| --- | --- |
+| `<leader>xx` | diagnostics (workspace) |
+| `<leader>xX` | diagnostics (buffer) |
+| `<leader>xs` | symbols |
+| `<leader>xr` | LSP references / definitions |
+| `<leader>xq` | quickfix list |
+| `<leader>sr` | search and replace (project / selection) |
+| `<leader>ft` | find todos |
+| `]t` / `[t` | next / previous todo |
+| `<leader>j` | easy jump |
+| `<leader>J` | Treesitter jump |
+| `<leader>gg` | lazygit |
+| `<leader>un` | notification history |
+| `<leader>uc` | toggle code context |
+| `<leader>or` | run task |
+| `<leader>ot` | task list |
+| `<leader>Ss` | restore session (cwd) |
+| `<leader>Sl` | restore last session |
+| `<leader>Sd` | don't save session |
+| `<S-h>` / `<S-l>` | previous / next buffer |
+| `<leader>bd` / `<leader>bo` | close buffer / close other buffers |
+| `<Esc><Esc>` | exit terminal mode |
+
+Uppercase `<leader>D` is the debugger. Lowercase `<leader>d` is data and DBT, from [Part 3](/blog/neovim-setup-3-data-engineering/). The two groups are easy to mix up, so watch the case.
+
+## Keep it healthy
+
+`lazy-lock.json` pins every plugin to a commit. On a new machine, `:Lazy restore` installs exactly those pinned versions, so your setup matches the one in this guide. When you decide to upgrade, `:Lazy sync` updates the plugins, and the lock file changes with it. Commit that change so you can go back.
+
+Sooner or later you will run `:checkhealth` and see warnings that look like problems. Most of them are not.
+
+<Callout type="note">
+  These `:checkhealth` messages are expected, and the config can't fix them:
+
+  - The snacks health check lists modules as `{disabled}`. That's the point of the small snacks setup.
+  - Snacks image tools such as kitty or magick are reported missing. I don't use snacks images.
+  - A notice that a newer Neovim version is available.
+  - smart-splits and tmux checks, which depend on how tmux is set up outside Neovim.
+  - An empty `site/pack/core` folder.
+</Callout>
+
+The checks for the node, perl, python3 and ruby providers are switched off on purpose, because the config uses no remote plugins:
+
+```lua title="lua/ryanparker/core/init.lua"
+-- No remote plugins: silence the optional provider health checks
+for _, p in ipairs({ "node", "perl", "python3", "ruby" }) do
+  vim.g["loaded_" .. p .. "_provider"] = 0
+end
+```
+
+## Troubleshooting
+
+- **There is no Java debug configuration.** The debug bundles were missing when the language server started. Check the Mason packages and the steps in [Part 4](/blog/neovim-setup-4-java/), then restart Neovim.
+- **Java tests don't start.** Press `<leader>ts` once to load neotest, then run `:NeotestJava setup`.
+- **`<leader>cr` does nothing.** The refactoring plugin needs Neovim 0.12.5 or newer, and on older builds it isn't loaded.
+- **The first press of a key is slow.** The plugin is loading. That happens once per session.
+- **`<leader>gg` fails.** Install lazygit, as in Part 1.
+- **dap-ui doesn't close.** End the session with `<leader>Dt`.
+
+## Wrapping up the series
+
+That's the whole setup. Here are the five parts again:
+
+- [Part 1: from zero to a working editor](/blog/neovim-setup-1-zero-to-editor/). Install the tools, get the config and check it starts.
+- [Part 2: LSP, completion, formatting and linting](/blog/neovim-setup-2-languages/). Language servers, completion, format on save and linting.
+- [Part 3: DBT, SQL, databases and CloudFormation](/blog/neovim-setup-3-data-engineering/). The data engineering tools.
+- [Part 4: Java with nvim-jdtls](/blog/neovim-setup-4-java/). Java support, with the debug bundles.
+- [Part 5: debugging, testing and the daily workflow](/blog/neovim-setup-5-debugging-and-workflow/). This post.
+
+I left some things out on purpose. There is no dashboard or file explorer from snacks, because Telescope and oil cover finding and browsing files. There is no virtual text for debug values, and I don't ship a `launch.json`. There is no SQL language server, and no Lombok setup for Java. Each of these is a small addition if you want it, and none is needed to get work done.
+
+If you take one thing from the series, make it the tip from Part 1: rename `lua/ryanparker/` and make the config yours. A config you understand is worth more than a perfect one you copied, and every file here is short enough to read in one sitting.
+
+Thanks for following along. Happy editing.

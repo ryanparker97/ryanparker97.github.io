@@ -6,6 +6,7 @@ import { getLocalized, getProfile, render } from '~/lib/content';
 import { companyLabel, displayUrl, formatDateRange, sortProjects, sortRoles } from '~/lib/cv';
 import { getLang, langStaticPaths } from '~/i18n/routes';
 import { useT } from '~/i18n';
+import { externalAttrs } from '~/lib/links';
 
 export const getStaticPaths = (() => langStaticPaths()) satisfies GetStaticPaths;
 
@@ -51,10 +52,16 @@ const bodies = new Map(
           {t('cv.phone')}: <a href={`tel:${p.phone}`}>{p.phoneDisplay}</a>
         </p>
         <p>
-          {t('cv.linkedin')}: <a href={p.socials.linkedin}>{displayUrl(p.socials.linkedin)}</a>
+          {t('cv.linkedin')}:{' '}
+          <a href={p.socials.linkedin} {...externalAttrs(p.socials.linkedin)}>
+            {displayUrl(p.socials.linkedin)}
+          </a>
         </p>
         <p>
-          {t('cv.github')}: <a href={p.socials.github}>{displayUrl(p.socials.github)}</a>
+          {t('cv.github')}:{' '}
+          <a href={p.socials.github} {...externalAttrs(p.socials.github)}>
+            {displayUrl(p.socials.github)}
+          </a>
         </p>
       </div>
     </header>

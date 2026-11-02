@@ -1,0 +1,43 @@
+---
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+import { formatDate } from '~/lib/format';
+import type { ListPart } from '~/lib/topics';
+
+interface Props {
+  lang: Lang;
+  parts: ListPart[];
+  nested?: boolean;
+  label?: string;
+}
+const { lang, parts, nested = false, label } = Astro.props;
+const t = useT(lang);
+---
+
+<ol class:list={['hl-list', { 'hl-parts': nested }]} aria-label={label}>
+  {parts.map((p) => (
+    <li>
+      {p.post ? (
+        <a class="hl-row" href={localePath(`/blog/${p.post.slug}/`, lang)}>
+          <span>
+            <span class="hl-num">{t('series.part', { n: p.part })}</span>
+            <span class="hl-title">{p.title}</span>
+          </span>
+          <span class="hl-meta">
+            <time datetime={p.post.pubDate.toISOString()}>{formatDate(p.post.pubDate, lang)}</time>
+            {' · '}
+            {t('blog.readingTime', { n: p.post.minutes })}
+          </span>
+        </a>
+      ) : (
+        <div class="hl-row hl-soon">
+          <span>
+            <span class="hl-num">{t('series.part', { n: p.part })}</span>
+            <span class="hl-title">{p.title}</span>
+          </span>
+          <span class="chip">{t('series.soon')}</span>
+        </div>
+      )}
+    </li>
+  ))}
+</ol>

@@ -17,19 +17,23 @@ export interface LocalNavProps {
   pill?: { href: string; label: string; download?: string };
 }
 
-/** Blog index, tag and series pages: All posts · Series · Tags, plus the RSS pill. */
-export function blogNav(lang: Lang, current?: 'all' | 'series' | 'tags'): LocalNavProps {
+/** Blog index, topics and series pages: All posts · Topics · Series, plus the RSS pill. */
+export function blogNav(lang: Lang, current?: 'all' | 'topics' | 'series'): LocalNavProps {
   const t = useT(lang);
   return {
     title: t('blog.title'),
     links: [
       { href: localePath('/blog/', lang), label: t('blog.all'), current: current === 'all' },
       {
+        href: localePath('/blog/topics/', lang),
+        label: t('blog.topics'),
+        current: current === 'topics',
+      },
+      {
         href: localePath('/blog/series/', lang),
         label: t('blog.series'),
         current: current === 'series',
       },
-      { href: localePath('/blog/tags/', lang), label: t('blog.tags'), current: current === 'tags' },
     ],
     pill: { href: localePath('/rss.xml', lang), label: t('blog.rss') },
   };

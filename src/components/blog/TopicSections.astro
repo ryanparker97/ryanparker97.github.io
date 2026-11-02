@@ -1,0 +1,84 @@
+---
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+import type { TopicGroup } from '~/lib/topics';
+import PostList from './PostList.astro';
+
+interface Props {
+  lang: Lang;
+  groups: TopicGroup[];
+}
+const { lang, groups } = Astro.props;
+const t = useT(lang);
+---
+
+{groups.length >= 2 && (
+  <nav aria-label={t('topics.jump')}>
+    <ul class="topic-jump">
+      {groups.map((g) => (
+        <li>
+          <a class="chip" href={`#topic-${g.slug}`}>
+            {g.title}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+)}
+<slot name="lead" />
+{groups.map((g) => (
+  <section class="topic-group" id={`topic-${g.slug}`} aria-labelledby={`topic-${g.slug}-title`}>
+    <header class="topic-group__head">
+      <h2 class="t-article-section" id={`topic-${g.slug}-title`}>
+        {g.topic ? (
+          <a class="topic-group__link" href={localePath(`/blog/topics/${g.slug}/`, lang)}>
+            {g.title}
+          </a>
+        ) : (
+          g.title
+        )}
+      </h2>
+      <p class="topic-group__count">
+        {g.count === 1 ? t('blog.post') : t('blog.posts', { n: g.count })}
+      </p>
+      <p class="topic-group__desc">{g.description}</p>
+    </header>
+    <PostList lang={lang} items={g.items} />
+  </section>
+))}
+
+<style>
+  .topic-jump {
+    list-style: none;
+    margin: 0 0 32px;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+  .topic-group + .topic-group {
+    margin-top: 48px;
+  }
+  .topic-group__head {
+    margin-bottom: 16px;
+  }
+  .topic-group__head p {
+    margin: 0;
+    color: var(--text-2);
+  }
+  .topic-group__link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    color: inherit;
+    text-decoration: none;
+  }
+  .topic-group__link:hover {
+    color: var(--link);
+  }
+  @media (min-width: 735px) {
+    .topic-group + .topic-group {
+      margin-top: 64px;
+    }
+  }
+</style>

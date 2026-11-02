@@ -1,0 +1,77 @@
+---
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+import { formatDate } from '~/lib/format';
+import type { PostRow } from '~/lib/topics';
+import PostCover from './PostCover.astro';
+
+interface Props {
+  lang: Lang;
+  rows: PostRow[];
+}
+const { lang, rows } = Astro.props;
+const t = useT(lang);
+---
+
+<ul class="hl-list post-rows">
+  {rows.map((row) => {
+    const { post, part, seriesTitle } = row;
+    return (
+      <li data-post={post.slug}>
+        <a class="hl-row post-row" href={localePath(`/blog/${post.slug}/`, lang)}>
+          <PostCover
+            image={post.image}
+            alt=""
+            label={seriesTitle ?? t('blog.article')}
+            part={part}
+            glyph={post.title.charAt(0).toUpperCase()}
+          />
+          <span class="post-row__text">
+            {part && (
+              <span class="hl-num">
+                {t('series.part', { n: part })} · {seriesTitle}
+              </span>
+            )}
+            <span class="hl-title">{row.partTitle ?? post.title}</span>
+            <span class="hl-desc">{post.description}</span>
+            <span class="hl-meta">
+              <time datetime={post.pubDate.toISOString()}>{formatDate(post.pubDate, lang)}</time>
+              {' · '}
+              {t('blog.readingTime', { n: post.minutes })}
+            </span>
+          </span>
+        </a>
+      </li>
+    );
+  })}
+</ul>
+
+<style>
+  .post-row {
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 16px;
+    align-items: center;
+  }
+  .post-row__text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .post-row__text :global(.hl-desc) {
+    display: none;
+  }
+  @media (min-width: 735px) {
+    .post-row {
+      grid-template-columns: 112px minmax(0, 1fr);
+      gap: 24px;
+    }
+    .post-row__text :global(.hl-desc) {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  }
+</style>

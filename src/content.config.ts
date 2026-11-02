@@ -10,10 +10,12 @@ const loader = (base: string, pattern = '**/*.md') =>
 
 const cvDate = z.string().regex(CV_DATE_RE, 'Use YYYY or YYYY-MM');
 // Empty YAML values (`end:`) become `undefined`, meaning "Present".
+const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 const emptyToUndefined = (v: unknown) => (v === '' || v === null ? undefined : v);
 const optionalDate = z.preprocess(emptyToUndefined, cvDate.optional());
 const optionalUrl = z.preprocess(emptyToUndefined, z.url().optional());
 const optionalText = z.preprocess(emptyToUndefined, z.string().optional());
+const topicRef = z.preprocess(emptyToUndefined, z.string().regex(KEBAB, 'kebab-case').optional());
 
 const profile = defineCollection({
   loader: loader('profile'),
@@ -139,13 +141,16 @@ const blog = defineCollection({
       description: z.string(),
       pubDate: z.coerce.date(),
       updatedDate: z.preprocess(emptyToUndefined, z.coerce.date().optional()),
-      tags: z.array(z.string().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'kebab-case')).default([]),
+      tags: z.array(z.string().regex(KEBAB, 'kebab-case')).default([]),
       heroImage: image().optional(),
+      /** Attribution for heroImage; supports [text](https://…) links. */
+      heroImageCredit: optionalText,
       /** Newsroom drop cap on the first paragraph (spec §5.10.8). */
       dropcap: z.boolean().default(false),
       draft: z.boolean().default(false),
       series: optionalText,
       seriesPart: z.preprocess(emptyToUndefined, z.number().int().min(1).optional()),
+      topic: topicRef,
     }),
 });
 
@@ -154,6 +159,7 @@ const series = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
+    topic: topicRef,
     parts: z.array(
       z.object({
         part: z.number().int().min(1),
@@ -162,6 +168,11 @@ const series = defineCollection({
       }),
     ),
   }),
+});
+
+const topics = defineCollection({
+  loader: loader('topics'),
+  schema: z.object({ title: z.string(), description: z.string(), order: z.number().int() }),
 });
 
 export const collections = {
@@ -173,4 +184,5 @@ export const collections = {
   star,
   blog,
   series,
+  topics,
 };

@@ -1,0 +1,342 @@
+---
+title: 'Hướng dẫn thiết lập Neovim, Phần 2: LSP, gợi ý mã, định dạng và linting'
+description: 'Thiết lập language server, gợi ý mã, định dạng khi lưu và linting cho mọi loại tệp trong cấu hình Neovim 0.12 của tôi, và kiểm tra từng thứ hoạt động.'
+pubDate: 2026-10-31
+tags: ['neovim', 'dotfiles', 'lsp', 'developer-tools']
+series: 'neovim-setup-guide'
+seriesPart: 2
+heroImage: '../../../assets/blog/neovim-setup/part-2.svg'
+heroImageCredit: 'Logo Neovim của [Jason Long](http://x.com/jasonlong), [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/), đã chỉnh sửa'
+---
+
+import Callout from '~/components/blog/Callout.astro';
+
+[Phần 1](/vi/blog/neovim-setup-1-zero-to-editor/) đã cài và chạy được mọi thứ. Phần này giúp từng loại tệp được hiểu đúng nghĩa: Python, Lua, tệp web, Bash, Terraform, YAML, Docker, Markdown và TOML đều có language server và gợi ý mã, cùng với trình định dạng và linter phù hợp.
+
+Đây là bốn công cụ riêng biệt, và đó là chủ ý. Language server hiểu mã. Gợi ý mã đưa hiểu biết đó đến bạn khi bạn gõ. Trình định dạng viết lại tệp khi bạn lưu. Linter chạy thêm các bước kiểm tra bằng dòng lệnh. Khi một trong số đó hỏng, bạn biết nên tìm ở đâu, thay vì lục lọi trong một plugin khổng lồ. Bạn có thể xem cả chuỗi bài trên [trang chuỗi bài viết](/vi/blog/series/neovim-setup-guide/).
+
+<Callout type="note" lang="vi">
+  **Đã thử với:** Neovim 0.12, macOS, dotfiles commit `64351ec`. **Nguồn:**
+  [github.com/ryanparker97/dotfiles](https://github.com/ryanparker97/dotfiles) (thư mục `nvim/`).
+</Callout>
+
+## Bạn sẽ có gì khi kết thúc
+
+Khi xong phần này, bạn sẽ có:
+
+- **16 language server** do Mason cài, được cấu hình bằng `vim.lsp.config` có sẵn của Neovim và khởi chạy bằng `vim.lsp.enable` (Java được khởi chạy riêng, ở Phần 4).
+- Gợi ý mã bằng **blink.cmp**, kèm tài liệu và gợi ý chữ ký hàm.
+- **Định dạng khi lưu**, với trình định dạng chọn theo từng loại tệp.
+- **Linter** chỉ chạy khi đã được cài, và bỏ qua các linter chậm khi bạn đang gõ.
+- **Chẩn đoán** ngay trên dòng hiện tại, với một cửa sổ nổi khi bạn nhảy giữa các chẩn đoán.
+- Một **công thức để thêm ngôn ngữ của riêng bạn**.
+
+## Trước khi bắt đầu
+
+Hãy hoàn thành [Phần 1](/vi/blog/neovim-setup-1-zero-to-editor/) trước, và kiểm tra rằng `:checkhealth` không báo lỗi. Mason tự cài hầu hết công cụ trong phần này. Các bản Homebrew của `terraform`, `shellcheck`, `shfmt`, `tflint` và `cfn-lint` từ Phần 1 là tùy chọn, vì Mason cũng cài chúng. Node vẫn phải lấy từ Homebrew, vì nhiều server và `prettier` chạy trên nó.
+
+## Các mảnh ghép khớp nhau thế nào
+
+| Plugin | Nạp khi | Nhiệm vụ |
+| --- | --- | --- |
+| mason.nvim | lệnh `:Mason` | cài server và công cụ |
+| mason-tool-installer | `VeryLazy` | cài các trình định dạng và linter |
+| nvim-lspconfig + mason-lspconfig | `BufReadPre` / `BufNewFile` | cấu hình và khởi chạy các server |
+| blink.cmp | `InsertEnter` | menu gợi ý mã |
+| conform.nvim | `BufWritePre`, `:ConformInfo`, `<leader>cf` | định dạng |
+| nvim-lint | `BufReadPost` / `BufNewFile` | linting |
+
+## Bước 1: cài server và công cụ bằng Mason
+
+Mason tải server, trình định dạng và linter về thư mục riêng của nó. Danh sách công cụ được dựng bằng một hàm nhỏ:
+
+```lua title="lua/ryanparker/plugins/lsp.lua"
+local function mason_tools()
+  local tools = {
+    "stylua",
+    "prettier",
+    -- …
+  }
+  if has_python_310() then
+    vim.list_extend(tools, { "sqlfluff" })
+  end
+  return tools
+end
+```
+
+`sqlfluff` chỉ được thêm trên Python 3.10 trở lên. Một hàm hỗ trợ tên `has_python_310()` chạy `python3` một lần, vào lần dùng đầu tiên, và nhớ kết quả. Nhờ vậy một lần cài chắc chắn thất bại sẽ không bao giờ được thử.
+
+Danh sách server đã được trình bày ở [Phần 1](/vi/blog/neovim-setup-1-zero-to-editor/), nên tôi không lặp lại. Giờ là chính trình cài đặt:
+
+```lua title="lua/ryanparker/plugins/lsp.lua"
+  {
+    "WhoIsSethDaniel/mason-tool-installer.nvim",
+    event = "VeryLazy",
+    -- …
+    config = function(_, opts)
+      -- …
+      -- The plugin's own start hook listens for VimEnter, which has already fired
+      -- by the time a VeryLazy load happens.
+      installer.run_on_start()
+    end,
+```
+
+Phần chú thích giải thích dòng lạ này. Plugin bắt đầu cài khi có `VimEnter`, nhưng cấu hình này nạp nó muộn hơn, ở `VeryLazy`, nên `config` gọi `run_on_start()` bằng tay.
+
+Ba lệnh đáng biết: `:Mason` mở cửa sổ cài đặt, `:MasonToolsInstall` cài những gì còn thiếu trong danh sách, và `:checkhealth mason` kiểm tra bản thân Mason có chạy được không.
+
+## Bước 2: language server với API có sẵn
+
+Từ Neovim 0.11, bạn không cần plugin để cấu hình server. Bạn mô tả một server bằng `vim.lsp.config` và khởi chạy nó bằng `vim.lsp.enable`. nvim-lspconfig vẫn cung cấp các thiết lập mặc định cho từng server, và mason-lspconfig gọi `vim.lsp.enable` cho mọi server nó đã cài, trừ `jdtls`, thứ mà Phần 4 tự xử lý.
+
+Đầu tiên là một thiết lập dùng chung cho mọi server, rồi đến danh sách đưa cho mason-lspconfig:
+
+```lua title="lua/ryanparker/plugins/lsp.lua"
+    config = function()
+      local capabilities = require("blink.cmp").get_lsp_capabilities()
+      vim.lsp.config("*", { capabilities = capabilities })
+      -- …
+      require("mason-lspconfig").setup({
+        ensure_installed = lsp_servers,
+        automatic_enable = { exclude = { "jdtls" } },
+      })
+    end,
+```
+
+Mục `"*"` cho mọi server biết rằng gợi ý mã đến từ blink.cmp. Hầu hết không cần gì thêm; một vài server có phần ghi đè ngắn.
+
+Python có hai server, và chúng chia việc: basedpyright lo kiểu dữ liệu và hover, ruff lo import và định dạng. Vì vậy hai thứ được tắt đi:
+
+```lua title="lua/ryanparker/plugins/lsp.lua"
+          if client and client.name == "ruff" then
+            client.server_capabilities.hoverProvider = false
+          end
+      -- …
+      vim.lsp.config("basedpyright", {
+        settings = {
+          basedpyright = {
+            disableOrganizeImports = true,
+            analysis = { typeCheckingMode = "standard" },
+          },
+        },
+      })
+```
+
+Hover của ruff được tắt trong một handler `LspAttach`, và organize-imports của basedpyright cũng tắt. Thiếu một trong hai, bạn sẽ gặp hover bị lặp và hai công cụ tranh nhau thứ tự import. Các phần ghi đè khác đều nhỏ, nên tôi chỉ mô tả. lua_ls dùng runtime LuaJIT với các tệp runtime của Neovim làm thư viện, và lazydev thêm các kiểu của `vim.uv`. emmet_ls bị giới hạn ở các tệp markup, và terraformls gắn vào `terraform`, `terraform-vars` và `hcl`. jsonls và yamlls đọc schema từ SchemaStore; chi tiết về YAML được bàn ở Phần 3.
+
+Ba phím tắt đến từ cấu hình này, được thêm khi `LspAttach`. Một hàm hỗ trợ cục bộ nhỏ `map()` (không trích ở đây) bọc `vim.keymap.set`, làm mỗi phím chỉ có hiệu lực trong buffer và thêm tiền tố "LSP: " vào mô tả:
+
+```lua title="lua/ryanparker/plugins/lsp.lua"
+          -- Built-ins (0.11+): K hover, grr references, gri implementation,
+          -- grn rename, gra code action, gO document symbols.
+          map("n", "gd", vim.lsp.buf.definition, "Definition")
+          map("n", "gD", vim.lsp.buf.declaration, "Declaration")
+          map({ "n", "x" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
+```
+
+Các phím này chỉ có hiệu lực trong buffer, nên chúng không tồn tại trong các tệp không có server. Những phím như `K` và `grn` đã có sẵn trong Neovim, nên cấu hình để yên chúng.
+
+### Chẩn đoán
+
+```lua title="lua/ryanparker/plugins/lsp.lua"
+      vim.diagnostic.config({
+        underline = true,
+        virtual_text = { current_line = true },
+        severity_sort = true,
+        jump = {
+          on_jump = function(_, bufnr)
+            vim.diagnostic.open_float({ bufnr = bufnr, scope = "cursor", focus = false })
+          end,
+        },
+        float = { border = "rounded", source = true },
+      })
+```
+
+Đoạn này nằm trong `init` của plugin, nên nó có hiệu lực trước khi bất kỳ client nào gắn vào. Từng phần làm gì:
+
+- `virtual_text = { current_line = true }` hiện thông báo ở cuối dòng, chỉ cho dòng con trỏ của bạn đang đứng.
+- `severity_sort` xếp lỗi trước cảnh báo.
+- `on_jump` mở một cửa sổ nổi với thông báo đầy đủ khi bạn nhấn `]d` hoặc `[d`.
+- `source = true` ghi tên công cụ đã báo vấn đề.
+
+<Callout type="note" lang="vi">
+  Các hướng dẫn cũ dùng `jump = { float = true }`. Tùy chọn đó đã lỗi thời (deprecated), nên cấu hình
+  này tự mở cửa sổ nổi bằng `on_jump`.
+</Callout>
+
+## Bước 3: gợi ý mã với blink.cmp
+
+blink.cmp là menu gợi ý mã. Các dòng về cơ sở dữ liệu được để lại cho Phần 3:
+
+```lua title="lua/ryanparker/plugins/completion.lua"
+    opts = {
+      keymap = { preset = "enter" },
+      signature = { enabled = true },
+      completion = { documentation = { auto_show = true, auto_show_delay_ms = 500 } },
+      sources = {
+        default = { "lsp", "path", "snippets", "buffer" },
+        per_filetype = {
+          lua = { inherit_defaults = true, "lazydev" },
+          -- …
+        },
+        providers = {
+          lazydev = { name = "LazyDev", module = "lazydev.integrations.blink", score_offset = 100 },
+          -- …
+        },
+      },
+    },
+```
+
+Spec được ghim ở `version = "1.*"`, nên một bản cập nhật không thể nhảy sang phiên bản major mới. Preset `enter` nghĩa là <kbd>Enter</kbd> chấp nhận mục đang được chọn. Gợi ý chữ ký hàm được bật, và tài liệu hiện ra sau 500 ms. Gợi ý đến từ language server, đường dẫn tệp, snippet và các từ trong buffer, và trong tệp Lua thì lazydev đứng đầu nhờ `score_offset` bằng 100.
+
+Ở chế độ insert, `<C-s>` là gợi ý chữ ký hàm có sẵn.
+
+## Bước 4: định dạng khi lưu với conform
+
+conform.nvim chạy một trình định dạng khi bạn lưu. Nó chọn trình định dạng theo loại tệp:
+
+```lua title="lua/ryanparker/plugins/formatting.lua"
+    opts = {
+      notify_on_error = false,
+      format_on_save = { timeout_ms = 1500, lsp_format = "fallback" },
+      formatters_by_ft = {
+        lua = { "stylua" },
+        python = { "ruff_organize_imports", "ruff_format" },
+        -- …
+        sh = { "shfmt" },
+        -- …
+        terraform = { "terraform_fmt" },
+        -- …
+      },
+    },
+```
+
+`timeout_ms = 1500` ngăn một trình định dạng chậm làm treo lần lưu. `lsp_format = "fallback"` xử lý các loại tệp không có mục riêng, như Java, TOML và Dockerfile: nếu language server của chúng định dạng được thì nó sẽ làm. Python chạy hai bước, sắp xếp import rồi định dạng, đều từ ruff. Các loại tệp web và Markdown dùng `prettier`.
+
+`notify_on_error = false` giữ cho lỗi im lặng. Như vậy yên tĩnh, nhưng một trình định dạng hỏng sẽ không báo cho bạn, nên hãy chạy `:ConformInfo` để xem chuyện gì đã xảy ra.
+
+`<leader>cf` định dạng buffer bằng tay, ở chế độ normal và visual, nên bạn có thể chỉ định dạng phần đang chọn. Nó chạy bất đồng bộ, nên trình soạn thảo không bao giờ phải chờ.
+
+## Bước 5: linting với nvim-lint
+
+Linter chạy một công cụ dòng lệnh và biến kết quả của nó thành chẩn đoán. Bảng ánh xạ từ loại tệp sang linter:
+
+```lua title="lua/ryanparker/plugins/linting.lua"
+      lint.linters_by_ft = {
+        javascript = { "eslint_d" },
+        -- …
+        sh = { "shellcheck" },
+        -- …
+        terraform = { "tflint" },
+        -- …
+        yaml = { "yamllint" },
+        -- …
+      }
+```
+
+Tệp này bổ sung thêm ba quy tắc.
+
+**Chỉ linter đã cài mới chạy.** Cấu hình kiểm tra lệnh của linter có tồn tại trên máy bạn không. Chỉ các lần kiểm tra thành công mới được nhớ, nên công cụ bạn cài giữa phiên sẽ được tìm thấy ở lần sau.
+
+**Linter chậm bỏ qua `InsertLeave`.** Linting chạy khi lưu, khi mở và khi bạn rời chế độ insert. Các công cụ chậm sẽ làm trường hợp cuối này ì ạch, nên chúng được đánh dấu và bỏ qua ở đó:
+
+```lua title="lua/ryanparker/plugins/linting.lua"
+      local slow = { sqlfluff = true }
+      -- …
+      vim.api.nvim_create_autocmd("InsertLeave", {
+        group = group,
+        callback = function(args)
+          try_lint(args.buf, { skip_slow = true })
+        end,
+```
+
+**Workflow dùng actionlint.** YAML dưới `.github/workflows/` là tệp GitHub Actions, nên nó dùng một linter khác:
+
+```lua title="lua/ryanparker/plugins/linting.lua"
+        if ft == "yaml" and vim.api.nvim_buf_get_name(bufnr):find("/%.github/workflows/") then
+          return { "actionlint" }
+        end
+```
+
+Plugin phụ thuộc vào mason.nvim, nên thư mục `bin` của Mason nằm trong `PATH` trước lần lint đầu tiên. Đây là bức tranh đầy đủ, theo từng ngôn ngữ:
+
+| Ngôn ngữ | Server | Định dạng | Lint |
+| --- | --- | --- | --- |
+| Python | `basedpyright` + `ruff` | `ruff` | chẩn đoán của `ruff` |
+| Lua | `lua_ls` + lazydev | `stylua` | không có |
+| Web/JSON | `vtsls`, `html`, `cssls`, `tailwindcss`, `emmet_ls`, `jsonls` | `prettier` | `eslint_d` |
+| Bash | `bashls` | `shfmt` | `shellcheck` |
+| Terraform/HCL | `terraformls` | `terraform fmt` | `tflint` |
+| YAML | `yamlls` + SchemaStore | `prettier` | `yamllint` |
+| GitHub Actions | `yamlls` | `prettier` | `actionlint` |
+| Docker | `dockerls` | không có | `hadolint` |
+| Markdown | `marksman` | `prettier` | `markdownlint-cli2` |
+| TOML | `taplo` | taplo, qua phương án dự phòng của LSP | không có |
+
+dbt/SQL và CloudFormation nằm ở Phần 3, Java ở Phần 4.
+
+## Bước 6: kiểm tra mọi thứ hoạt động
+
+Chạy `:checkhealth vim.lsp` để xem báo cáo về language server.
+
+<Callout type="tip" lang="vi">
+  `:LspInfo` chỉ là bí danh của `:checkhealth vim.lsp`. Bạn sẽ thấy nó trong các hướng dẫn cũ.
+</Callout>
+
+Rồi thử ba tệp thật:
+
+- `nvim main.tf`: thanh trạng thái hiện `terraformls`. Lưu bằng `:w`, và `:ConformInfo` hiện `terraform_fmt`.
+- `nvim test.sh`: bắt đầu tệp bằng `#!/usr/bin/env bash`, thêm `echo $1` rồi lưu. shellcheck thường sẽ hiện một ghi chú về việc đặt biến trong dấu nháy.
+- `nvim package.json`: thêm một khóa, và gợi ý mã đề xuất các khóa đã biết, từ SchemaStore.
+
+Để liệt kê các client đang gắn vào buffer hiện tại, chạy `:lua =vim.lsp.get_clients({ bufnr = 0 })`.
+
+## Phím tắt cho mã
+
+| Phím | Tác dụng |
+| --- | --- |
+| `gd` / `gD` | đi đến định nghĩa / khai báo |
+| `K` / `grn` | xem tài liệu (hover) / đổi tên |
+| `grr` / `gri` | tham chiếu / phần triển khai |
+| `gra` / `<leader>ca` | code action |
+| `grt` / `gO` | định nghĩa kiểu / các symbol trong tệp |
+| `grx` | chạy codelens |
+| `<C-s>` | gợi ý chữ ký hàm (chế độ insert) |
+| `<leader>cf` | định dạng buffer hoặc phần đang chọn |
+| `<leader>cd` / `<leader>cl` | chẩn đoán của dòng / danh sách vị trí chẩn đoán |
+| `]d` / `[d` | chẩn đoán kế tiếp / trước đó |
+
+Chỉ `gd`, `gD` và `<leader>ca` đến từ cấu hình này. Phần còn lại có sẵn trong Neovim: hầu hết từ 0.11, `grt` và `grx` từ 0.12. trouble.nvim (`<leader>xx`) cung cấp danh sách chẩn đoán; nó xuất hiện ở Phần 5.
+
+## Thêm một ngôn ngữ của riêng bạn
+
+Một ngôn ngữ mới chạm vào ba tệp, và Terraform đã được thiết lập đúng như vậy:
+
+1. **Server và công cụ** trong `lua/ryanparker/plugins/lsp.lua`. Thêm tên server vào `lsp_servers`, và mọi trình định dạng hay linter vào `mason_tools()`. Chỉ thêm khối `vim.lsp.config` nếu server cần ghi đè.
+2. **Trình định dạng** trong `lua/ryanparker/plugins/formatting.lua`. Thêm một dòng vào `formatters_by_ft`.
+3. **Linter** trong `lua/ryanparker/plugins/linting.lua`. Thêm một dòng vào `linters_by_ft`.
+
+Đôi khi Neovim đoán sai loại tệp. Các tệp `.tf` mới và trống bị nhận là `tf`, nên cấu hình ánh xạ phần mở rộng:
+
+```lua title="lua/ryanparker/core/autocmds.lua"
+vim.filetype.add({
+  extension = {
+    -- Built-in detection returns "tf" for empty or comment-only files, so new
+    -- Terraform buffers would miss the terraform formatters/LSP until reopened.
+    tf = "terraform",
+  },
+```
+
+Nếu bạn cũng muốn tô màu cú pháp, hãy thêm parser Treesitter của ngôn ngữ đó vào `lua/ryanparker/plugins/treesitter.lua`. Đây là khuôn mẫu các tệp tuân theo, không phải lời khuyên từ tài liệu của các plugin, nên hãy xem tài liệu riêng của từng công cụ để biết chi tiết.
+
+## Khắc phục sự cố
+
+- **Server không gắn vào.** Chạy `:checkhealth vim.lsp`, rồi mở `:Mason` và kiểm tra server có hiện là đã cài không.
+- **Lưu mà không định dạng.** Lỗi của trình định dạng được cố ý để im lặng. Chạy `:ConformInfo` để xem trình định dạng nào đã chạy và có gì sai.
+- **Linter không làm gì.** Nó chỉ chạy khi đã được cài. Chạy `:MasonToolsInstall`, rồi lưu lại.
+- **Tệp `.tf` mới có loại tệp `tf`.** Điều này xảy ra nếu bạn chưa chép `core/autocmds.lua`, nơi ánh xạ phần mở rộng. Mở lại tệp, hoặc chạy `:set ft=terraform`.
+- **Thiếu `sqlfluff`.** Python của bạn cũ hơn 3.10, nên cấu hình bỏ qua nó. Xem [Phần 1](/vi/blog/neovim-setup-1-zero-to-editor/).
+
+## Tiếp theo
+
+Ở Phần 3, chúng ta dùng cùng các mảnh ghép này cho công việc dữ liệu, với model dbt, SQL trên cơ sở dữ liệu thật và template CloudFormation.

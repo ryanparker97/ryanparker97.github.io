@@ -1,0 +1,51 @@
+---
+import { useT, type Lang } from '~/i18n';
+import { creditParts } from '~/lib/credit';
+import { externalAttrs } from '~/lib/links';
+
+interface Props {
+  lang: Lang;
+  credit: string;
+}
+const { lang, credit } = Astro.props;
+const t = useT(lang);
+// Keep punctuation that follows a link on the link's line (no line starts with a comma).
+const PUNCT = /^[,.;:)]+/;
+const raw = creditParts(credit);
+const parts = raw.map((p, i) => {
+  if (p.href) {
+    const next = raw[i + 1];
+    return { ...p, tail: next && !next.href ? (next.text.match(PUNCT)?.[0] ?? '') : '' };
+  }
+  const lead = raw[i - 1]?.href ? (p.text.match(PUNCT)?.[0] ?? '') : '';
+  return { ...p, text: p.text.slice(lead.length), tail: '' };
+});
+---
+
+<span class="cover-credit">
+  {t('blog.coverCredit')}{' '}
+  {parts.map((p) =>
+    p.href ? (
+      <span class="nw">
+        <a href={p.href} {...externalAttrs(p.href)}>
+          {p.text}
+        </a>
+        {p.tail}
+      </span>
+    ) : (
+      p.text
+    ),
+  )}
+</span>
+
+<style>
+  .nw {
+    white-space: nowrap;
+  }
+  .cover-credit a {
+    text-decoration: underline;
+    display: inline-block;
+    padding-block: 14px;
+    margin-block: -14px;
+  }
+</style>

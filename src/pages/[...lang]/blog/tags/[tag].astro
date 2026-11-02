@@ -29,7 +29,7 @@ const seriesTitle = (id?: string) => series.find((s) => s.slug === id)?.data.tit
 const title = t('blog.tagTitle', { tag: tag! });
 ---
 
-<BaseLayout {title} description={title} {lang} {fallback} noSearch localNav={blogNav(lang, 'tags')}>
+<BaseLayout {title} description={title} {lang} {fallback} noSearch localNav={blogNav(lang)}>
   <Hero
     tight
     eyebrow={t('blog.title')}

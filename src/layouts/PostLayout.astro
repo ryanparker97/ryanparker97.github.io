@@ -1,9 +1,11 @@
 ---
 import '~/styles/prose.css';
+import { Image } from 'astro:assets';
 import BaseLayout from './BaseLayout.astro';
 import SeriesBox from '~/components/blog/SeriesBox.astro';
 import MoreFrom from '~/components/blog/MoreFrom.astro';
 import DotList from '~/components/ui/DotList.astro';
+import CoverCredit from '~/components/blog/CoverCredit.astro';
 import Toc from '~/components/blog/Toc.astro';
 import { seriesNeighbors } from '~/lib/blog';
 import type { Post } from '~/lib/blog-content';
@@ -27,8 +29,9 @@ interface Props {
   /** Older and newer posts, used when the post is not part of a series. */
   prev?: Post;
   next?: Post;
+  topic?: { slug: string; title: string };
 }
-const { post, lang, minutes, headings, series, prev, next } = Astro.props;
+const { post, lang, minutes, headings, series, prev, next, topic } = Astro.props;
 const t = useT(lang);
 const d = post.data;
 const { data: profile } = await getProfile(lang);
@@ -41,10 +44,9 @@ const jsonLd = blogPostingLd(d, {
   lang: post.contentLang,
 });
 const neighbors = series && d.seriesPart ? seriesNeighbors(series.parts, d.seriesPart) : undefined;
-const category =
-  series && d.seriesPart
-    ? `${t('series.part', { n: d.seriesPart })} · ${series.title}`
-    : t('blog.article');
+const seriesLabel =
+  series && d.seriesPart ? `${t('series.part', { n: d.seriesPart })} · ${series.title}` : undefined;
+const category = [topic?.title, seriesLabel].filter(Boolean).join(' · ') || t('blog.article');
 // "More from": the previous and next published parts, else the two newest other posts.
 const more = neighbors
   ? [neighbors.prev, neighbors.next]
@@ -110,6 +112,24 @@ const more = neighbors
       <hr class="keyline" />
     </header>
 
+    {d.heroImage && (
+      <figure class="post-hero" data-pagefind-ignore>
+        <Image
+          src={d.heroImage}
+          alt=""
+          width={480}
+          height={480}
+          loading="eager"
+          class="post-hero-img"
+        />
+        {d.heroImageCredit && (
+          <figcaption class="t-caption">
+            <CoverCredit {lang} credit={d.heroImageCredit} />
+          </figcaption>
+        )}
+      </figure>
+    )}
+
     {series && d.seriesPart && (
       <div class="series">
         <SeriesBox {lang} {series} parts={series.parts} current={d.seriesPart} />
@@ -132,12 +152,29 @@ const more = neighbors
   .post {
     display: grid;
     grid-template-columns: 1fr minmax(0, var(--article)) 1fr;
-    grid-template-areas: '. head .' '. series .' '. tocn .' '. body .' '. foot .';
+    grid-template-areas: '. head .' '. post-hero .' '. series .' '. tocn .' '. body .' '. foot .';
     padding-bottom: 64px;
   }
   .head {
     grid-area: head;
     padding-top: var(--section-pad-tight);
+  }
+  .post-hero {
+    grid-area: post-hero;
+    margin: 44px 0 0;
+  }
+  .post-hero-img {
+    display: block;
+    width: 200px;
+    height: auto;
+    aspect-ratio: 1;
+    border-radius: 18px;
+    outline: 1px solid var(--keyline);
+    outline-offset: -1px;
+  }
+  .post-hero figcaption {
+    margin-top: 12px;
+    color: var(--text-2);
   }
   .series {
     grid-area: series;
@@ -197,6 +234,9 @@ const more = neighbors
     .keyline {
       margin-top: 36px;
     }
+    .post-hero {
+      margin-top: 36px;
+    }
     .series {
       margin-top: 36px;
     }
@@ -204,6 +244,12 @@ const more = neighbors
   @media (max-width: 734px) {
     .keyline {
       margin-top: 32px;
+    }
+    .post-hero {
+      margin-top: 32px;
+    }
+    .post-hero-img {
+      width: 144px;
     }
     .series {
       margin-top: 32px;

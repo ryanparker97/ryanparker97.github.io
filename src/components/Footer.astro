@@ -4,6 +4,7 @@ import { Icon } from 'astro-icon/components';
 import { getProfile } from '~/lib/content';
 import { useT, type Lang } from '~/i18n';
 import { localePath, stripLang } from '~/i18n/routes';
+import { externalAttrs } from '~/lib/links';
 
 interface Props {
   lang: Lang;
@@ -47,6 +48,7 @@ const columns = [
     title: t('footer.writing'),
     links: [
       { href: localePath('/blog/', lang), label: t('blog.all') },
+      { href: localePath('/blog/topics/', lang), label: t('blog.topics') },
       { href: localePath('/blog/series/', lang), label: t('series.title') },
       { href: localePath('/blog/tags/', lang), label: t('blog.tags') },
       { href: localePath('/rss.xml', lang), label: t('footer.rss') },
@@ -113,7 +115,7 @@ const columns = [
                     <a
                       href={l.href}
                       download={'download' in l ? l.download : undefined}
-                      rel={l.href.startsWith('http') ? 'noopener' : undefined}
+                      {...externalAttrs(l.href)}
                     >
                       {l.label}
                     </a>
@@ -142,7 +144,7 @@ const columns = [
                     <a
                       href={l.href}
                       download={'download' in l ? l.download : undefined}
-                      rel={l.href.startsWith('http') ? 'noopener' : undefined}
+                      {...externalAttrs(l.href)}
                     >
                       {l.label}
                     </a>
@@ -158,7 +160,7 @@ const columns = [
     <p class="reach">
       {t('footer.reachBefore')} <a href={`mailto:${profile.email}`}>{t('footer.reachEmail')}</a>{' '}
       {t('footer.reachMid')}{' '}
-      <a href={profile.socials.linkedin} rel="noopener">
+      <a href={profile.socials.linkedin} {...externalAttrs(profile.socials.linkedin)}>
         {t('footer.reachLinkedin')}
       </a>
       .
@@ -168,14 +170,11 @@ const columns = [
       <p class="copy">
         {t('footer.copyright', { year: new Date().getFullYear() })} {t('footer.rights')}
       </p>
-      <ul class="legal-links">
-        <li>
-          <a href="https://astro.build" rel="noopener">
-            {t('footer.built')}
-          </a>
-        </li>
-        {analytics && <li>{t('footer.analytics')}</li>}
-      </ul>
+      {analytics && (
+        <ul class="legal-links">
+          <li>{t('footer.analytics')}</li>
+        </ul>
+      )}
       <a class="lang" href={switchHref} lang={other} hreflang={other}>
         {t('footer.language')}
       </a>

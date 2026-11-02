@@ -1,0 +1,63 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Hero from '~/components/tile/Hero.astro';
+import { getTopicGroups } from '~/lib/blog-content';
+import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
+import { blogNav } from '~/lib/localnav';
+import { useT } from '~/i18n';
+
+export const getStaticPaths = (() => langStaticPaths()) satisfies GetStaticPaths;
+
+const lang = getLang(Astro.params.lang);
+const t = useT(lang);
+const { groups, fallback } = await getTopicGroups(lang);
+const rows = groups
+  .filter((g) => g.topic)
+  .sort((a, b) => a.topic!.order - b.topic!.order || a.slug.localeCompare(b.slug));
+---
+
+<BaseLayout
+  title={t('topics.title')}
+  description={t('topics.description')}
+  {lang}
+  {fallback}
+  noSearch
+  localNav={blogNav(lang, 'topics')}
+>
+  <Hero
+    tight
+    eyebrow={t('blog.title')}
+    title={t('topics.title')}
+    subline={t('topics.description')}
+  />
+  <section class="section section--tight">
+    <div class="section-inner">
+      {rows.length > 0 ? (
+        <ul class="hl-list topic-list">
+          {rows.map((g) => (
+            <li>
+              <a class="hl-row" href={localePath(`/blog/topics/${g.slug}/`, lang)}>
+                <span>
+                  <span class="hl-title" style="display:block">
+                    {g.title}
+                  </span>
+                  <span class="hl-desc" style="display:block">
+                    {g.description}
+                  </span>
+                </span>
+                <span class="hl-meta">
+                  {g.count === 1 ? t('blog.post') : t('blog.posts', { n: g.count })}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="t-subhead" style="text-align:center">
+          {t('blog.noPosts')}
+        </p>
+      )}
+    </div>
+  </section>
+</BaseLayout>

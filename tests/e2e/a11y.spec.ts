@@ -9,6 +9,8 @@ const ROUTES = [
   '/star/emr-cost-optimization/',
   '/blog/',
   '/blog/neovim-setup-1-zero-to-editor/',
+  '/blog/topics/',
+  '/blog/topics/developer-tools/',
   '/blog/tags/',
   '/blog/tags/neovim/',
   '/blog/series/',

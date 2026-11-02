@@ -140,8 +140,8 @@ test.describe('Part A: review r3 fixes', () => {
     page,
   }) => {
     await page.goto('/blog/');
-    await expect(page.locator('#feature .chip-mint')).toHaveCount(0);
-    await expect(page.locator('#feature .fmeta')).toHaveText(/\d{4} · \d+ min read/);
+    await expect(page.locator('main .chip-mint')).toHaveCount(0);
+    await expect(page.locator('.post-rows .hl-meta').first()).toHaveText(/\d{4} · \d+ min read/);
     await page.goto('/');
     await expect(page.locator('#writing .chip-mint')).toHaveCount(0);
   });
@@ -414,17 +414,16 @@ test.describe('Part B: Experiences, STAR, Projects, Blog (R6, R8)', () => {
     expect(m.disc).toBeLessThanOrEqual(m.col + 2);
   });
 
-  test('parts-list "Coming soon" chips share a right-aligned column (R8)', async ({ page }) => {
-    await page.goto('/blog/');
-    const chips = await page.locator('#feature .soon').evaluateAll((els) =>
-      els.map((e) => {
-        const chip = e.querySelector('.chip')!.getBoundingClientRect();
-        const title = e.querySelector('.ptitle')!.getBoundingClientRect();
-        return { right: Math.round(chip.right), dy: chip.top - title.top };
-      }),
-    );
-    expect(chips.length).toBeGreaterThan(0);
-    expect(new Set(chips.map((c) => c.right)).size).toBe(1);
-    for (const c of chips) expect(Math.abs(c.dy)).toBeLessThanOrEqual(6);
+  test('topic page parts-list shows every part published, with no Coming soon chips (R8)', async ({
+    page,
+  }) => {
+    await page.goto('/blog/topics/developer-tools/');
+    await expect(page.locator('.post-list .hl-soon')).toHaveCount(0);
+    await expect(page.locator('.hl-parts li')).toHaveCount(5);
+    await expect(page.locator('.hl-parts li a')).toHaveCount(5);
+    const lefts = await page
+      .locator('.hl-parts li a')
+      .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)));
+    expect(new Set(lefts).size).toBe(1);
   });
 });
