@@ -1,0 +1,342 @@
+---
+title: 'Neovim setup guide, Part 3: DBT, SQL, databases and CloudFormation'
+description: 'Work on dbt models, query databases with table and column completion, and edit CloudFormation templates with the right schema in my Neovim 0.12 config.'
+pubDate: 2026-11-01
+tags: ['neovim', 'dotfiles', 'dbt', 'sql', 'data-engineering']
+series: 'neovim-setup-guide'
+seriesPart: 3
+heroImage: '../../../assets/blog/neovim-setup/part-3.svg'
+heroImageCredit: 'Neovim logo by [Jason Long](http://x.com/jasonlong), [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/), modified'
+---
+
+import Callout from '~/components/blog/Callout.astro';
+
+Data work is a strange mix for an editor. A SQL file can be full of Jinja, a query only makes sense against a live database, and the YAML templates that describe your infrastructure are long and picky about their schema. [Part 2](/blog/neovim-setup-2-languages/) set up the general pieces: language servers, completion, formatting and linting. This part points those same pieces at data files.
+
+Most of this loads only when a SQL file, a database command or a template asks for it; the exception is the completion pieces, covered in step 4. You can see the whole series on the [series page](/blog/series/neovim-setup-guide/).
+
+<Callout type="note">
+  **Tested with:** Neovim 0.12, macOS, dotfiles commit `64351ec`. **Source:**
+  [github.com/ryanparker97/dotfiles](https://github.com/ryanparker97/dotfiles) (folder `nvim/`).
+</Callout>
+
+## What you'll have at the end
+
+When you finish this part, you'll have:
+
+- **`.sql` files inside a dbt project** detected as the file type `sql.dbt`.
+- **dbt commands** on five keys, using dbtpal.
+- **sqlfluff** formatting and linting for SQL.
+- A **database UI** and `:DB` queries, using vim-dadbod.
+- **Table and column completion** that also works inside dbt models.
+- **CloudFormation templates** with YAML validation, CloudFormation tags and cfn-lint.
+
+The config has no SQL language server. The coverage table in the README has a dash in the LSP column for dbt and SQL. Completion comes from your database, and formatting and linting come from sqlfluff, which covers what I need.
+
+## Before you start
+
+You need Parts 1 and 2 done, so that `:checkhealth` is clean and the plugin manager works. On top of that:
+
+- **`dbt` and `sqlfluff`.** Both came from [Part 1, step 1](/blog/neovim-setup-1-zero-to-editor/) (`pipx install dbt-core` and `pipx install sqlfluff`).
+- **A dbt project to try it on.** Any project with a `dbt_project.yml` will do.
+- **A database client.** vim-dadbod runs your database's own command-line client, such as `psql` for Postgres, so that client has to be installed. That is how the plugin works; the config doesn't set it.
+
+## How a SQL file becomes a dbt model
+
+A plain `.sql` file is just SQL. A dbt model is SQL plus Jinja, and it needs different tools. So the config gives dbt files their own file type. In `core/autocmds.lua`, a `.sql` file under `models/`, `macros/`, `analyses/`, `seeds/`, `snapshots/` or `tests/` becomes `sql.dbt`, but only if a `dbt_project.yml` sits above it. Anything else stays plain `sql`.
+
+```lua title="lua/ryanparker/core/autocmds.lua" {4,6-7}
+    [".*%.sql"] = {
+      function(path)
+        -- …
+        for _, dir in ipairs({ "models", "macros", "analyses", "seeds", "snapshots", "tests" }) do
+          if path:find("/" .. dir .. "/", 1, true) then
+            if vim.fs.root(path, "dbt_project.yml") then
+              return "sql.dbt"
+            end
+            return nil
+          end
+        end
+      end,
+    },
+```
+
+A new file type has a cost: Treesitter has no parser with that name. Two lines in `treesitter.lua` fix that by telling it to reuse an existing parser:
+
+```lua title="lua/ryanparker/plugins/treesitter.lua"
+      pcall(vim.treesitter.language.register, "sql", "sql.dbt")
+      pcall(vim.treesitter.language.register, "yaml", "yaml.cloudformation")
+      pcall(vim.treesitter.language.register, "terraform", "terraform-vars")
+```
+
+`sql.dbt` reuses the `sql` parser, and `yaml.cloudformation` reuses `yaml`. The third line is for Terraform variable files, which Part 2 already covered. To see which file type a buffer got, run `:set ft?`.
+
+## Step 1: dbt commands with dbtpal
+
+dbtpal runs dbt for the model you have open. Here is its spec:
+
+```lua title="lua/ryanparker/plugins/data.lua" {3-6,10}
+  {
+    "PedramNavid/dbtpal",
+    enabled = function()
+      return vim.fn.executable("dbt") == 1
+    end,
+    ft = { "sql", "sql.dbt", "dbt" },
+    dependencies = { "nvim-lua/plenary.nvim" },
+    opts = {
+      path_to_dbt = "dbt",
+      protect_compiled_files = true,
+      custom_dbt_syntax_enabled = true,
+    },
+    keys = {
+      { "<leader>dr", "<cmd>DbtRun<CR>", desc = "dbt run model" },
+      { "<leader>dt", "<cmd>DbtTest<CR>", desc = "dbt test model" },
+      { "<leader>db", "<cmd>DbtBuild<CR>", desc = "dbt build" },
+      { "<leader>dc", "<cmd>DbtCompile<CR>", desc = "dbt compile" },
+      { "<leader>dD", "<cmd>DbtDebug<CR>", desc = "dbt debug" },
+    },
+  },
+```
+
+Four things matter here:
+
+- `enabled` is a function that runs at startup. If `dbt` is not on your `PATH`, the plugin doesn't exist at all, so a machine without dbt gets no dbt keys and no errors.
+- `ft` loads the plugin for the three SQL file types, and pressing one of its keys loads it too, so it costs nothing until then.
+- `protect_compiled_files = true` is set to protect dbt's compiled files, going by its name; see dbtpal's docs for exactly what it does.
+- The five keys run model, test model, build, compile and debug. They all start with `<leader>d`.
+
+<Callout type="warning">
+  If you install dbt after the first launch, restart Neovim. The `enabled` check only runs at
+  startup, and lazy.nvim installs dbtpal at that point. dbtpal is not in `lazy-lock.json` at this
+  commit, because dbt was missing when the lock file was written. The lock file changes the first
+  time the plugin installs.
+</Callout>
+
+## Step 2: format and lint SQL with sqlfluff
+
+One tool does both jobs. `formatting.lua` (lines 35 to 37) and `linting.lua` (lines 16 to 18) list the same three file types: `sql`, `sql.dbt` and `dbt`. Format on save works as described in Part 2.
+
+sqlfluff is slow, so the linting config treats it specially. It never lints on `InsertLeave`, which would run it every time you leave insert mode. It only lints when you read or save a file:
+
+```lua title="lua/ryanparker/plugins/linting.lua"
+      -- Slow linters: never run while typing (InsertLeave).
+      local slow = { sqlfluff = true }
+```
+
+sqlfluff also needs to know which SQL dialect you write. Its own docs describe a `.sqlfluff` file at the project root for that. This is the only config file in this part that is not from my repo. It is a placeholder, and this file is not part of the config; see sqlfluff's docs for your dialect and for its dbt templater.
+
+```ini title=".sqlfluff"
+[sqlfluff]
+dialect = postgres
+```
+
+## Step 3: connect to a database with dadbod
+
+vim-dadbod runs queries, and vim-dadbod-ui gives you a sidebar with your connections and tables. vim-dadbod-ui loads only on its commands or key. vim-dadbod itself also loads with blink.cmp, as step 4 shows:
+
+```lua title="lua/ryanparker/plugins/data.lua"
+  {
+    "tpope/vim-dadbod",
+    cmd = { "DB" },
+  },
+  {
+    "kristijanhusak/vim-dadbod-ui",
+    cmd = { "DBUI", "DBUIToggle", "DBUIAddConnection" },
+    dependencies = { "tpope/vim-dadbod" },
+    keys = { { "<leader>du", "<cmd>DBUIToggle<CR>", desc = "DB UI" } },
+    init = function()
+      vim.g.db_ui_use_nerd_fonts = 1
+    end,
+  },
+```
+
+Running `:DB` loads vim-dadbod. Running `:DBUI`, `:DBUIToggle` or `:DBUIAddConnection`, or pressing `<leader>du`, loads the UI. The last setting turns on Nerd Font icons, one more reason to use a Nerd Font.
+
+The config doesn't store any connection, and it shouldn't, because a URL usually holds a password. The easy way is an environment variable. This URL is a placeholder, so use your own:
+
+```sh
+$ export DATABASE_URL=postgres://localhost:5432/analytics
+```
+
+Start Neovim from that shell. The completion source in my config looks for a connection in `w:db`, `t:db`, `b:db`, `g:db`, and then `$DATABASE_URL`. The plugin's docs also say vim-dadbod falls back to `$DATABASE_URL` when you run `:DB` without a URL. Try a first query with `:DB select 1`. If you would rather not use an environment variable, run `:DBUIAddConnection` and fill in a connection from inside the UI.
+
+## Step 4: table and column completion, even in dbt models
+
+This is the clever part of the data setup. Part 2 showed that blink.cmp gets its suggestions from sources. For SQL, one of those sources is your live database:
+
+```lua title="lua/ryanparker/plugins/completion.lua" {5-6}
+      sources = {
+        default = { "lsp", "path", "snippets", "buffer" },
+        per_filetype = {
+          -- …
+          -- blink splits "sql.dbt" on ".", so this entry also serves dbt models.
+          sql = { "snippets", "dadbod", "buffer" },
+          -- …
+        },
+        providers = {
+          -- …
+          dadbod = { name = "Dadbod", module = "vim_dadbod_completion.blink", enabled = dadbod_enabled },
+        },
+      },
+```
+
+The comment explains the trick. blink splits `sql.dbt` on the dot, so the `sql` entry also serves dbt models. That would be the whole story, except for one problem: vim-dadbod-completion only accepts the file types `sql`, `mysql` and `plsql`. A `sql.dbt` buffer is ignored. Two things in my config deal with that: the file type swap below, and a function called `dadbod_enabled`, covered after it.
+
+The first fix is to show the buffer to the plugin as plain `sql` for a moment, so its `fetch()` accepts it. This is the function that does it:
+
+```lua title="lua/ryanparker/plugins/completion.lua" {1-4,17-20}
+-- vim-dadbod-completion hard-codes ['sql','mysql','plsql'] in fetch(), but once a
+-- buffer is cached, omni() no longer checks the filetype. So prime dbt buffers by
+-- briefly presenting them as sql. eventignore=all keeps FileType, ftplugin and
+-- syntax from re-running during the swap.
+local function prime_dbt(buf)
+  local url
+  -- …
+  local cands = { vim.w.db, vim.t.db, vim.b[buf].db, vim.g.db, vim.env.DATABASE_URL, n = 5 }
+  for i = 1, cands.n do
+    -- …
+  end
+  if not url or vim.b[buf].dadbod_primed == tostring(url) then
+    return
+  end
+  vim.b[buf].dadbod_primed = tostring(url)
+  local saved = vim.o.eventignore
+  vim.o.eventignore = "all"
+  vim.bo[buf].filetype = "sql"
+  pcall(vim.fn["vim_dadbod_completion#fetch"], buf)
+  vim.bo[buf].filetype = "sql.dbt"
+  vim.o.eventignore = saved
+end
+```
+
+It reads the connection in the order from step 3, swaps the file type while `eventignore` is `all`, fetches your tables and columns, and swaps back. Once the plugin has cached a buffer, it stops checking the file type, so completion keeps working. The marker `dadbod_primed` remembers which URL a buffer was primed with, so the dance doesn't repeat for the same URL.
+
+The swap only gets past `fetch()`. The plugin checks the file type a second time in its blink source's own `enabled()`. A provider-level `enabled` in blink overrides that, and `dadbod_enabled` is mine. It refuses other file types, and for `sql.dbt` it calls `prime_dbt` before saying yes:
+
+```lua title="lua/ryanparker/plugins/completion.lua"
+local function dadbod_enabled()
+  local buf = vim.api.nvim_get_current_buf()
+  local ft = vim.bo[buf].filetype
+  if not dadbod_fts[ft] then
+    return false
+  end
+  if ft == "sql.dbt" then
+    prime_dbt(buf)
+  end
+  return true
+end
+```
+
+The completion pieces are not fully lazy: vim-dadbod-completion and vim-dadbod are dependencies of blink.cmp, so they load with it on the first `InsertEnter` in any buffer.
+
+<Callout type="tip">
+  After you change the schema, run `:DBCompletionClearCache`. The stock command empties the whole
+  cache and refetches only the current buffer, and only for sql, mysql and plsql. In a dbt buffer, `prime_dbt` would
+  return early because `dadbod_primed` is unchanged, so it would never fetch tables again. My
+  config replaces the command so that it also resets the priming.
+</Callout>
+
+## Step 5: CloudFormation templates
+
+CloudFormation templates are YAML, but a plain `yaml` file type can't tell them apart from any other YAML. So the config looks inside the file. If the first 50 lines contain `AWSTemplateFormatVersion` or `AWS::`, the file becomes `yaml.cloudformation`:
+
+```lua title="lua/ryanparker/core/autocmds.lua"
+    [".*%.ya?ml"] = {
+      function(path, bufnr)
+        local lines
+        if bufnr and vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr) then
+          lines = vim.api.nvim_buf_get_lines(bufnr, 0, 50, false)
+        elseif path and vim.fn.filereadable(path) == 1 then
+          lines = vim.fn.readfile(path, "", 50)
+        end
+        for _, line in ipairs(lines or {}) do
+          if line:find("AWSTemplateFormatVersion", 1, true) or line:find("AWS::", 1, true) then
+            return "yaml.cloudformation"
+          end
+        end
+      end,
+    },
+```
+
+The next piece teaches the YAML language server about CloudFormation. Templates use short tags such as `!Ref` and `!Sub`, which are not standard YAML. Without help, the server flags every one of them. The `customTags` list tells it they are fine:
+
+```lua title="lua/ryanparker/plugins/lsp.lua" {2,8,11-15}
+      vim.lsp.config("yamlls", {
+        filetypes = { "yaml", "yaml.docker-compose", "yaml.gitlab", "yaml.helm-values", "yaml.cloudformation" },
+        settings = {
+          yaml = {
+            schemaStore = { enable = false, url = "" },
+            schemas = ok_schema and schemastore.yaml.schemas() or {},
+            -- …
+            customTags = {
+              "!And sequence",
+              -- …
+              "!Ref scalar",
+              "!Sub scalar",
+              "!Sub sequence",
+              "!GetAtt scalar",
+              "!GetAtt sequence",
+              -- …
+              "!Join sequence",
+            },
+          },
+        },
+      })
+```
+
+The `filetypes` line on top adds `yaml.cloudformation`, so the server attaches to these files. The list holds the intrinsic-function tags, and I elided the middle of it. For the schema, the config uses SchemaStore through `schemastore.yaml.schemas()`. As I understand it, SchemaStore matches by file name, so a template named `template.yaml` or `*.cf.yaml` should get a matching schema while other names may not.
+
+The rest of the chain is familiar from Part 2:
+
+- prettier formats the file (`formatting.lua`, line 31).
+- `cfn_lint` lints it (`linting.lua`, line 24).
+- `cfn-lint` itself is installed by Mason (`lsp.lua`, line 35).
+
+One small extra: in YAML files, `<leader>cy` yanks the key path under your cursor. It comes from yaml.nvim, and its description in which-key is "Yank YAML key path". GitHub Actions and Terraform files were covered in [Part 2](/blog/neovim-setup-2-languages/), so I won't repeat them.
+
+## Step 6: check that everything works
+
+Go into a dbt project and open a model. The path below is a placeholder, so use one of yours:
+
+```sh
+$ cd ~/projects/my-dbt-project
+$ nvim models/staging/stg_orders.sql
+```
+
+Then check these four things:
+
+- `:set ft?` prints `filetype=sql.dbt`.
+- `:ConformInfo` lists `sqlfluff` for the buffer.
+- `:Lazy` lists dbtpal.
+- `<leader>dc` compiles the model.
+
+Next, test the database. With `DATABASE_URL` set before you started Neovim, enter insert mode and type `select * from `. The completion menu should show tables from the Dadbod source. Then run `:DBUI` to open the UI.
+
+Finally, test CloudFormation. Create a `template.yaml` that starts with `AWSTemplateFormatVersion: '2010-09-09'`, save it and reopen it with `:e`, because detection reads the lines when the file opens. Then run `:set ft?`, which should print `filetype=yaml.cloudformation`. A `!Ref` in the file is not flagged, and saving the file runs cfn-lint. If all of that works, the detection, the language server and the linters are talking to each other.
+
+## Keymaps for data work
+
+| Key | Action |
+| --- | --- |
+| `<leader>dr` | dbt run model |
+| `<leader>dt` | dbt test model |
+| `<leader>db` | dbt build |
+| `<leader>dc` | dbt compile |
+| `<leader>dD` | dbt debug |
+| `<leader>du` | database UI |
+| `<leader>cy` | yank YAML key path |
+
+The five dbt keys exist only when `dbt` is on your `PATH`. which-key shows the `<leader>d` group as "data / db". Note that lowercase `<leader>d` is data and uppercase `<leader>D` is the debugger, which Part 5 covers.
+
+## Troubleshooting
+
+- **dbt keys do nothing.** dbt was not on your `PATH` when Neovim started. Fix that, then restart Neovim.
+- **`:set ft?` says `sql`.** The file is outside the dbt folders, or there is no `dbt_project.yml` above it.
+- **No tables in completion.** The config found no connection, or your database client (for example `psql`) is not installed. Set `DATABASE_URL` (or one of the other variables), then run `:DBCompletionClearCache`.
+- **SQL isn't linted while typing.** That is by design. It lints on read and save.
+- **sqlfluff complains about the dialect.** Add a `.sqlfluff` file with your dialect, as in step 2.
+- **`!Ref` is flagged in a template.** The marker is not in the first 50 lines, so the file stayed `yaml`. Or you created the file inside Neovim, because detection reads the lines on open; reopen it with `:e`. Run `:set ft=yaml.cloudformation` if neither helps.
+
+## What's next
+
+In Part 4 we set up Java, which needs its own launcher instead of the generic server setup.

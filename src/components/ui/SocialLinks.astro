@@ -1,5 +1,6 @@
 ---
 import { Icon } from 'astro-icon/components';
+import { externalAttrs } from '~/lib/links';
 import { useT, type Lang } from '~/i18n';
 import type { CollectionEntry } from 'astro:content';
 
@@ -29,7 +30,7 @@ const links = [
         class="icon-btn"
         aria-label={l.label}
         title={l.label}
-        rel={l.href.startsWith('http') ? 'noopener' : undefined}
+        {...externalAttrs(l.href)}
       >
         <Icon name={`lucide:${l.icon}`} size={20} />
       </a>

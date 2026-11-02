@@ -59,7 +59,8 @@ describe('CertificationsTile', () => {
     expect(html).toContain('+2 more');
     expect(html).toContain('data-monogram');
     expect(html.match(/>\s*Verify\s*</g)).toHaveLength(1);
-    expect(html).toContain('rel="noopener"');
+    expect(html).toContain('rel="noopener noreferrer"');
+    expect(html).toContain('target="_blank"');
     expect(html).not.toContain('class="btn');
   });
 

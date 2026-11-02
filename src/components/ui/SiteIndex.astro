@@ -1,5 +1,6 @@
 ---
 /** Apple's end-of-page Index (spec §5.10.10): grouped links in a `<nav>`, one H2 per group. */
+import { EXTERNAL_REL, isExternal } from '~/lib/links';
 interface Group {
   title: string;
   links: { href: string; label: string; external?: boolean }[];
@@ -18,7 +19,10 @@ const { label, groups } = Astro.props;
       <ul>
         {g.links.map((l, k) => (
           <li style={`--g:${gi};--k:${k}`}>
-            <a href={l.href} rel={l.external ? 'noopener' : undefined}>
+            <a
+              href={l.href}
+              {...(l.external || isExternal(l.href) ? { target: '_blank', rel: EXTERNAL_REL } : {})}
+            >
               {l.label}
             </a>
           </li>

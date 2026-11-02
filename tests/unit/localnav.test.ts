@@ -2,12 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { blogNav, projectsNav, singleNav } from '../../src/lib/localnav';
 
 describe('local nav definitions (spec §4.0)', () => {
-  it('blog: All posts, Series, Tags and an RSS pill', () => {
+  it('blog: All posts, Topics, Series and an RSS pill', () => {
     const nav = blogNav('en', 'series');
     expect(nav.title).toBe('Blog');
-    expect(nav.links.map((l) => l.label)).toEqual(['All posts', 'Series', 'Tags']);
-    expect(nav.links.map((l) => l.current)).toEqual([false, true, false]);
+    expect(nav.links.map((l) => l.label)).toEqual(['All posts', 'Topics', 'Series']);
+    expect(nav.links.map((l) => l.current)).toEqual([false, false, true]);
     expect(nav.pill).toEqual({ href: '/rss.xml', label: 'RSS' });
+  });
+
+  it('blog: topics page marks Topics current', () => {
+    const nav = blogNav('en', 'topics');
+    expect(nav.links.map((l) => l.current)).toEqual([false, true, false]);
+    expect(nav.links[1].href).toBe('/blog/topics/');
   });
 
   it('blog in Vietnamese keeps the /vi/ prefix', () => {

@@ -9,6 +9,8 @@ const INNER = [
   '/star/',
   '/star/emr-cost-optimization/',
   '/blog/',
+  '/blog/topics/',
+  '/blog/topics/developer-tools/',
   '/blog/tags/',
   '/blog/tags/neovim/',
   '/blog/series/',
@@ -158,6 +160,7 @@ test.describe('local nav on every inner page', () => {
   test('blog nav has the RSS pill; a post shows a single chevron link', async ({ page }) => {
     await page.goto('/blog/');
     await expect(page.locator('.local-nav .pill')).toHaveText('RSS');
+    await expect(page.locator('.local-nav .links a')).toHaveText(['All posts', 'Topics', 'Series']);
     await page.goto('/blog/neovim-setup-1-zero-to-editor/');
     const link = page.locator('.local-nav .solo-link');
     await expect(link).toHaveAccessibleName('All posts');
@@ -243,16 +246,17 @@ test.describe('footer', () => {
       await page.goto(path);
       const legal = page.locator('footer .legal');
       await expect(legal).toContainText(`Copyright © ${new Date().getFullYear()} Ryan Parker.`);
-      await expect(legal.getByRole('link', { name: 'Built with Astro' })).toHaveAttribute(
-        'href',
-        'https://astro.build',
-      );
+      await expect(page.locator('footer a[href*="astro.build"]')).toHaveCount(0);
+      await expect(page.locator('footer')).not.toContainText(/Built with Astro|Xây dựng với Astro/);
       await expect(legal.getByRole('link', { name: 'Tiếng Việt' })).toHaveAttribute(
         'href',
         /\/vi\//,
       );
       await expect(page.locator('footer .icon-btn')).toHaveCount(0);
     }
+    await page.goto('/vi/');
+    await expect(page.locator('footer a[href*="astro.build"]')).toHaveCount(0);
+    await expect(page.locator('footer')).not.toContainText(/Built with Astro|Xây dựng với Astro/);
   });
 
   test('directory has Explore, Writing, Connect and Resources with their links', async ({
@@ -708,6 +712,9 @@ test.describe('blocks and in-page targets', () => {
       '/star/',
       '/star/emr-cost-optimization/',
       '/blog/',
+      '/blog/topics/',
+      '/blog/topics/developer-tools/',
+      '/blog/series/neovim-setup-guide/',
       '/blog/tags/',
       '/blog/series/',
       '/blog/neovim-setup-1-zero-to-editor/',

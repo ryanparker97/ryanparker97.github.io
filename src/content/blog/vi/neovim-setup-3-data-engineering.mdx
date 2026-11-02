@@ -1,0 +1,342 @@
+---
+title: 'Hướng dẫn thiết lập Neovim, Phần 3: DBT, SQL, cơ sở dữ liệu và CloudFormation'
+description: 'Làm việc với model dbt, truy vấn cơ sở dữ liệu có gợi ý bảng và cột, và sửa template CloudFormation với đúng schema trong cấu hình Neovim 0.12 của tôi.'
+pubDate: 2026-11-01
+tags: ['neovim', 'dotfiles', 'dbt', 'sql', 'data-engineering']
+series: 'neovim-setup-guide'
+seriesPart: 3
+heroImage: '../../../assets/blog/neovim-setup/part-3.svg'
+heroImageCredit: 'Logo Neovim của [Jason Long](http://x.com/jasonlong), [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/), đã chỉnh sửa'
+---
+
+import Callout from '~/components/blog/Callout.astro';
+
+Công việc với dữ liệu là một sự pha trộn kỳ lạ đối với một trình soạn thảo. Một tệp SQL có thể đầy Jinja, một câu truy vấn chỉ có ý nghĩa khi chạy trên cơ sở dữ liệu thật, và các template YAML mô tả hạ tầng của bạn thì dài và rất khắt khe về schema. [Phần 2](/vi/blog/neovim-setup-2-languages/) đã thiết lập các mảnh ghép chung: language server, gợi ý mã, định dạng và linting. Phần này hướng chính những mảnh ghép đó vào các tệp dữ liệu.
+
+Hầu hết những gì ở đây chỉ được nạp khi một tệp SQL, một lệnh cơ sở dữ liệu hoặc một template yêu cầu; ngoại lệ là các mảnh gợi ý mã, được nói ở bước 4. Bạn có thể xem cả chuỗi bài trên [trang chuỗi bài viết](/vi/blog/series/neovim-setup-guide/).
+
+<Callout type="note" lang="vi">
+  **Đã thử với:** Neovim 0.12, macOS, dotfiles commit `64351ec`. **Nguồn:**
+  [github.com/ryanparker97/dotfiles](https://github.com/ryanparker97/dotfiles) (thư mục `nvim/`).
+</Callout>
+
+## Bạn sẽ có gì khi kết thúc
+
+Khi xong phần này, bạn sẽ có:
+
+- **Các tệp `.sql` trong một dự án dbt** được nhận diện là loại tệp `sql.dbt`.
+- **Các lệnh dbt** trên năm phím, dùng dbtpal.
+- Định dạng và linting SQL bằng **sqlfluff**.
+- Một **giao diện cơ sở dữ liệu** và các truy vấn `:DB`, dùng vim-dadbod.
+- **Gợi ý bảng và cột**, hoạt động cả bên trong các model dbt.
+- **Template CloudFormation** với kiểm tra YAML, các tag CloudFormation và cfn-lint.
+
+Cấu hình không có language server cho SQL. Bảng độ phủ trong README có dấu gạch ở cột LSP cho dbt và SQL. Gợi ý mã đến từ cơ sở dữ liệu của bạn, còn định dạng và linting đến từ sqlfluff, đủ cho những gì tôi cần.
+
+## Trước khi bắt đầu
+
+Bạn cần hoàn thành Phần 1 và 2, để `:checkhealth` sạch lỗi và trình quản lý plugin hoạt động. Ngoài ra:
+
+- **`dbt` và `sqlfluff`.** Cả hai đã được cài ở [Phần 1, bước 1](/vi/blog/neovim-setup-1-zero-to-editor/) (`pipx install dbt-core` và `pipx install sqlfluff`).
+- **Một dự án dbt để thử.** Dự án nào có `dbt_project.yml` cũng được.
+- **Một client cơ sở dữ liệu.** vim-dadbod chạy client dòng lệnh của chính cơ sở dữ liệu bạn dùng, ví dụ `psql` cho Postgres, nên client đó phải được cài sẵn. Đó là cách plugin hoạt động; cấu hình không đặt điều này.
+
+## Một tệp SQL trở thành model dbt như thế nào
+
+Một tệp `.sql` thông thường chỉ là SQL. Một model dbt là SQL cộng Jinja, và cần công cụ khác. Vì vậy cấu hình cho các tệp dbt một loại tệp riêng. Trong `core/autocmds.lua`, một tệp `.sql` nằm dưới `models/`, `macros/`, `analyses/`, `seeds/`, `snapshots/` hoặc `tests/` sẽ thành `sql.dbt`, nhưng chỉ khi có `dbt_project.yml` ở thư mục phía trên. Mọi trường hợp khác vẫn là `sql` thường.
+
+```lua title="lua/ryanparker/core/autocmds.lua" {4,6-7}
+    [".*%.sql"] = {
+      function(path)
+        -- …
+        for _, dir in ipairs({ "models", "macros", "analyses", "seeds", "snapshots", "tests" }) do
+          if path:find("/" .. dir .. "/", 1, true) then
+            if vim.fs.root(path, "dbt_project.yml") then
+              return "sql.dbt"
+            end
+            return nil
+          end
+        end
+      end,
+    },
+```
+
+Một loại tệp mới có một cái giá: Treesitter không có parser nào mang tên đó. Hai dòng trong `treesitter.lua` giải quyết việc này bằng cách bảo nó dùng lại một parser có sẵn:
+
+```lua title="lua/ryanparker/plugins/treesitter.lua"
+      pcall(vim.treesitter.language.register, "sql", "sql.dbt")
+      pcall(vim.treesitter.language.register, "yaml", "yaml.cloudformation")
+      pcall(vim.treesitter.language.register, "terraform", "terraform-vars")
+```
+
+`sql.dbt` dùng lại parser `sql`, và `yaml.cloudformation` dùng lại `yaml`. Dòng thứ ba dành cho các tệp biến Terraform, đã nói ở Phần 2. Để xem một buffer nhận loại tệp nào, chạy `:set ft?`.
+
+## Bước 1: lệnh dbt với dbtpal
+
+dbtpal chạy dbt cho model bạn đang mở. Đây là spec của nó:
+
+```lua title="lua/ryanparker/plugins/data.lua" {3-6,10}
+  {
+    "PedramNavid/dbtpal",
+    enabled = function()
+      return vim.fn.executable("dbt") == 1
+    end,
+    ft = { "sql", "sql.dbt", "dbt" },
+    dependencies = { "nvim-lua/plenary.nvim" },
+    opts = {
+      path_to_dbt = "dbt",
+      protect_compiled_files = true,
+      custom_dbt_syntax_enabled = true,
+    },
+    keys = {
+      { "<leader>dr", "<cmd>DbtRun<CR>", desc = "dbt run model" },
+      { "<leader>dt", "<cmd>DbtTest<CR>", desc = "dbt test model" },
+      { "<leader>db", "<cmd>DbtBuild<CR>", desc = "dbt build" },
+      { "<leader>dc", "<cmd>DbtCompile<CR>", desc = "dbt compile" },
+      { "<leader>dD", "<cmd>DbtDebug<CR>", desc = "dbt debug" },
+    },
+  },
+```
+
+Có bốn điều đáng chú ý:
+
+- `enabled` là một hàm chạy lúc khởi động. Nếu `dbt` không nằm trong `PATH`, plugin hoàn toàn không tồn tại, nên máy không có dbt sẽ không có phím dbt và không có lỗi.
+- `ft` nạp plugin cho ba loại tệp SQL, và nhấn một phím của nó cũng nạp plugin, nên nó không tốn gì cho đến lúc đó.
+- `protect_compiled_files = true` được đặt để bảo vệ các tệp đã biên dịch của dbt, theo như tên của nó; xem tài liệu của dbtpal để biết chính xác nó làm gì.
+- Năm phím chạy model, test model, build, compile và debug. Tất cả đều bắt đầu bằng `<leader>d`.
+
+<Callout type="warning" lang="vi">
+  Nếu bạn cài dbt sau lần khởi chạy đầu tiên, hãy khởi động lại Neovim. Việc kiểm tra `enabled` chỉ
+  chạy lúc khởi động, và lazy.nvim cài dbtpal vào thời điểm đó. dbtpal không có trong
+  `lazy-lock.json` ở commit này, vì dbt bị thiếu khi tệp khóa được viết. Tệp khóa sẽ thay đổi lần
+  đầu plugin được cài.
+</Callout>
+
+## Bước 2: định dạng và linting SQL với sqlfluff
+
+Một công cụ làm cả hai việc. `formatting.lua` (dòng 35 đến 37) và `linting.lua` (dòng 16 đến 18) liệt kê cùng ba loại tệp: `sql`, `sql.dbt` và `dbt`. Định dạng khi lưu hoạt động như đã mô tả ở Phần 2.
+
+sqlfluff chạy chậm, nên cấu hình linting xử lý nó đặc biệt. Nó không bao giờ lint ở `InsertLeave`, tức là mỗi lần bạn rời chế độ insert. Nó chỉ lint khi bạn đọc hoặc lưu một tệp:
+
+```lua title="lua/ryanparker/plugins/linting.lua"
+      -- Slow linters: never run while typing (InsertLeave).
+      local slow = { sqlfluff = true }
+```
+
+sqlfluff cũng cần biết bạn viết SQL theo dialect nào. Tài liệu của chính nó mô tả một tệp `.sqlfluff` ở thư mục gốc dự án cho việc này. Đây là tệp cấu hình duy nhất trong phần này không đến từ repo của tôi. Nó chỉ là ví dụ minh họa, và tệp này không thuộc cấu hình; hãy xem tài liệu của sqlfluff cho dialect của bạn và cho templater dbt của nó.
+
+```ini title=".sqlfluff"
+[sqlfluff]
+dialect = postgres
+```
+
+## Bước 3: kết nối cơ sở dữ liệu với dadbod
+
+vim-dadbod chạy truy vấn, còn vim-dadbod-ui cho bạn một thanh bên với các kết nối và bảng. vim-dadbod-ui chỉ được nạp khi dùng lệnh hoặc phím của nó. vim-dadbod cũng được nạp cùng blink.cmp, như bước 4 sẽ cho thấy:
+
+```lua title="lua/ryanparker/plugins/data.lua"
+  {
+    "tpope/vim-dadbod",
+    cmd = { "DB" },
+  },
+  {
+    "kristijanhusak/vim-dadbod-ui",
+    cmd = { "DBUI", "DBUIToggle", "DBUIAddConnection" },
+    dependencies = { "tpope/vim-dadbod" },
+    keys = { { "<leader>du", "<cmd>DBUIToggle<CR>", desc = "DB UI" } },
+    init = function()
+      vim.g.db_ui_use_nerd_fonts = 1
+    end,
+  },
+```
+
+Chạy `:DB` sẽ nạp vim-dadbod. Chạy `:DBUI`, `:DBUIToggle` hoặc `:DBUIAddConnection`, hoặc nhấn `<leader>du`, sẽ nạp giao diện. Thiết lập cuối bật biểu tượng Nerd Font, thêm một lý do để dùng Nerd Font.
+
+Cấu hình không lưu bất kỳ kết nối nào, và không nên, vì một URL thường chứa mật khẩu. Cách đơn giản là dùng biến môi trường. URL này chỉ là ví dụ, hãy dùng URL của bạn:
+
+```sh
+$ export DATABASE_URL=postgres://localhost:5432/analytics
+```
+
+Hãy khởi động Neovim từ shell đó. Nguồn gợi ý trong cấu hình của tôi tìm kết nối trong `w:db`, `t:db`, `b:db`, `g:db`, rồi đến `$DATABASE_URL`. Tài liệu của plugin cũng nói vim-dadbod quay về `$DATABASE_URL` khi bạn chạy `:DB` mà không có URL. Hãy thử truy vấn đầu tiên với `:DB select 1`. Nếu bạn không muốn dùng biến môi trường, chạy `:DBUIAddConnection` và điền một kết nối ngay trong giao diện.
+
+## Bước 4: gợi ý bảng và cột, kể cả trong model dbt
+
+Đây là phần khéo léo của thiết lập dữ liệu. Phần 2 đã cho thấy blink.cmp lấy gợi ý từ các nguồn. Với SQL, một trong các nguồn đó là cơ sở dữ liệu thật của bạn:
+
+```lua title="lua/ryanparker/plugins/completion.lua" {5-6}
+      sources = {
+        default = { "lsp", "path", "snippets", "buffer" },
+        per_filetype = {
+          -- …
+          -- blink splits "sql.dbt" on ".", so this entry also serves dbt models.
+          sql = { "snippets", "dadbod", "buffer" },
+          -- …
+        },
+        providers = {
+          -- …
+          dadbod = { name = "Dadbod", module = "vim_dadbod_completion.blink", enabled = dadbod_enabled },
+        },
+      },
+```
+
+Chú thích giải thích mẹo này. blink tách `sql.dbt` theo dấu chấm, nên mục `sql` cũng phục vụ các model dbt. Chuyện sẽ kết thúc ở đó, trừ một vấn đề: vim-dadbod-completion chỉ chấp nhận các loại tệp `sql`, `mysql` và `plsql`. Một buffer `sql.dbt` bị bỏ qua. Hai thứ trong cấu hình của tôi xử lý việc này: việc đổi loại tệp bên dưới, và một hàm tên `dadbod_enabled`, được nói sau đó.
+
+Cách sửa đầu tiên là cho plugin thấy buffer như một buffer `sql` thường trong chốc lát, để `fetch()` của nó chấp nhận. Đây là hàm làm việc đó:
+
+```lua title="lua/ryanparker/plugins/completion.lua" {1-4,17-20}
+-- vim-dadbod-completion hard-codes ['sql','mysql','plsql'] in fetch(), but once a
+-- buffer is cached, omni() no longer checks the filetype. So prime dbt buffers by
+-- briefly presenting them as sql. eventignore=all keeps FileType, ftplugin and
+-- syntax from re-running during the swap.
+local function prime_dbt(buf)
+  local url
+  -- …
+  local cands = { vim.w.db, vim.t.db, vim.b[buf].db, vim.g.db, vim.env.DATABASE_URL, n = 5 }
+  for i = 1, cands.n do
+    -- …
+  end
+  if not url or vim.b[buf].dadbod_primed == tostring(url) then
+    return
+  end
+  vim.b[buf].dadbod_primed = tostring(url)
+  local saved = vim.o.eventignore
+  vim.o.eventignore = "all"
+  vim.bo[buf].filetype = "sql"
+  pcall(vim.fn["vim_dadbod_completion#fetch"], buf)
+  vim.bo[buf].filetype = "sql.dbt"
+  vim.o.eventignore = saved
+end
+```
+
+Nó đọc kết nối theo thứ tự ở bước 3, đổi loại tệp khi `eventignore` là `all`, lấy các bảng và cột của bạn, rồi đổi lại. Khi plugin đã lưu cache một buffer, nó không kiểm tra loại tệp nữa, nên gợi ý mã tiếp tục hoạt động. Dấu `dadbod_primed` nhớ buffer đã được mồi bằng URL nào, nên màn đổi qua đổi lại không lặp lại với cùng một URL.
+
+Việc đổi loại tệp chỉ vượt qua được `fetch()`. Plugin kiểm tra loại tệp lần thứ hai trong `enabled()` của chính nguồn blink. Một `enabled` ở cấp provider trong blink sẽ ghi đè nó, và `dadbod_enabled` là của tôi. Nó từ chối các loại tệp khác, và với `sql.dbt` nó gọi `prime_dbt` trước khi đồng ý:
+
+```lua title="lua/ryanparker/plugins/completion.lua"
+local function dadbod_enabled()
+  local buf = vim.api.nvim_get_current_buf()
+  local ft = vim.bo[buf].filetype
+  if not dadbod_fts[ft] then
+    return false
+  end
+  if ft == "sql.dbt" then
+    prime_dbt(buf)
+  end
+  return true
+end
+```
+
+Các mảnh gợi ý mã không hoàn toàn nạp lười (lazy-load): vim-dadbod-completion và vim-dadbod là dependency của blink.cmp, nên chúng được nạp cùng nó ở `InsertEnter` đầu tiên trong bất kỳ buffer nào.
+
+<Callout type="tip" lang="vi">
+  Sau khi bạn đổi schema, chạy `:DBCompletionClearCache`. Lệnh gốc xóa toàn bộ cache và chỉ lấy lại
+  cho buffer hiện tại, và chỉ với sql, mysql và plsql. Trong một buffer dbt, `prime_dbt` sẽ thoát
+  sớm vì `dadbod_primed` không đổi, nên nó sẽ không bao giờ lấy lại các bảng. Cấu hình của tôi thay
+  lệnh này để nó cũng đặt lại việc mồi.
+</Callout>
+
+## Bước 5: template CloudFormation
+
+Template CloudFormation là YAML, nhưng loại tệp `yaml` thường không phân biệt được chúng với YAML khác. Vì vậy cấu hình nhìn vào bên trong tệp. Nếu 50 dòng đầu chứa `AWSTemplateFormatVersion` hoặc `AWS::`, tệp trở thành `yaml.cloudformation`:
+
+```lua title="lua/ryanparker/core/autocmds.lua"
+    [".*%.ya?ml"] = {
+      function(path, bufnr)
+        local lines
+        if bufnr and vim.api.nvim_buf_is_valid(bufnr) and vim.api.nvim_buf_is_loaded(bufnr) then
+          lines = vim.api.nvim_buf_get_lines(bufnr, 0, 50, false)
+        elseif path and vim.fn.filereadable(path) == 1 then
+          lines = vim.fn.readfile(path, "", 50)
+        end
+        for _, line in ipairs(lines or {}) do
+          if line:find("AWSTemplateFormatVersion", 1, true) or line:find("AWS::", 1, true) then
+            return "yaml.cloudformation"
+          end
+        end
+      end,
+    },
+```
+
+Mảnh tiếp theo dạy language server YAML về CloudFormation. Template dùng các tag ngắn như `!Ref` và `!Sub`, vốn không phải YAML chuẩn. Nếu không được giúp, server sẽ báo lỗi từng tag. Danh sách `customTags` cho nó biết chúng hợp lệ:
+
+```lua title="lua/ryanparker/plugins/lsp.lua" {2,8,11-15}
+      vim.lsp.config("yamlls", {
+        filetypes = { "yaml", "yaml.docker-compose", "yaml.gitlab", "yaml.helm-values", "yaml.cloudformation" },
+        settings = {
+          yaml = {
+            schemaStore = { enable = false, url = "" },
+            schemas = ok_schema and schemastore.yaml.schemas() or {},
+            -- …
+            customTags = {
+              "!And sequence",
+              -- …
+              "!Ref scalar",
+              "!Sub scalar",
+              "!Sub sequence",
+              "!GetAtt scalar",
+              "!GetAtt sequence",
+              -- …
+              "!Join sequence",
+            },
+          },
+        },
+      })
+```
+
+Dòng `filetypes` ở trên cùng thêm `yaml.cloudformation`, để server gắn vào các tệp này. Danh sách chứa các tag hàm nội tại, và tôi đã lược phần giữa. Với schema, cấu hình dùng SchemaStore qua `schemastore.yaml.schemas()`. Theo tôi hiểu, SchemaStore khớp theo tên tệp, nên một template tên `template.yaml` hoặc `*.cf.yaml` hẳn sẽ nhận được schema phù hợp, còn tên khác thì có thể không.
+
+Phần còn lại của chuỗi đã quen từ Phần 2:
+
+- prettier định dạng tệp (`formatting.lua`, dòng 31).
+- `cfn_lint` lint nó (`linting.lua`, dòng 24).
+- Chính `cfn-lint` được Mason cài (`lsp.lua`, dòng 35).
+
+Một tiện ích nhỏ thêm: trong các tệp YAML, `<leader>cy` copy đường dẫn khóa dưới con trỏ. Nó đến từ yaml.nvim, và mô tả của nó trong which-key là "Yank YAML key path". GitHub Actions và các tệp Terraform đã được nói ở [Phần 2](/vi/blog/neovim-setup-2-languages/), nên tôi không lặp lại.
+
+## Bước 6: kiểm tra mọi thứ hoạt động
+
+Vào một dự án dbt và mở một model. Đường dẫn bên dưới chỉ là ví dụ, hãy dùng đường dẫn của bạn:
+
+```sh
+$ cd ~/projects/my-dbt-project
+$ nvim models/staging/stg_orders.sql
+```
+
+Rồi kiểm tra bốn điều sau:
+
+- `:set ft?` in ra `filetype=sql.dbt`.
+- `:ConformInfo` liệt kê `sqlfluff` cho buffer.
+- `:Lazy` liệt kê dbtpal.
+- `<leader>dc` biên dịch model.
+
+Tiếp theo, kiểm tra cơ sở dữ liệu. Với `DATABASE_URL` đã đặt trước khi bạn khởi động Neovim, vào chế độ insert và gõ `select * from `. Menu gợi ý sẽ hiện các bảng từ nguồn Dadbod. Sau đó chạy `:DBUI` để mở giao diện.
+
+Cuối cùng, kiểm tra CloudFormation. Tạo một `template.yaml` bắt đầu bằng `AWSTemplateFormatVersion: '2010-09-09'`, lưu và mở lại bằng `:e`, vì việc nhận diện đọc các dòng khi tệp được mở. Rồi chạy `:set ft?`, nó phải in ra `filetype=yaml.cloudformation`. Một `!Ref` trong tệp không bị báo lỗi, và lưu tệp sẽ chạy cfn-lint. Nếu tất cả đều hoạt động, việc nhận diện, language server và các linter đang phối hợp với nhau.
+
+## Phím tắt cho công việc dữ liệu
+
+| Phím | Tác dụng |
+| --- | --- |
+| `<leader>dr` | chạy model dbt |
+| `<leader>dt` | test model dbt |
+| `<leader>db` | build dbt |
+| `<leader>dc` | biên dịch dbt |
+| `<leader>dD` | debug dbt |
+| `<leader>du` | giao diện cơ sở dữ liệu |
+| `<leader>cy` | copy đường dẫn khóa YAML |
+
+Năm phím dbt chỉ tồn tại khi `dbt` nằm trong `PATH`. which-key hiển thị nhóm `<leader>d` là "data / db". Lưu ý rằng `<leader>d` viết thường là dữ liệu còn `<leader>D` viết hoa là trình gỡ lỗi, được nói ở Phần 5.
+
+## Khắc phục sự cố
+
+- **Các phím dbt không làm gì.** dbt không nằm trong `PATH` khi Neovim khởi động. Sửa điều đó, rồi khởi động lại Neovim.
+- **`:set ft?` báo `sql`.** Tệp nằm ngoài các thư mục dbt, hoặc không có `dbt_project.yml` ở phía trên.
+- **Không có bảng nào trong gợi ý.** Cấu hình không tìm thấy kết nối, hoặc client cơ sở dữ liệu của bạn (ví dụ `psql`) chưa được cài. Đặt `DATABASE_URL` (hoặc một trong các biến khác), rồi chạy `:DBCompletionClearCache`.
+- **SQL không được lint khi đang gõ.** Đó là chủ ý. Nó lint khi đọc và lưu.
+- **sqlfluff phàn nàn về dialect.** Thêm một tệp `.sqlfluff` với dialect của bạn, như ở bước 2.
+- **`!Ref` bị báo lỗi trong template.** Dấu hiệu nhận diện không nằm trong 50 dòng đầu, nên tệp vẫn là `yaml`. Hoặc bạn tạo tệp ngay trong Neovim, vì việc nhận diện đọc các dòng khi mở; hãy mở lại bằng `:e`. Chạy `:set ft=yaml.cloudformation` nếu cả hai cách đều không giúp được.
+
+## Tiếp theo
+
+Ở Phần 4, chúng ta thiết lập Java, thứ cần một trình khởi chạy riêng thay vì thiết lập server chung.

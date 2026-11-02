@@ -7,6 +7,7 @@ import tailwindcss from '@tailwindcss/vite';
 import { remarkStarSections } from './src/lib/remark-star-sections';
 import { viPageHasContent } from './src/lib/vi-coverage';
 import { codeBlockTransformer } from './src/lib/shiki-transformer';
+import { rehypeExternalLinks } from './src/lib/rehype-external-links';
 
 export default defineConfig({
   site: 'https://ryanparker97.github.io',
@@ -35,7 +36,10 @@ export default defineConfig({
   ],
   markdown: {
     // Astro 7 defaults to Sätteri; remark plugins need the unified processor.
-    processor: unified({ remarkPlugins: [remarkStarSections] }),
+    processor: unified({
+      remarkPlugins: [remarkStarSections],
+      rehypePlugins: [rehypeExternalLinks],
+    }),
     shikiConfig: {
       themes: { light: 'github-light-high-contrast', dark: 'github-dark-high-contrast' },
       defaultColor: false,

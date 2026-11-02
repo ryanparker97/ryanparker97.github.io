@@ -1,5 +1,6 @@
 ---
 /** Chevron link (spec §5.6): the › is aria-hidden, so the accessible name never includes it. */
+import { EXTERNAL_REL, isExternal } from '~/lib/links';
 interface Props {
   href: string;
   /** Accessible name when the visible label is generic ("Learn more about my experience"). */
@@ -10,14 +11,15 @@ interface Props {
   [attr: string]: unknown;
 }
 const { href, label, class: cls, external = false, ...rest } = Astro.props;
+const newTab = external || isExternal(href);
 ---
 
 <a
   {href}
   class:list={['link-chevron', cls]}
   aria-label={label}
-  target={external ? '_blank' : undefined}
-  rel={external ? 'noopener' : undefined}
+  target={newTab ? '_blank' : undefined}
+  rel={newTab ? EXTERNAL_REL : undefined}
   {...rest}
 >
   <span>

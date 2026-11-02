@@ -20,6 +20,9 @@ export function viPageHasContent(pathname: string): boolean {
     path.startsWith(prefix) ? path.slice(prefix.length).split('/')[0] : '';
   if (path.startsWith('/blog/series/') && slug('/blog/series/'))
     return hasFile('series', slug('/blog/series/'));
+  if (path.startsWith('/blog/topics/') && slug('/blog/topics/'))
+    return hasFile('topics', slug('/blog/topics/'));
+  if (path === '/blog/topics/') return translated('blog', 'topics');
   if (path.startsWith('/blog/tags/') || path === '/blog/series/' || path === '/blog/')
     return translated('blog');
   if (path.startsWith('/blog/')) return hasFile('blog', slug('/blog/'));

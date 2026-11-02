@@ -2,9 +2,9 @@
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import Hero from '~/components/tile/Hero.astro';
-import NewsTile from '~/components/tile/NewsTile.astro';
-import { getSeriesDetail, getSeriesList } from '~/lib/blog-content';
-import { getLang, langStaticPaths, localePath, switchTarget } from '~/i18n/routes';
+import PartRows from '~/components/blog/PartRows.astro';
+import { getSeriesDetail, getSeriesList, toListPost } from '~/lib/blog-content';
+import { getLang, langStaticPaths, switchTarget } from '~/i18n/routes';
 import { blogNav } from '~/lib/localnav';
 import { useT } from '~/i18n';
 
@@ -21,6 +21,11 @@ const lang = getLang(Astro.params.lang);
 const t = useT(lang);
 const detail = (await getSeriesDetail(Astro.params.slug!, lang))!;
 const { entry, parts, published } = detail;
+const listParts = parts.map((p) => ({
+  part: p.part,
+  title: p.title,
+  post: p.post && toListPost(p.post),
+}));
 ---
 
 <BaseLayout
@@ -39,24 +44,9 @@ const { entry, parts, published } = detail;
     subline={t('series.progress', { n: published, total: parts.length })}
     copy={entry.data.description}
   />
-  <section class="news-band">
-    <ol class="news-grid">
-      {parts.map((p, i) => (
-        <NewsTile
-          index={i}
-          href={p.post ? localePath(`/blog/${p.post.slug}/`, lang) : undefined}
-          title={p.post?.data.title ?? p.title}
-          category={t('series.part', { n: p.part })}
-          description={p.post?.data.description ?? p.description}
-          meta={p.post ? t('blog.readingTime', { n: p.post.minutes }) : undefined}
-        >
-          {!p.post && (
-            <p class="news-meta">
-              <span class="chip">{t('series.soon')}</span>
-            </p>
-          )}
-        </NewsTile>
-      ))}
-    </ol>
+  <section class="section section--tight">
+    <div class="section-inner">
+      <PartRows {lang} parts={listParts} label={entry.data.title} />
+    </div>
   </section>
 </BaseLayout>

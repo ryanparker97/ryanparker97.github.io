@@ -95,6 +95,8 @@ test.describe('hreflang agrees with the sitemap', () => {
       '/star/',
       '/star/emr-cost-optimization/',
       '/blog/',
+      '/blog/topics/',
+      '/blog/topics/developer-tools/',
     ]) {
       await page.goto(path);
       const inSitemap = sitemap.includes(`<loc>https://ryanparker97.github.io/vi${path}</loc>`);

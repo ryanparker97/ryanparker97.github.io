@@ -63,18 +63,36 @@ const t = useT(lang);
     min-height: 24px;
     padding-block: 4px;
   }
+  /* Every link is at least a 44px tap target. */
+  .parts a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding-block: 6px;
+  }
   .hairline {
     gap: 0;
     border-top: 1px solid var(--border);
   }
   .hairline li {
-    padding-block: 12px;
+    padding-block: 0;
     border-bottom: 1px solid var(--border);
+  }
+  .hairline a,
+  .hairline .soon {
+    padding-block: 12px;
+  }
+  .parts:not(.hairline) strong {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
   }
   .hairline a {
     color: var(--link);
   }
   .hairline strong {
+    display: block;
+    padding-block: 12px;
     color: var(--text);
   }
 </style>
