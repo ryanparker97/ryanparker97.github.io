@@ -5,11 +5,12 @@ test.skip(({ browserName }) => browserName !== 'chromium', 'reads dist; one brow
 
 const decode = (s: string) =>
   s
-    .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    // Last, so "&amp;lt;" decodes to "&lt;", not "<".
+    .replace(/&amp;/g, '&')
     .trim();
 
 function titleOf(p: BuiltPage): string {
