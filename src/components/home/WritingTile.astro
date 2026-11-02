@@ -67,6 +67,10 @@ const part = post?.data.seriesPart ?? 0;
 
 <style>
   /* Part numerals at Promo size, the current part in --text and the rest in --border. */
+  /* The series chip may wrap at 200% text. */
+  .chip {
+    white-space: normal;
+  }
   .progress p {
     margin: 0 0 12px;
     color: var(--text-2);
@@ -75,6 +79,7 @@ const part = post?.data.seriesPart ?? 0;
   }
   .progress ol {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     gap: 24px;
     margin: 0;

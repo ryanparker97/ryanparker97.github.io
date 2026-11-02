@@ -1,7 +1,8 @@
 ---
 /**
- * Items of a `·`-separated list (spec §5.4): each item is a `nowrap` span that carries the
- * separator after itself, so an item never splits and a line never starts with a `·`.
+ * Items of a `·`-separated list (spec §5.4): each item is an inline-block span that carries
+ * the separator after itself, so an item stays whole and a line never starts with a `·`; items wrap
+ * inside only when one item is wider than the line (WCAG 1.4.10).
  */
 interface Item {
   text: string;

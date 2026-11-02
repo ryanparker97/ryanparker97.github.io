@@ -30,6 +30,7 @@ const t = useT(lang);
     gap: 8px;
   }
   .chip-filter {
+    min-width: 44px;
     min-height: 36px;
     padding-block: 8px;
     cursor: pointer;
@@ -41,6 +42,16 @@ const t = useT(lang);
   .chip-filter[aria-pressed='true'] {
     background: var(--text);
     color: var(--bg);
+  }
+  @media (forced-colors: active) {
+    .chip-filter {
+      border: 1px solid ButtonText;
+    }
+    .chip-filter[aria-pressed='true'] {
+      background: Highlight;
+      color: HighlightText;
+      border-color: Highlight;
+    }
   }
   @media (max-width: 734px) {
     .filter {

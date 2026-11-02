@@ -485,6 +485,8 @@ test.describe('Highlights gallery and sticky storytelling', () => {
       'aria-labelledby',
       'highlights-title',
     );
+    await expect(g).not.toHaveAttribute('aria-labelledby', /.+/);
+    await expect(page.getByRole('region', { name: 'Get the highlights.' })).toHaveCount(1);
     const cards = g.locator('.gallery-card');
     await expect(cards).toHaveCount(order.length);
     await expect(cards.first().locator('.gc-label')).toHaveText('FPT Software · 2026');

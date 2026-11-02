@@ -456,28 +456,12 @@ test('drop cap and quote styles apply when opted in', async ({ page }) => {
   expect(small).toBe('48px');
 });
 
-for (const [path, text] of [
-  ['/blog/', 'Cover art: Neovim logo by Jason Long, CC BY 3.0, modified'],
-  ['/vi/blog/', 'Ảnh bìa: Logo Neovim của Jason Long, CC BY 3.0, đã chỉnh sửa'],
-] as const) {
-  test(`${path} shows one deduplicated cover credit`, async ({ page }) => {
+for (const path of ['/blog/', '/vi/blog/']) {
+  test(`${path} shows no cover credit`, async ({ page }) => {
     await page.goto(path);
-    const credit = page.locator('.cover-credits');
-    await expect(credit).toHaveCount(1);
-    await expect(credit).toHaveText(text);
-    const links = credit.locator('a');
-    await expect(links).toHaveText(['Jason Long', 'CC BY 3.0']);
-    for (const i of [0, 1]) {
-      await expect(links.nth(i)).toHaveAttribute('target', '_blank');
-      await expect(links.nth(i)).toHaveAttribute('rel', 'noopener noreferrer');
-    }
-    expect(await links.evaluateAll((a) => a.map((x) => x.getAttribute('href')))).toEqual([
-      'http://x.com/jasonlong',
-      'http://creativecommons.org/licenses/by/3.0/',
-    ]);
-    const last = await page.locator('.post-rows > li').last().boundingBox();
-    const box = await credit.boundingBox();
-    expect(box!.y).toBeGreaterThan(last!.y + last!.height - 1);
+    await expect(page.locator('.post-rows > li').first()).toBeVisible();
+    await expect(page.locator('.cover-credits, .cover-credit')).toHaveCount(0);
+    await expect(page.locator('main')).not.toContainText(/Cover art|Ảnh bìa|Jason Long/);
   });
 }
 
@@ -510,7 +494,7 @@ test('topic pages are excluded from the search index', async ({ page }) => {
   }
 });
 
-test('post page shows the part cover with a credit caption', async ({ page }) => {
+test('post page shows the part cover with no credit caption', async ({ page }) => {
   for (const [path, n] of [
     [PARTS[0], '1'],
     [PARTS[4], '5'],
@@ -523,14 +507,8 @@ test('post page shows the part cover with a credit caption', async ({ page }) =>
     await expect(img).toHaveAttribute('src', new RegExp(`part-${n}\\.[^/]*svg$`));
   }
   await page.goto(PARTS[0]);
-  const cap = page.locator('figure.post-hero figcaption');
-  await expect(cap).toHaveText('Cover art: Neovim logo by Jason Long, CC BY 3.0, modified');
-  const links = cap.getByRole('link');
-  await expect(links).toHaveCount(2);
-  for (let i = 0; i < 2; i++) {
-    await expect(links.nth(i)).toHaveAttribute('target', '_blank');
-    await expect(links.nth(i)).toHaveAttribute('rel', 'noopener noreferrer');
-  }
+  await expect(page.locator('figure.post-hero figcaption')).toHaveCount(0);
+  await expect(page.locator('main')).not.toContainText(/Cover art|Jason Long/);
   const rule = await page.locator('header.head .keyline').boundingBox();
   const fig = await page.locator('figure.post-hero').boundingBox();
   const series = await page.locator('nav.series-box').boundingBox();
@@ -541,7 +519,6 @@ test('post page shows the part cover with a credit caption', async ({ page }) =>
     /\/og-default\.png$/,
   );
   await page.goto(`/vi${PARTS[0]}`);
-  await expect(page.locator('figure.post-hero figcaption')).toHaveText(
-    'Ảnh bìa: Logo Neovim của Jason Long, CC BY 3.0, đã chỉnh sửa',
-  );
+  await expect(page.locator('figure.post-hero figcaption')).toHaveCount(0);
+  await expect(page.locator('main')).not.toContainText(/Ảnh bìa|Jason Long/);
 });

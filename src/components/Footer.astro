@@ -157,15 +157,6 @@ const columns = [
       </div>
     </nav>
 
-    <p class="reach">
-      {t('footer.reachBefore')} <a href={`mailto:${profile.email}`}>{t('footer.reachEmail')}</a>{' '}
-      {t('footer.reachMid')}{' '}
-      <a href={profile.socials.linkedin} {...externalAttrs(profile.socials.linkedin)}>
-        {t('footer.reachLinkedin')}
-      </a>
-      .
-    </p>
-
     <div class="legal">
       <p class="copy">
         {t('footer.copyright', { year: new Date().getFullYear() })} {t('footer.rights')}
@@ -191,10 +182,32 @@ const columns = [
     letter-spacing: -0.01em;
     padding-bottom: env(safe-area-inset-bottom);
   }
+  /* Short pages: the footer ends at the viewport bottom (spec §5.9). Screen only; no fixed positioning. */
+  @media screen {
+    :global(body:has(> .site-footer)) {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    @supports (min-height: 100dvh) {
+      :global(body:has(> .site-footer)) {
+        min-height: 100dvh;
+      }
+    }
+    .site-footer {
+      margin-top: auto;
+    }
+  }
   /* A page whose last band is also --surface-2 gets a line above the footer. */
   :global(
       html:has(
-        main > :nth-last-child(1 of :not([hidden])):is(.section--surface, .tone-surface, .news-band)
+        main
+          > :nth-last-child(1 of :not([hidden])):is(
+            .section--surface,
+            .tone-surface,
+            .news-band,
+            .unit:not(.unit--bg)
+          )
       )
     )
     .site-footer,
@@ -202,7 +215,7 @@ const columns = [
       html:has(
         main
           > :nth-last-child(1 of :not([hidden]))
-          > :last-child:is(.section--surface, .tone-surface, .news-band)
+          > :last-child:is(.section--surface, .tone-surface, .news-band, .unit:not(.unit--bg))
       )
     )
     .site-footer {
@@ -275,20 +288,13 @@ const columns = [
   .accordions {
     display: none;
   }
-  .reach {
-    margin: 0;
-    padding-block: 37px 19px;
-    border-bottom: 1px solid var(--border);
-  }
-  .reach a {
-    color: var(--link);
-    text-decoration: underline;
-  }
   .legal {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 0 30px;
+    margin-top: 37px;
+    border-top: 1px solid var(--border);
     padding-block: 17px 11px;
   }
   .legal p {
@@ -366,19 +372,12 @@ const columns = [
       min-height: 44px;
       padding-inline: 14px;
     }
-    .reach {
-      padding-block: 8px;
-      border-bottom: 0;
-    }
-    .reach a {
-      display: inline-flex;
-      align-items: center;
-      min-height: 44px;
-    }
     .legal {
       flex-direction: column;
       align-items: flex-start;
       gap: 4px;
+      margin-top: 0;
+      border-top: 0;
       padding-block: 12px 20px;
     }
     .legal-links a,

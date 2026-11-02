@@ -34,6 +34,7 @@ test.describe('Experiences', () => {
     await page.goto('/experiences/print/');
     await expect(page.locator('meta[name=robots]')).toHaveAttribute('content', 'noindex');
     await expect(page.locator('header[data-nav]')).toHaveCount(0);
+    await expect(page.locator('main')).toHaveCount(1);
     await expect(
       page.getByRole('heading', { name: 'AI Engineering & Agentic Coding' }),
     ).toBeVisible();
@@ -84,6 +85,60 @@ test.describe('Projects', () => {
     await expect(summary).toHaveAttribute('aria-label', /^Learn more about /);
     await expect(summary.locator('.plus-label')).toHaveText('Learn more');
   });
+
+  for (const path of ['/projects/', '/vi/projects/']) {
+    for (const w of [375, 900, 1440]) {
+      test(`${path} at ${w}px: the Learn more summary is last and overlaps nothing, closed and open`, async ({
+        page,
+      }) => {
+        await page.emulateMedia({ reducedMotion: 'reduce' });
+        await page.setViewportSize({ width: w, height: 900 });
+        await page.goto(path);
+        for (const open of [false, true]) {
+          const state = open ? 'open' : 'closed';
+          if (open) {
+            await tile(page).locator('summary').click();
+            await expect(tile(page).locator('details')).toHaveAttribute('open', '');
+          }
+          const m = await tile(page).evaluate((tileEl) => {
+            const s = tileEl.querySelector('summary')!;
+            const sr = s.getBoundingClientRect();
+            const hits: string[] = [];
+            let maxBottom = -Infinity;
+            for (const e of Array.from(tileEl.querySelectorAll('*'))) {
+              if (s.contains(e) || e.contains(s)) continue;
+              if (!e.checkVisibility({ visibilityProperty: true })) continue;
+              const r = e.getBoundingClientRect();
+              if (r.width === 0 || r.height === 0) continue;
+              maxBottom = Math.max(maxBottom, r.bottom);
+              if (
+                r.left < sr.right &&
+                r.right > sr.left &&
+                r.top < sr.bottom &&
+                r.bottom > sr.top
+              ) {
+                hits.push(`${e.tagName.toLowerCase()}.${e.className}`);
+              }
+            }
+            const tr = tileEl.getBoundingClientRect();
+            const col = tileEl.querySelector('.lockup')!.getBoundingClientRect();
+            return {
+              hits,
+              gapAbove: sr.top - maxBottom,
+              tail: tr.bottom - sr.bottom,
+              rightDelta: Math.abs(sr.right - col.right),
+            };
+          });
+          expect(m.hits, `${state}: intersecting elements`).toEqual([]);
+          expect(m.gapAbove, `${state}: gap above the summary`).toBeGreaterThanOrEqual(16);
+          expect(m.rightDelta, `${state}: summary right edge vs lockup column`).toBeLessThanOrEqual(
+            2,
+          );
+          expect(m.tail, `${state}: space after the summary`).toBeLessThanOrEqual(41);
+        }
+      });
+    }
+  }
 
   test('Details toggles with Enter and Space and announces its state', async ({ page }) => {
     await page.goto('/projects/');

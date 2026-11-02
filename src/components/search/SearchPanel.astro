@@ -176,7 +176,7 @@ const quick = [
     }
   }
   .status {
-    margin-top: 16px;
+    margin-top: 32px;
     color: var(--text-2);
     font-size: 0.875rem;
   }
@@ -186,6 +186,9 @@ const quick = [
     display: none;
   }
   .results {
+    margin-top: 16px;
+  }
+  .status:empty + .results {
     margin-top: 32px;
   }
   /* The ✕ shows only at compact chrome or with a coarse pointer; Esc and the curtain close it. */
@@ -229,14 +232,16 @@ const quick = [
     }
     .quick a {
       min-height: 44px;
-      padding-block: 3px;
       gap: 14px;
       font-size: 1.0625rem;
     }
     .quick a::before {
       font-size: 14px;
     }
-    .results {
+    .status {
+      margin-top: 49px;
+    }
+    .status:empty + .results {
       margin-top: 49px;
     }
     .panel:not([hidden]) .field,

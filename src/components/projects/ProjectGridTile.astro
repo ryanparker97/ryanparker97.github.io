@@ -1,7 +1,8 @@
 ---
 /**
  * One project tile (spec §4.6): the lockup on top, tech chips and links below, and a plus disc
- * that opens the labelled bullets in place. The tile has no per-project page.
+ * that opens the labelled bullets in place. The plus disc is the tile's last row and moves below
+ * the bullets when open. The tile has no per-project page.
  */
 import { Image } from 'astro:assets';
 import type { Localized } from '~/lib/content';
@@ -97,13 +98,17 @@ const moreTech = d.tech.length - shownTech.length;
 
 <style>
   :global(.grid-tile[data-project]) {
-    padding-bottom: 76px;
-    /* The chips follow the summary 32px below it; they are not pushed to the tile bottom. */
-    justify-content: center;
+    /* Lockup and chips stack from the top; the details (summary) take the remaining space so the
+       disc sits last. */
+    justify-content: flex-start;
   }
   :global(.grid-tile[data-project] > .more) {
     max-width: none;
     width: calc(100% - 0px);
+    display: flex;
+    flex-direction: column;
+    /* In a taller 2-up row the disc drops to the tile bottom. */
+    margin-top: auto;
   }
   .dates {
     margin: 8px 0 0;
@@ -146,37 +151,15 @@ const moreTech = d.tech.length - shownTech.length;
     gap: 0 24px;
     margin: 0;
   }
-  .more summary {
-    position: absolute;
-    inset-inline-end: 16px;
-    inset-block-end: 16px;
-  }
-  @media (max-width: 1068px) {
-    .more summary {
-      inset-inline-end: 13px;
-      inset-block-end: 13px;
-    }
-  }
-  /* A tile spanning both columns: the disc sits at the right edge of the lockup column, 60px
-     from the tile bottom. */
-  @media (min-width: 735px) {
-    :global(
-        .tiles-2up
-          > .grid-tile[data-project]:is(
-            .grid-tile--span,
-            :last-child:nth-child(odd),
-            :has(details[open])
-          )
-      )
-      .more
-      summary {
-      inset-inline-end: max(16px, calc((100% - var(--content)) / 2));
-      inset-block-end: 60px;
-    }
+  /* After the content, at the lockup column's right edge. */
+  .more > summary {
+    order: 1;
+    align-self: flex-end;
+    margin-inline-end: max(0px, calc((100% - var(--content)) / 2));
   }
   .more-body {
     width: min(100%, calc(var(--content-wide) - 64px));
-    margin: 32px auto 0;
+    margin: 32px auto;
     text-align: start;
   }
   .at {

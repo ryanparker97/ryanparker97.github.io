@@ -61,13 +61,7 @@ const fallback =
 const jsonLd = personLd(p, new URL(localePath('/', lang), Astro.site).href, lang);
 ---
 
-<BaseLayout
-  title={t('meta.siteName')}
-  description={t('home.description')}
-  {lang}
-  {fallback}
-  {jsonLd}
->
+<BaseLayout title={t('home.title')} description={t('home.description')} {lang} {fallback} {jsonLd}>
   <HeroUnit {lang} profile={p} {stats} />
   {role && (
     <ExperienceUnit

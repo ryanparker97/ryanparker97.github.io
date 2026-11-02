@@ -69,12 +69,7 @@ const stat = headlineStat(d.metrics);
   }
   @media (min-width: 735px) {
     :global(.card.story) {
-      padding: 32px 32px 16px;
-    }
-  }
-  @media (min-width: 1069px) {
-    :global(.card.story) {
-      padding: 40px 40px 16px;
+      padding: 28px 28px 16px;
     }
   }
   .chips {
@@ -98,6 +93,12 @@ const stat = headlineStat(d.metrics);
     position: absolute;
     inset-inline-end: 16px;
     inset-block-end: 16px;
+  }
+  @media (max-width: 1068px) {
+    .more summary {
+      inset-inline-end: 13px;
+      inset-block-end: 13px;
+    }
   }
   .more-body {
     margin-top: 24px;

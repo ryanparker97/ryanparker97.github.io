@@ -273,11 +273,21 @@ const attrs = (l: LocalNavLink) => ({
     background: currentColor;
     opacity: 0.8;
   }
+  .links :is(a, button) {
+    line-height: 1.3334;
+  }
   .solo-link {
     flex: none;
+    max-width: 66%;
     margin-inline-start: auto;
     color: var(--link);
     font-size: 0.875rem;
+  }
+  .solo-link > span:first-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .chev-text {
     margin-inline-start: 0.24em;
