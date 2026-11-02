@@ -472,7 +472,8 @@ a.grid-tile:hover {
   font-weight: 600;
   line-height: 1;
   letter-spacing: -0.003em;
-  white-space: nowrap;
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
 }
 @media (min-width: 735px) {
   .stat-value {
@@ -568,6 +569,9 @@ a.grid-tile:hover {
   .stat-strip--compact > li + li {
     border-top: 0;
     border-left: 1px solid var(--border);
+  }
+  .stat-strip--compact .stat-value {
+    overflow-wrap: break-word;
   }
   .stat-strip--compact .stat-cap {
     overflow-wrap: anywhere;
@@ -819,8 +823,9 @@ a.grid-tile:hover {
 /* Reduced variant: the STAR story question, centred as one block with inline quote marks. */
 .quote--reduced {
   width: fit-content;
-  max-inline-size: 760px;
+  max-inline-size: min(760px, 100%);
   margin-inline: auto;
+  overflow-wrap: anywhere;
   text-align: center;
 }
 .quote--reduced blockquote > p:first-child::before {
@@ -1294,7 +1299,7 @@ mark.tech.tech--start {
 }
 @layer base {
   :where(h1, h2, h3, h4, .t-subhead):not(:where(.card, .prose, article) *) {
-    overflow-wrap: break-word;
+    overflow-wrap: anywhere;
   }
 }
 
