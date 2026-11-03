@@ -185,6 +185,7 @@
   "blog.read": "Đọc",
   "blog.moreFrom": "Đọc thêm",
   "blog.coverCredit": "Ảnh bìa:",
+  "blog.coverAlt": "Ảnh bìa: {title}",
   "blog.moreSeries": "Thêm trong loạt bài này",
   "common.goHome": "Về trang chủ",
   "common.learnAbout": "Tìm hiểu thêm về {title}",

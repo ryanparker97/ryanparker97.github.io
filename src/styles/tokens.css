@@ -9,7 +9,7 @@
   --surface: var(--bg);
   --fill: light-dark(#e8e8ed, #333336);
   --text: light-dark(#1d1d1f, #f5f5f7);
-  --text-2: light-dark(#6e6e73, #86868b);
+  --text-2: light-dark(#515154, #aeaeb2);
   --border: light-dark(#d2d2d7, #424245);
   --keyline: light-dark(rgb(0 0 0 / 0.16), rgb(255 255 255 / 0.24));
   --accent: #0071e3;
@@ -26,12 +26,12 @@
   --paddle-fill: light-dark(rgb(210 210 215 / 0.64), rgb(66 66 69 / 0.72));
   --paddle-fill-hover: light-dark(rgb(210 210 215 / 0.7), rgb(66 66 69 / 0.8));
   --paddle-fill-active: light-dark(rgb(193 193 198 / 0.65), rgb(66 66 69 / 0.9));
-  --paddle-ink: light-dark(rgb(0 0 0 / 0.56), rgb(255 255 255 / 0.8));
+  --paddle-ink: light-dark(rgb(0 0 0 / 0.72), rgb(255 255 255 / 0.8));
   --menu-ink: light-dark(#333336, #e8e8ed);
-  --ft-text: light-dark(rgb(0 0 0 / 0.56), rgb(255 255 255 / 0.56));
-  --ft-link: light-dark(rgb(0 0 0 / 0.72), rgb(255 255 255 / 0.8));
+  --ft-text: light-dark(rgb(0 0 0 / 0.68), rgb(255 255 255 / 0.66));
+  --ft-link: light-dark(rgb(0 0 0 / 0.8), rgb(255 255 255 / 0.8));
   --ft-title: light-dark(rgb(0 0 0 / 0.88), rgb(255 255 255 / 0.92));
-  --ft-pipe: light-dark(rgb(0 0 0 / 0.48), rgb(255 255 255 / 0.4));
+  --ft-pipe: light-dark(rgb(0 0 0 / 0.56), rgb(255 255 255 / 0.48));
 
   --mint: #a8e6cf; /* the print rule under headings only */
 

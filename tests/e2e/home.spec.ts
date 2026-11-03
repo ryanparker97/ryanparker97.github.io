@@ -409,6 +409,14 @@ test.describe('Grid tile content', () => {
     await expect(tile.locator('[data-series-progress] li')).toHaveCount(5);
     await expect(tile.locator('[data-series-progress]')).toContainText('Part 5 of 5');
     await expect(tile.locator('.actions > a')).toHaveCount(2);
+    const art = tile.locator('img.writing-art');
+    await expect(art).toHaveCount(1);
+    await expect(art).toHaveAttribute('alt', /^Cover art: /);
+    await expect(art).toHaveAttribute('src', /part-5\.[^/]*svg$/);
+    const box = await art.boundingBox();
+    expect(Math.abs(box!.width - 280)).toBeLessThanOrEqual(1);
+    await page.goto('/vi/');
+    await expect(page.locator('#writing img.writing-art')).toHaveAttribute('alt', /^Ảnh bìa: /);
   });
 
   test('certifications: newest first, issuer logos, no Verify link without a URL', async ({

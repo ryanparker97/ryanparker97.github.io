@@ -288,6 +288,15 @@ test.describe('blog', () => {
   test('series index shows progress and links every part', async ({ page }) => {
     await page.goto('/blog/series/neovim-setup-guide/');
     await expect(page.getByText('5 of 5 published')).toBeVisible();
+    const art = page.locator('main img.series-art');
+    await expect(art).toHaveAttribute('alt', 'Cover art: Neovim setup guide');
+    await expect(art).toHaveAttribute('src', /part-1\.[^/]*svg$/);
+    await page.goto('/vi/blog/series/neovim-setup-guide/');
+    await expect(page.locator('main img.series-art')).toHaveAttribute(
+      'alt',
+      'Ảnh bìa: Hướng dẫn thiết lập Neovim',
+    );
+    await page.goto('/blog/series/neovim-setup-guide/');
     const cards = page.locator('main ol.hl-list > li');
     await expect(cards).toHaveCount(5);
     for (let i = 0; i < 5; i++) {
@@ -521,4 +530,18 @@ test('post page shows the part cover with no credit caption', async ({ page }) =
   await page.goto(`/vi${PARTS[0]}`);
   await expect(page.locator('figure.post-hero figcaption')).toHaveCount(0);
   await expect(page.locator('main')).not.toContainText(/Ảnh bìa|Jason Long/);
+});
+
+test('post hero is big and centred', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(PARTS[0]);
+  const img = (await page.locator('figure.post-hero img').boundingBox())!;
+  const fig = (await page.locator('figure.post-hero').boundingBox())!;
+  expect(Math.abs(img.width - 480)).toBeLessThanOrEqual(1);
+  expect(Math.abs(img.x + img.width / 2 - (fig.x + fig.width / 2))).toBeLessThanOrEqual(1);
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto(PARTS[0]);
+  const img2 = (await page.locator('figure.post-hero img').boundingBox())!;
+  const fig2 = (await page.locator('figure.post-hero').boundingBox())!;
+  expect(Math.abs(img2.width - fig2.width)).toBeLessThanOrEqual(1);
 });

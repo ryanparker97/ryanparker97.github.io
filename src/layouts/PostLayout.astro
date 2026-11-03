@@ -165,7 +165,8 @@ const more = neighbors
   }
   .post-hero-img {
     display: block;
-    width: 200px;
+    width: min(100%, 480px);
+    margin-inline: auto;
     height: auto;
     aspect-ratio: 1;
     border-radius: 18px;
@@ -194,7 +195,7 @@ const more = neighbors
   .date {
     margin-top: 4px !important;
     color: var(--text-2);
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 600;
     line-height: 1.4286;
   }
@@ -214,14 +215,14 @@ const more = neighbors
   }
   .meta-line :global(a) {
     display: inline-block;
-    line-height: 1.4286;
+    line-height: 20px;
     padding-block: 12px;
     margin-block: -12px;
   }
   .meta-line {
     margin: 4px 0 -12px !important;
     color: var(--text-2);
-    font-size: 0.875rem;
+    font-size: 1rem;
     line-height: 44px;
   }
   .keyline {
@@ -238,6 +239,9 @@ const more = neighbors
     .post-hero {
       margin-top: 36px;
     }
+    .post-hero-img {
+      width: min(100%, 400px);
+    }
     .series {
       margin-top: 36px;
     }
@@ -250,7 +254,7 @@ const more = neighbors
       margin-top: 32px;
     }
     .post-hero-img {
-      width: 144px;
+      width: 100%;
     }
     .series {
       margin-top: 32px;

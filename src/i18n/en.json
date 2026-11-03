@@ -185,6 +185,7 @@
   "blog.read": "Read",
   "blog.moreFrom": "More to read",
   "blog.coverCredit": "Cover art:",
+  "blog.coverAlt": "Cover art: {title}",
   "blog.moreSeries": "More in this series",
   "common.goHome": "Go home",
   "common.learnAbout": "Learn more about {title}",

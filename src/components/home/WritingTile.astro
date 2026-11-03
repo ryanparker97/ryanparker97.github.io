@@ -1,4 +1,5 @@
 ---
+import { Image } from 'astro:assets';
 import type { Post } from '~/lib/blog-content';
 import { formatDate } from '~/lib/format';
 import { tileHeadline } from '~/lib/home';
@@ -22,9 +23,11 @@ const meta = post
   ? `${formatDate(post.data.pubDate, lang)} · ${t('blog.readingTime', { n: post.minutes })}`
   : undefined;
 const part = post?.data.seriesPart ?? 0;
+const art = post?.data.heroImage;
+const showProgress = !!post && seriesTotal > 1 && part > 0;
 ---
 
-<GridTile id="writing" {span} stack labelledby="writing-title">
+<GridTile id="writing" {span} stack={!art} labelledby="writing-title">
   <Lockup
     id="writing-title"
     size="promo"
@@ -53,19 +56,53 @@ const part = post?.data.seriesPart ?? 0;
       </Fragment>
     )}
   </Lockup>
-  {post && seriesTotal > 1 && part > 0 && (
-    <div slot="visual" class="progress" data-series-progress>
-      <p>{t('home.writing.part', { n: part, total: seriesTotal })}</p>
-      <ol aria-hidden="true">
-        {Array.from({ length: seriesTotal }, (_, i) => (
-          <li class:list={{ on: i + 1 === part }}>{i + 1}</li>
-        ))}
-      </ol>
+  {post && (art || showProgress) && (
+    <div slot="visual">
+      {art && (
+        <Image
+          src={art}
+          alt={t('blog.coverAlt', { title: post.data.title })}
+          width={480}
+          height={480}
+          loading="lazy"
+          class="writing-art"
+        />
+      )}
+      {showProgress && (
+        <div class="progress" data-series-progress>
+          <p>{t('home.writing.part', { n: part, total: seriesTotal })}</p>
+          <ol aria-hidden="true">
+            {Array.from({ length: seriesTotal }, (_, i) => (
+              <li class:list={{ on: i + 1 === part }}>{i + 1}</li>
+            ))}
+          </ol>
+        </div>
+      )}
     </div>
   )}
 </GridTile>
 
 <style>
+  .writing-art {
+    display: block;
+    width: 280px;
+    height: auto;
+    aspect-ratio: 1;
+    margin: 0 auto 24px;
+    border-radius: 18px;
+    outline: 1px solid var(--keyline);
+    outline-offset: -1px;
+  }
+  @media (max-width: 1068px) {
+    .writing-art {
+      width: 240px;
+    }
+  }
+  @media (max-width: 734px) {
+    .writing-art {
+      width: 200px;
+    }
+  }
   /* Part numerals at Promo size, the current part in --text and the rest in --border. */
   /* The series chip may wrap at 200% text. */
   .chip {
@@ -74,7 +111,7 @@ const part = post?.data.seriesPart ?? 0;
   .progress p {
     margin: 0 0 12px;
     color: var(--text-2);
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     line-height: 1.3334;
   }
   .progress ol {

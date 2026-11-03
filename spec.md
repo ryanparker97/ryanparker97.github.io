@@ -176,7 +176,7 @@ Home follows the **apple.com homepage**: a stack of units on a white page, separ
 
 - Eyebrow "Experiences". **H2:** the current role title, e.g. *Senior Data Engineer (Team Lead).*
 - Subhead: "<Company> · since <Mon YYYY>", then the years of experience.
-- **Career rail** (the unit's visual, replacing the old company line): `<ol class="rail" aria-label="Career">` with one row per company, newest first (two stints at one company share a row; back-to-back roles at the same company merge into one bar): the company (17/600†, `--text` for the current company, `--text-2` for earlier ones), a caption with its years (*2020–2021 · 2026–now*, 12px `--text-2`, 5px† above the bar), and a track with one graph bar (§5.10.9) per stint, positioned by `--s` (start) and `--w` (width) as fractions of the whole career span, computed at build time from the experience collection. Current stint `--accent`, past stints `#86868B`†; rows 32 / 24 / 20px apart; first and last year as 12px ticks under the last row; centred 692px column. Each row has a visually hidden sentence ("FPT Software: 2020 to 2021, and 2026 to now."). Bars grow with the §5.10.9 motion. Each track shows a faint full-width `--fill` track behind its bars, the company label and years are start-aligned above their track, and each bar is at least 24px wide so a short current stint never reads as a dot. Bars grow after their row has faded in (delay ≥ the row's reveal).
+- **Career rail** (the unit's visual, replacing the old company line): `<ol class="rail" aria-label="Career">` with one row per company, newest first (two stints at one company share a row; back-to-back roles at the same company merge into one bar): the company (19/600, `--text` for the current company, `--text-2` for earlier ones), a caption with its years (*2020–2021 · 2026–now*, 14px `--text-2`, 5px† above the bar), and a track with one graph bar (§5.10.9) per stint, positioned by `--s` (start) and `--w` (width) as fractions of the whole career span, computed at build time from the experience collection. Current stint `--accent`, past stints `#86868B`†; rows 32 / 24 / 20px apart; first and last year as 14px ticks under the last row; centred 692px column. Each row has a visually hidden sentence ("FPT Software: 2020 to 2021, and 2026 to now."). Bars grow with the §5.10.9 motion. Each track shows a faint full-width `--fill` track behind its bars, the company label and years are start-aligned above their track, and each bar is at least 24px wide so a short current stint never reads as a dot. Bars grow after their row has faded in (delay ≥ the row's reveal).
 - Actions: **Learn more** (primary → `/experiences/`) · **Download PDF** (secondary).
 
 #### 4.1.4 Technical skills (`id="skills"`)
@@ -198,8 +198,8 @@ Four grid tiles (§5.10.3), in this order. A tile with no content is left out an
 |---|---|---|---|
 | **Featured project** | `work` | Eyebrow "Project", project title (H2), subtitle as subhead, kind chip, up to 4 tech names as the tile's visual: one centred, wrapping line at Card headline size (28/600) in `--text-2`, at most 2 lines | **Learn more** (primary → `/projects/#<slug>`) · **All projects** (secondary) |
 | **Featured STAR story** | `stories` | Eyebrow "STAR story", story title (H2), up to 3 competency chips, and the result metric as the tile's **super stat** visual (§5.10.5) at the bottom | **Read the story** (primary) · **All stories** (secondary) |
-| **Latest writing** | `writing` | Eyebrow "Blog", newest published post title (H2), date · reading time, series chip if any; for a post in a series, the visual is the part numerals *1 2 3 4 5* at Promo size, 24px apart, the current part `--text` and the rest `--border` (`aria-hidden`), under a Caption line "Part 1 of 5 · Neovim setup guide" | **Read the post** (primary) · **All posts** (secondary) |
-| **Certifications** | `certifications` | Eyebrow "Certifications", H2 *"Certified on the platforms I use."*, up to 3 rows (badge 56px, else the issuer logo on a white 56px disc, else monogram, name as H3 at 21/600, issuer · year at 14px, 20px between rows), then "+N more". The rows form one fit-content block centred in the tile, with badges and text **left-aligned inside it** so they line up | **Verify ›** per row when `credentialUrl` is set (`target="_blank" rel="noopener noreferrer"`). No tile-level action |
+| **Latest writing** | `writing` | Eyebrow "Blog", newest published post title (H2), date · reading time, series chip if any; for a post in a series, the visual is the part numerals *1 2 3 4 5* at Promo size, 24px apart, the current part `--text` and the rest `--border` (`aria-hidden`), under a Caption line "Part 1 of 5 · Neovim setup guide". When the post has a `heroImage`, the visual starts with it as a centred square (280 / 240 / 200px, radius 18, keyline outline, alt "Cover art: <title>" from `blog.coverAlt`), 24px above the progress, and the tile is split (not stacked) | **Read the post** (primary) · **All posts** (secondary) |
+| **Certifications** | `certifications` | Eyebrow "Certifications", H2 *"Certified on the platforms I use."*, up to 3 rows (badge 56px, else the issuer logo on a white 56px disc, else monogram, name as H3 at 21/600, issuer · year at 16px, 20px between rows), then "+N more". The rows form one fit-content block centred in the tile, with badges and text **left-aligned inside it** so they line up | **Verify ›** per row when `credentialUrl` is set (`target="_blank" rel="noopener noreferrer"`). No tile-level action |
 
 - **Which item is shown:** the first `featured` project; the newest `featured` STAR story by `date`, else the newest story; the newest published post.
 - **Writing headline:** when the post title is longer than 8 words, it is cut at the first colon (e.g. "Neovim setup guide, Part 1"), else at 8 words with "…". The full title is the accessible name of the post link.
@@ -336,7 +336,7 @@ One full section per role, sorted with the current role first, then `start` desc
   - the headline result metric as a **stat lockup** (§5.10.5, card size), e.g. *Cut / >50% / EMR costs*;
   - the **four-panel grid**, opened by a **plus disc** (§5.6) labelled "Learn more about <title>";
   - a **permalink ›** to `/star/<slug>/`.
-- **Four-panel grid** (`StarPanels`): all four parts visible at once, no nested toggles. **Situation** and **Task** sit side by side; **Action** and **Result** span the full width below (Action carries the most detail). One column when the grid is narrower than 520px (container query). Each panel has a small uppercase label (`--text-2`, 12/600, H4 in a card, H3 on the story page), its body in `--text-2` with bold terms in `--text`, 18px radius, a 4% `--text` tint so it reads on either band, and 12px gaps. The Result panel shows every `metrics` entry as a stat lockup, plus **graph bars** (§5.10.9) for a metric that has `compare` values. No pastel colours.
+- **Four-panel grid** (`StarPanels`): all four parts visible at once, no nested toggles. **Situation** and **Task** sit side by side; **Action** and **Result** span the full width below (Action carries the most detail). One column when the grid is narrower than 520px (container query). Each panel has a small uppercase label (`--text-2`, 14/600, H4 in a card, H3 on the story page), its body in `--text-2` with bold terms in `--text`, 18px radius, a 4% `--text` tint so it reads on either band, and 12px gaps. The Result panel shows every `metrics` entry as a stat lockup, plus **graph bars** (§5.10.9) for a metric that has `compare` values. No pastel colours.
 - **Story page `/star/<slug>/`:** local nav = the role name as the title and **All stories ›**; hero with the role · company as the eyebrow, the story title as **H1**, and 32px below it the interview question as a **centred quote** (§5.10.8, reduced size, `width: fit-content; max-inline-size: 760px; margin-inline: auto; text-align: center` with inline, not hanging, quote marks; figcaption "Interview question", centred) in place of the subhead, then 48px below it the result metric as a **super stat** (§5.10.5); one alignment (centred) throughout the hero; the four-panel grid in a 760px column on a `--surface-2` section; closing section with **All stories ›** and **Read the role ›** (`/experiences/#<role-slug>`).
 
 **Acceptance criteria (STAR)**
@@ -353,6 +353,7 @@ One full section per role, sorted with the current role first, then `start` desc
 - **Local nav:** title "Blog"; links All posts · Topics · Series; small pill **RSS**. Tags are not in the local nav; the footer "Writing" column links to `/blog/tags/`.
 - **Index list:** one flat hairline list (`.hl-list.post-rows`) of every published post, newest first. It is not grouped by topic and has no newest line or jump links. Each series part is its own row; a standalone post is one row.
 - **Row:** a square thumbnail (112px, 72px at S) and the text side by side at every width. The text is the "Part N · Series" kicker for series posts, the title (the short part title for a series part), a description (clamped to two lines, hidden below 735px) and "date · reading time". The whole row is one link, at least 44px tall. The thumbnail is `heroImage` (decorative, `alt=""`) or a generated token cover (`.post-cover`: series name or "Article" label, large part number or the title's first letter, `aria-hidden`). When any row has a `heroImageCredit`, one deduplicated "Cover art: …" line (Caption size, `--text-2`, underlined new-tab links) appears under the list.
+- **Series page hero:** the first published part's `heroImage`, centred under the lockup (280 / 240 / 200px, radius 18, keyline outline, alt from `blog.coverAlt` with the series title).
 - **Topics index** (`/blog/topics/`): one hairline row per topic (title, description, post count), ordered by `order`. **Topic page** (`/blog/topics/<slug>/`): the hero above, then a hairline list without group headings in which a series is one row with its parts nested beneath it (short part titles, each a link with date · minutes; unpublished parts show a "Coming soon" chip and are not links). Empty topics get no page.
 - **Series index** (`/blog/series/`): one Newsroom tile per series with "<x> of <y> published". **Series page:** the same hairline list for one series, every part in reading order, with part number, title, description, reading time and status; unpublished parts show a "Coming soon" chip and are not links.
 - **Tags** (`/blog/tags/`): all tags as chips with counts. Tag slugs are lowercase kebab-case.
@@ -361,21 +362,21 @@ One full section per role, sorted with the current role first, then `start` desc
 **Post (`/blog/<slug>/`), Apple Newsroom style**
 - **Local nav:** title = the series name (or "Blog"); link **All posts ›**.
 - **Header** (on `--bg`, left-aligned in the article column, like Newsroom†; category → headline 20px†, date 4px† below the category, and a 1px `--border` keyline 653px wide 44px† below the meta line, 36† at M, 32† at S):
-  - eyebrow in Newsroom style (12px, 600, uppercase, `--text-2`): *"DEVELOPER TOOLS · PART 1 · NEOVIM SETUP GUIDE"* (topic, then series), or just the topic, or *"ARTICLE"*;
+  - eyebrow in Newsroom style (14px, 600, uppercase, `--text-2`): *"DEVELOPER TOOLS · PART 1 · NEOVIM SETUP GUIDE"* (topic, then series), or just the topic, or *"ARTICLE"*;
   - the date (and "Updated <date>" if set) in Body-reduced 600;
   - **H1** in Article headline size (§5.4, 700 as Newsroom†);
   - the description as the Article subhead (24px / 500 / 28px line-height / 0.009em†, `--text`†, 20px† below the H1);
   - a meta line: reading time · tag links.
-- **Hero:** when `heroImage` is set, a decorative (`alt=""`) square image (200px, 144px at S, radius 18, 1px keyline outline) sits below the header keyline and above the series box, at 44 / 36 / 32px spacing, with the `heroImageCredit` as a Caption-size `--text-2` caption ("Cover art: …"). It is excluded from search (`data-pagefind-ignore`). The OG image stays `og-default.png`.
+- **Hero:** when `heroImage` is set, a decorative (`alt=""`) square image, centred, 480px wide at L, 400px at M and the full column width at S (radius 18, 1px keyline outline) sits below the header keyline and above the series box, at 44 / 36 / 32px spacing, with the `heroImageCredit` as a Caption-size `--text-2` caption ("Cover art: …"). It is excluded from search (`data-pagefind-ignore`). The OG image stays `og-default.png`.
 - **Series box** under the header: *"Part 1 of 5 · Neovim setup guide"*, then the ordered list of all parts. The current part is bold, published parts are links, and unpublished parts are `--text-2` with a "Coming soon" chip and are not links. At S it collapses to a single "Part 1 of 5 ⌄" `<details>` line.
 - **Body:** the article column (§5.2), Article body size, `--text`. Paragraphs are 1.4211em† apart. H2s in Article section size (700†) with 52 / 48 / 44px† above and 16px† below. Images and diagrams may break out to the content width.
 - **Quote:** an MDX `<Quote by="…" role="…">` renders as a Newsroom pull quote (§5.10.8). **Drop cap:** with `dropcap: true` in frontmatter (§6.7), the first paragraph opens with a drop cap (§5.10.8).
-- **TOC:** sticky on the right at ≥ 1280px (top offset `var(--sticky-h) + 24px`; at scroll 0 its top lines up with the category eyebrow), Caption-size links at a 26px pitch, the current item `--text` and the rest `--text-2`, built from H2/H3, with the current section highlighted while scrolling. Below 1280px it is a collapsed `<details>` "On this page" above the body.
+- **TOC:** sticky on the right at ≥ 1280px (top offset `var(--sticky-h) + 24px`; at scroll 0 its top lines up with the category eyebrow), Caption-size links at a 26px pitch for single-line items, the current item `--text` and the rest `--text-2`, built from H2/H3, with the current section highlighted while scrolling. Below 1280px it is a collapsed `<details>` "On this page" above the body.
 - **Code blocks:** Shiki with light/dark themes matching the site theme, on `--surface-2` with an 18px radius; a language label and a **Copy** button. They support a **filename title** (` ```lua title="lua/ryanparker/lazy.lua" `) as a header bar, **line highlights** (` {3-5} `) on `--fill`, and `shell`/`sh` blocks whose `$` prompt is **not copied**. At S they run to the screen edges with no radius and scroll inside.
 - **Callouts:** `<Callout type="note | tip | warning">` renders as a `--surface-2` panel with an 18px radius, a 4px left accent in `--link`, an icon and a bold label ("Note", "Tip", "Warning"), with `role="note"`. Types differ by icon and label, not by colour.
 - **Keys:** `<kbd>` is a small rounded keycap on `--fill`, e.g. <kbd>Space</kbd> <kbd>f</kbd> <kbd>f</kbd>.
 - **Diagrams:** inline SVG components (§4.5.1).
-- **End of article (Newsroom "More from"):** for a post in a series, a hairline list with the previous and next **published** parts (*"Part 0: …"* / *"Part 2: …"*, 19px/600 titles, 32px row padding); otherwise the two newest other posts. Then the footer.
+- **End of article (Newsroom "More from"):** for a post in a series, a hairline list with the previous and next **published** parts (*"Part 0: …"* / *"Part 2: …"*, 21px/600 titles, 32px row padding); otherwise the two newest other posts. Then the footer.
 - **RSS:** published parts appear like normal posts, with the title prefixed "Part N:" only when it doesn't already include it.
 
 **Series (content)**
@@ -476,7 +477,7 @@ The default theme is **light (white)**, whatever the system setting (§5.12).
 | `--surface` | = `--bg` | = `--bg` | Kept as an alias for "cards on grey bands" |
 | `--fill` | `#E8E8ED`† | `#333336`† | Neutral chips, keycaps, code line highlights |
 | `--text` | `#1D1D1F`† | `#F5F5F7`† | Primary text |
-| `--text-2` | `#6E6E73`† | `#86868B`† | Secondary text, eyebrows, captions (AA on `--bg` and `--surface-2`) |
+| `--text-2` | `#515154` | `#AEAEB2` | Secondary text, eyebrows, captions (7:1 on `--bg` and `--surface-2`; darker than Apple's #6E6E73/#86868B for contrast) |
 | `--border` | `#D2D2D7`† | `#424245`† | Hairlines, separators |
 | `--keyline` | `rgba(0,0,0,.16)`† | `rgba(255,255,255,.24)`† | Bottom line of the nav bars |
 | `--accent` | `#0071E3`† | `#0071E3`† | Primary pill fill (white text), focus ring |
@@ -490,12 +491,13 @@ The default theme is **light (white)**, whatever the system setting (§5.12).
 
 - **Bands and cards:** sections alternate `--bg` and `--surface-2`. Cards and tiles take the **opposite** colour of the band they sit on. No shadows and no borders on cards, tiles or sections.
 - The old `--sky-*`, `--butter-*` and `--mint-ink` tokens and the hero glow are removed. Mint survives only in the three uses above, never on anything larger than a chip.
-- Every text/background pair meets **WCAG 2.2 AA** (4.5:1 for body text, 3:1 for large text and UI), checked by axe in CI.
+- Every text token reaches **7:1** (WCAG AAA) on the backgrounds it is used on, in both themes. The exceptions stay at least **4.5:1** so Apple's blue survives: `--link`, white on `--accent`/`-hover`/`-active`, `--on-link` on `--link`, `--ft-pipe`, and `--text-2` on `--fill`. Large text and UI keep at least 3:1. Checked by `tests/unit/contrast.test.ts` (rgba tokens composited over their band) and by axe in CI.
 
 ### 5.4 Typography
 
 - **Font stack** everywhere, including blog bodies: `-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Inter Variable", Helvetica, Arial, sans-serif`. Apple devices render SF Pro (Text below 20px, Display at 20px and up†) with no download. Self-hosted Inter (Latin + Vietnamese subsets, `font-display: swap`) is the fallback elsewhere and is **not preloaded**, so Apple devices never fetch it. Newsreader is removed. No third-party font requests.
 - `-webkit-font-smoothing: antialiased; font-synthesis: none`†. The root font size stays 100% (Apple's 106.25% root is not copied, so Tailwind spacing stays predictable); sizes below are in px for clarity and written in rem in CSS.
+- **Larger text:** every text size under 21px is 2px larger than Apple's (Body 19, Body-reduced 16, Caption 14), and the post H2 grows to 28 / 24 / 24. Sizes of 21px and up keep Apple's values. Where another section quotes an older small size, add 2px. Note: the local-nav links between 834px and 1068px use a 16px gap (24px elsewhere) so they fit at 14px. Exception: at compact chrome the local-nav title (19px), small pill (12px) and solo link (17px) keep Apple's sizes, so the bar fits at 320px with 200% text.
 - **Code:** `ui-monospace, "SF Mono", Menlo, monospace`, 0.9em.
 
 | Role | L | M | S | Line-height | Tracking | Weight |
@@ -504,22 +506,22 @@ The default theme is **light (white)**, whatever the system setting (§5.12).
 | **Unit headline** (Home full-unit H2) | 56† | 48† | 32† | 1.0714† | -0.005em† | 600 |
 | **Section headline** (inner-page H2) | 48† | 40† | 32† | 1.0835† | -0.003em† | 600 |
 | **Promo headline** (grid tile H2) | 40† | 32† | 32 | 1.1† | 0† | 600 |
-| **Subhead** | 28† | 24† | 19† | 1.1429† | 0.007em† | 400 |
+| **Subhead** | 28† | 24† | 21 | 1.1429† | 0.007em† | 400 |
 | **Card headline** (H3) | 28† | 24† | 21† | 1.1429 | 0.007em | 600 |
-| **Eyebrow** | 21† | 19† | 17† | 1† | 0.011em† | 600, `--text-2` |
-| **Intro** | 21† | 21 | 19† | 1.381† | 0.011em | 400 |
-| **Lockup copy** (paragraph in a hero/unit; `--text-2`, `<strong>` in `--text`†) | 21† | 21† | 19† | 1.381† (1.421† at S) | 0.011em† (0.012em† at S) | 600† |
+| **Eyebrow** | 21† | 21 | 19 | 1† | 0.011em† | 600, `--text-2` |
+| **Intro** | 21† | 21 | 21 | 1.381† | 0.011em | 400 |
+| **Lockup copy** (paragraph in a hero/unit; `--text-2`, `<strong>` in `--text`†) | 21† | 21† | 21 | 1.381† (1.421† at S) | 0.011em† (0.012em† at S) | 600† |
 | **Stat value** (hero) | 48† | 32† | 28† | 1† | -0.003em | 600, `white-space: nowrap`† |
 | **Stat value** (card) | 28† | 24† | 21† | 1.1429 | 0.007em | 600 |
-| **Body** | 17† | 17 | 17 | 1.4706† | -0.022em† | 400 |
-| **Body-reduced** (card bodies at S, meta) | 14† | 14 | 14 | 1.4286† | -0.016em† | 400 |
-| **Caption** (nav links, footer, chips) | 12† | 12 | 12 | 1.3334† | -0.01em† | 400 |
+| **Body** | 19 | 19 | 19 | 1.4706† | -0.022em† | 400 |
+| **Body-reduced** (card bodies at S, meta) | 16 | 16 | 16 | 1.4286† | -0.016em† | 400 |
+| **Caption** (nav links, footer, chips) | 14 | 14 | 14 | 1.3334† | -0.01em† | 400 |
 | **Article headline** (post H1) | 48† | 40† | 32† | 1.0835 | -0.003em | 700† |
 | **Article subhead** | 24† | 21† | 21 | 1.25 | 0.009em | 400 |
-| **Article body** | 19† | 17† | 17 | 1.42† | 0.012em† | 400 |
-| **Article section** (post H2) | 24† | 21† | 21 | 1.1667 | 0.009em | 700† |
+| **Article body** | 21 | 19 | 19 | 1.42† | 0.012em† | 400 |
+| **Article section** (post H2) | 28 | 24 | 24 | 1.1667 | 0.009em | 700† |
 | **Newsroom tile title** | 24† | 21† | 21† | 1.1667 | 0.009em | 700† (clamped to 5 lines†) |
-| **Newsroom category** | 14† | 12† | 12† | 1.2858 | 0 | 700†, uppercase, `--text-2` |
+| **Newsroom category** | 16 | 14 | 14 | 1.2858 | 0 | 700†, uppercase, `--text-2` |
 | **Quote** | 40† | 32† | 28† | 1.2† / 1.25† / 1.286† | 0 | 400† |
 
 - Card bodies use Body at M and L and Body-reduced at S†.
@@ -538,15 +540,15 @@ The default theme is **light (white)**, whatever the system setting (§5.12).
 
 | Element | Spec |
 |---|---|
-| **Primary pill** | `--accent` fill, white text, 17px†, padding 12px 22px†, radius 980px† (44px tall). Hover `--accent-hover`, active `--accent-active`†. |
+| **Primary pill** | `--accent` fill, white text, 19px, padding 11px 22px including the 1px border, radius 980px† (44px tall). Hover `--accent-hover`, active `--accent-active`†. |
 | **Secondary pill** | Transparent, 1px `--link` border, `--link` text, same size. Hover: `--link` fill with white text†. |
-| **Small pill** (local nav) | Primary style at 12px†, padding 3px 10px† (24px† tall, transparent 1px border). A transparent `::before` extends the tap area to 44 × 44px; tap areas of neighbouring links and the pill must not overlap (keep at least 8px between them). |
+| **Small pill** (local nav) | Primary style at 14px (12px at compact chrome), padding 3px 10px† (about 26.7px tall; 24px at compact chrome, transparent 1px border). A transparent `::before` extends the tap area to 44 × 44px; tap areas of neighbouring links and the pill must not overlap (keep at least 8px between them). |
 | **Chevron link** | `--link` text with a trailing `›` (`aria-hidden`, 0.24em† before it), no underline; underline on hover. Used for "Learn more ›", "Read ›", "All stories ›". The accessible name has no chevron and adds context where the text is generic ("Learn more about my experience"). |
 | **Text link** (in prose) | `--link`, underlined in article bodies and cards, no underline elsewhere; underline on hover. |
-| **Chip** | 28px tall, padding 0 12px, radius 980px, Caption size at 500 weight. **Neutral** chips (kind, competency, tag, series, "Coming soon") use `--fill` + `--text`. **Mint** chips (tech stack, "Current") use `--mint-tint` + `--text`. Interactive chips (filters, tags) have a 44px tap area and show their selected state with `--text` fill and `--bg` text. |
+| **Chip** | 28px tall, padding 5px 12px with an 18px line, radius 980px, Caption size (14px) at 500 weight. **Neutral** chips (kind, competency, tag, series, "Coming soon") use `--fill` + `--text`. **Mint** chips (tech stack, "Current") use `--mint-tint` + `--text`. Interactive chips (filters, tags) have a 44px tap area and show their selected state with `--text` fill and `--bg` text. |
 | **Icon button** | 16px icon in a 44 × 44px target, `--text` at 80% opacity, 100% on hover. |
 | **Plus disc** (expanders) | A **36px**† circle in a 44 × 44px† target, 16px† from the bottom-right corner of its tile or card (13px† at M and S; a Projects tile's disc is in flow as its last row instead, §4.6), fill `--fill`†, a 2px "+" glyph in `--text` at 56%† (≥ 3:1 on `--fill`). Open: the "+" rotates 45° into "×" over 320ms `--ease`; background transition 100ms linear†. |
-| **Paddle** (gallery) | A **36px**† circle in a 44 × 44px target; fill `rgba(210,210,215,.64)`† (hover `.70`†, active `rgba(193,193,198,.65)`†), arrow `rgba(0,0,0,.56)`†; dark: fill `rgba(66,66,69,.72)`†, arrow `rgba(255,255,255,.8)`†. Disabled: opacity .42† and `disabled`. |
+| **Paddle** (gallery) | A **36px**† circle in a 44 × 44px target; fill `rgba(210,210,215,.64)`† (hover `.70`†, active `rgba(193,193,198,.65)`†), arrow `rgba(0,0,0,.72)`; dark: fill `rgba(66,66,69,.72)`†, arrow `rgba(255,255,255,.8)`†. Disabled: opacity .42† and `disabled`. |
 | **Focus ring** | 2px solid `--accent`, offset 1px† (3px on cards and tiles), on every interactive element. |
 | **Hover lift** | Rounded whole-card links (gallery cards, Newsroom tiles) scale to **1.0161**† on hover with `transform .3s var(--ease-card)`† and `background-color .344s ease`†, only under `(hover: hover) and (pointer: fine)`†. Square full-bleed tiles never scale. |
 | **Pressed state** | Round buttons (plus discs, paddles, icon buttons) press to `scale(.95)`†. On touch devices other controls set `opacity: 0.7` on `:active` for 100ms; `-webkit-tap-highlight-color: transparent`. Hover styles live only under `@media (hover: hover)`. |
@@ -558,17 +560,17 @@ The default theme is **light (white)**, whatever the system setting (§5.12).
 - **Bar:** **44px**† tall (**48px**† at compact chrome). On pages **without** a local nav (Home, 404) it is sticky at the top. On pages **with** a local nav it scrolls away with the page and the local nav sticks at `top: 0` instead, as on Apple product pages† (`#globalnav { position: absolute }`†), so only 48–52px of chrome stays on screen.
 - **Background:** at scroll 0 the bar matches the page (`transparent`, no blur†); once content scrolls under it, it becomes `--nav-glass` with `backdrop-filter: saturate(180%) blur(20px)`†, transitioning `background .24s var(--ease)`†. Implemented with a CSS scroll timeline (`animation-timeline: scroll(root); animation-range: 0 1px`) under `@supports`; without support it is always glass. `--nav-solid` at .92 opacity when blur is not supported†. While the search panel or the mobile menu is open the bar is solid `--nav-solid`.
 - `--nav-h` holds the bar height. `--sticky-h` is the height of whatever is stuck at the top: `--nav-h` on pages without a local nav, `--local-h` on pages with one. Every sticky offset and scroll margin uses `--sticky-h`; none hard-code a number.
-- **Row (above compact chrome):** the `--chrome` row (1024px† outer), items spread with `justify-content: space-between`†: **brand** (the name, 14px/600) · Experiences · Projects · STAR · Blog · **search** · **theme** · **language**. Links are Caption size, `0 8px`† padding, full bar height, coloured `--nav-ink` (`rgba(0,0,0,.8)`† / dark `rgba(255,255,255,.8)`†) and `--nav-ink-hover` (`#000` / `#fff`†) on hover and for `aria-current="page"`, with `color .32s var(--ease-nav)`†. Dim with colour, never `opacity`, so focus rings stay full strength. Focus rings inside both bars use `outline-offset: -7px`† so they are never clipped.
+- **Row (above compact chrome):** the `--chrome` row (1024px† outer), items spread with `justify-content: space-between`†: **brand** (the name, 16px/600) · Experiences · Projects · STAR · Blog · **search** · **theme** · **language**. Links are Caption size (14px), `0 8px`† padding, full bar height, coloured `--nav-ink` (`rgba(0,0,0,.8)`† / dark `rgba(255,255,255,.8)`†) and `--nav-ink-hover` (`#000` / `#fff`†) on hover and for `aria-current="page"`, with `color .32s var(--ease-nav)`†. Dim with colour, never `opacity`, so focus rings stay full strength. Focus rings inside both bars use `outline-offset: -7px`† so they are never clipped.
 - **Search panel** (Apple's search flyout): the search icon, ⌘K / Ctrl+K or `/` opens a panel that drops down from under the bar, full width, `--nav-solid`, no shadow, with the page behind it covered by `--curtain` and `blur(20px)`†.
   - Inside, in the `--chrome` row: a 20px search glyph in `--text-2` (`--text` while focused) and, 8px after it, the input at 24px/600† (28px† at compact chrome; never below 16px, so iOS does not zoom). **No ring or box around the field**†: the caret and the darkened glyph mark focus. 32px† top and 80px† bottom padding.
-  - Before you type, **Quick links** (12px/600†, 17px/600† at compact chrome, `#333336`† / dark `#E8E8ED`, each with a → arrow 11px† before the text, 14px† at compact; padding 4px 8px†, radius 5px†, 4px† apart; hover/focus background `--surface-2`†): Experiences, Projects, Download PDF, the newest post. At compact chrome each quick link is at least 44px tall.
+  - Before you type, **Quick links** (14px/600, 19px/600 at compact chrome, `#333336`† / dark `#E8E8ED`, each with a → arrow 13px before the text, 16px at compact; padding 4px 8px†, radius 5px†, 4px† apart; hover/focus background `--surface-2`†): Experiences, Projects, Download PDF, the newest post. At compact chrome each quick link is at least 44px tall.
   - Results (Pagefind) start 32px† (49px† at compact) below the field: type (Blog / STAR / Experiences / Projects), title and highlighted excerpt. Result counts use correct plurals ("1 result", "2 results").
   - **Motion**†: the panel reveals over 240ms `--ease-nav` (`clip-path: inset(0 0 100% 0) → inset(0)`), the field fades in from `translateY(-4px)` (−8px at compact) over 240ms, 200ms delayed, quick links follow 20ms apart, and the curtain fades `opacity .32s var(--ease-nav) 80ms`. None under reduced motion.
   - It is a modal dialog: focus moves to the input on open and **stays inside the panel** (Tab and Shift+Tab cycle through the field, quick links, results and close button). Esc, the curtain or the trigger closes it and returns focus to the trigger. The ✕ button shows only at compact chrome or with a coarse pointer. The browser's own clear button on `type="search"` is hidden (`::-webkit-search-cancel-button { appearance: none }`). The Pagefind script loads on first open.
 - **Mobile menu (compact chrome):**
   - The bar shows the brand on the left, then **search** and the **menu button** on the right. Theme and language move into the menu. The menu button is 48 × 48px†, flush with the right edge (`margin-inline-end: calc(-1 * var(--gutter))`, safe area respected).
   - **Menu button:** two 1px lines that morph into an **✕** (each rotates ±45°, 240ms†, `--ease-nav`). It has `aria-expanded`, `aria-controls="mobile-menu"` and a label that switches between "Menu" and "Close" (i18n).
-  - **Panel:** fixed below the bar, `height: calc(100dvh - var(--nav-h))` (100vh fallback), `--nav-solid`, scrolling on its own, 4px top padding so the first link starts right under the bar†. Links are stacked and left-aligned at **28px/600**† with 48px† side padding and a 46px† pitch: Experiences · Projects · STAR · Blog, in `#333336`† (dark `#E8E8ED`†), `--text` on hover. **No current-page colour** (Apple shows none†); `aria-current="page"` still marks it. Then a group label in 17px† `--text-2` ("More") and three 17px/600† rows in the same ink, each at least 44px tall, sharing one style: **Theme: Light** (the three-state toggle, §5.12), **Language: Tiếng Việt / English** (keeps the current page), **Download PDF**.
+  - **Panel:** fixed below the bar, `height: calc(100dvh - var(--nav-h))` (100vh fallback), `--nav-solid`, scrolling on its own, 4px top padding so the first link starts right under the bar†. Links are stacked and left-aligned at **28px/600**† with 48px† side padding and a 46px† pitch: Experiences · Projects · STAR · Blog, in `#333336`† (dark `#E8E8ED`†), `--text` on hover. **No current-page colour** (Apple shows none†); `aria-current="page"` still marks it. Then a group label in 19px `--text-2` ("More") and three 19px/600 rows in the same ink, each at least 44px tall, sharing one style: **Theme: Light** (the three-state toggle, §5.12), **Language: Tiếng Việt / English** (keeps the current page), **Download PDF**.
   - **Motion:** the panel fades in over 240ms†; links fade in from `translateY(-4px)`† over 320ms†, staggered 20ms†. Closing: items go `translateY(-8px)` and fade over 200ms†, no stagger. No animation under reduced motion.
   - **While open:** page scroll is locked (keeping the position), `main` and the footer are `inert`, focus moves to the first link and stays inside the bar and the panel, and the bar turns solid `--nav-solid`.
   - **Closing:** the ✕, Esc, tapping any link (including a same-page anchor) or resizing past compact chrome. Focus returns to the menu button. Changing theme or language does not close it.
@@ -588,7 +590,7 @@ Every inner page has one (§4.0); Home and 404 do not.
 - **Compact chrome: title + chevron dropdown** (as on Apple product pages on iPhone†):
   - The bar shows the title on the left, then the **chevron on the right next to the small pill**† (16 × 9px, stroke 1.2px†, 80% opacity†). The links row is hidden.
   - The dropdown is a native **`<details>`**: the `<summary>` spans the title and chevron (`flex: 1; justify-content: space-between`), so the whole area is the tap target; accessible name e.g. "Experiences, sections". The chevron rotates 180° when open.
-  - **One surface:** when open, the bar and the tray share one solid `--nav-solid` background (no glass, so page text never shows through), with one `--keyline` under the tray. The tray is at most `60dvh` tall and scrolls inside, padding 16px 16px 20px. Links are **14px/-0.02em**†, `--nav-ink`, in **44px** rows (Apple uses 34px†; 44px keeps the tap-target rule), indented 16px; the current item is full ink with a **1.2 × 12px vertical bar 16px before it**† (no ✓).
+  - **One surface:** when open, the bar and the tray share one solid `--nav-solid` background (no glass, so page text never shows through), with one `--keyline` under the tray. The tray is at most `60dvh` tall and scrolls inside, padding 16px 16px 20px. Links are **16px/-0.02em**, `--nav-ink`, in **44px** rows (Apple uses 34px†; 44px keeps the tap-target rule), indented 16px; the current item is full ink with a **1.2 × 12px vertical bar 16px before it**† (no ✓).
   - **Motion**†: the tray reveals over 320ms `--ease-nav` (clip-path), its links fade from `translateY(-4px)` over 320ms with delays of 260ms + 20ms per link; the bar background returns 240ms after closing. None under reduced motion.
   - It closes on a link tap (then jumps to the anchor), the summary, Esc, a tap outside, or 40px of page scroll. Without JavaScript the `<details>` still opens and its links work.
   - Pages with a single link (blog post, STAR story) show no chevron; the link sits on the right as a chevron text link ("All posts ›"), and the title truncates to make room.
@@ -599,9 +601,9 @@ Every inner page has one (§4.0); Home and 404 do not.
 
 The same footer on every page, modelled on Apple's global footer†. It sits flush under the last section. On a page shorter than the viewport it sits at the bottom of the viewport instead, with `--bg` filling the space above it: on screen only, the body is a `min-height: 100dvh` flex column and the footer takes `margin-top: auto` (no fixed positioning, no JS). The band (background and any top line) spans the full viewport width; the content keeps the 980px column.
 
-- `--surface-2` background, Caption size (12px/1.3334†). Colours: text `--ft-text` (`rgba(0,0,0,.56)`† / dark `rgba(255,255,255,.56)`), links `--ft-link` (`rgba(0,0,0,.72)`† / dark `.8`†) with no underline (underline on hover), column titles `--ft-title` (`rgba(0,0,0,.88)`† / dark `.92`†), pipes and separators `--ft-pipe` (`rgba(0,0,0,.48)`† / dark `rgba(255,255,255,.4)`†). Content row `--chrome` (§5.2; the 980px content edge, while the band itself is full-bleed), plus the bottom safe area. When the last page band is also `--surface-2`, a 1px `--border` line sits above the footer.
-- **Density:** at compact chrome every footer link is at least 44px tall. Above compact chrome (pointer layouts) the footer uses Apple's density†: a 25.6px link pitch (16px line + 0.8em†), which meets WCAG 2.2 SC 2.5.8 target spacing (§9).
-- **1. Breadcrumbs** (every page except Home): a home link (the brand initials "RP"), then 6 × 11px chevron separators in `--ft-pipe` with 11px† after them and items 7px† apart, the current section and the current page, e.g. *RP › Blog › Neovim setup guide, Part 1*; 17px† vertical padding (about 56px† tall). **No hairline under it** above compact chrome†; one hairline at compact chrome†.
+- `--surface-2` background, Caption size (14px/1.3334). Colours: text `--ft-text` (`rgba(0,0,0,.68)` / dark `rgba(255,255,255,.66)`), links `--ft-link` (`rgba(0,0,0,.8)` / dark `.8`) with no underline (underline on hover), column titles `--ft-title` (`rgba(0,0,0,.88)`† / dark `.92`†), pipes and separators `--ft-pipe` (`rgba(0,0,0,.56)` / dark `rgba(255,255,255,.48)`). Content row `--chrome` (§5.2; the 980px content edge, while the band itself is full-bleed), plus the bottom safe area. When the last page band is also `--surface-2`, a 1px `--border` line sits above the footer.
+- **Density:** at compact chrome every footer link is at least 44px tall. Above compact chrome (pointer layouts) the footer uses Apple's density†: a 27px link pitch (18.67px line + 0.6em), which meets WCAG 2.2 SC 2.5.8 target spacing (§9).
+- **1. Breadcrumbs** (every page except Home): a home link (the brand initials "RP"), then 6 × 11px chevron separators in `--ft-pipe` with 11px† after them and items 7px† apart, the current section and the current page, e.g. *RP › Blog › Neovim setup guide, Part 1*; 16px vertical padding (about 57px tall). **No hairline under it** above compact chrome†; one hairline at compact chrome†.
 - **2. Directory:** four columns (25% each†), each with a 600-weight `--ft-title` title and 0.8em† below it:
   - **Explore:** Experiences · Projects · STAR stories · Blog
   - **Writing:** All posts · Topics · Series · Tags · RSS
@@ -652,9 +654,9 @@ Used on Home, Projects and the Blog pages.
 
 #### 5.10.5 Stat lockup and stat strip
 
-- A **stat lockup** is Apple's `figure.stat`†: an optional short caption above (≤ 2 words: "Up to", "Led", "Cut"), the value, and a caption below, in reading order: `<li class="stat"><span class="stat-cap">Cut</span><span class="stat-value">&gt;50%</span><span class="stat-cap">EMR costs</span></li>`. Values use the Stat value sizes (§5.4), captions Body-reduced (14px / 1.2858 / -0.016em†); value and captions are both `--text`† (size does the work). No `aria-label` on the value.
+- A **stat lockup** is Apple's `figure.stat`†: an optional short caption above (≤ 2 words: "Up to", "Led", "Cut"), the value, and a caption below, in reading order: `<li class="stat"><span class="stat-cap">Cut</span><span class="stat-value">&gt;50%</span><span class="stat-cap">EMR costs</span></li>`. Values use the Stat value sizes (§5.4), captions Body-reduced (16px / 1.2858 / -0.016em); value and captions are both `--text`† (size does the work). No `aria-label` on the value.
 - A **stat strip** is a `<ul aria-label="At a glance">` of 1–3 lockups, separated by 1px `--border` hairlines. At S, when every value is at most 5 characters, the strip stays **3 across** (`.stat-strip--compact`, set at build time; captions wrap to at most 2 lines, `text-wrap: balance`); otherwise the lockups stack with hairlines between them.
-- A **super stat** (`.stat--super`) is the visual of the Home STAR tile and the STAR story page: value **80px**† / 64 / 48 at L / M / S, line-height 1, -0.015em, captions **17px**†. At most one per page. Stats never count up† (Apple reveals them with the normal fade).
+- A **super stat** (`.stat--super`) is the visual of the Home STAR tile and the STAR story page: value **80px**† / 64 / 48 at L / M / S, line-height 1, -0.015em, captions **19px**. At most one per page. Stats never count up† (Apple reveals them with the normal fade).
 
 #### 5.10.6 Anchors
 
@@ -678,14 +680,14 @@ Used on Home, Projects and the Blog pages.
 #### 5.10.9 Graph bars
 
 - For a STAR metric with `compare` values (§6.6): one bar per entry next to the stat lockup, in a `1fr auto` grid with a 90px† column gap (72px† stat column and 20px† gap at S) and 48 / 32 / 20px† row gaps.
-- Bars are `<hr aria-hidden="true">`†, **10px**† tall (7px† at S), radius half the height†, width proportional to the value (`style="--w:.48"`, set at build time), `transform-origin: left`†. The "after" bar is `--accent`; others `#86868B`. Labels 12px `--text-2`, 5px† above.
+- Bars are `<hr aria-hidden="true">`†, **10px**† tall (7px† at S), radius half the height†, width proportional to the value (`style="--w:.48"`, set at build time), `transform-origin: left`†. The "after" bar is `--accent`; others `#86868B`. Labels 14px `--text-2`, 5px† above.
 - A visually hidden sentence ("Before: 100, after: 48") carries the meaning†.
 - Motion: `scaleX(0 → 1)`, 1000ms `--ease`, 150ms stagger, when 50% visible (via `reveal.ts`). Static under reduced motion and JS off.
 
 #### 5.10.10 Site index
 
-- Apple's end-of-page Index†, inside `<nav aria-label="Site index">` with one H2 per group. Group titles 17 / 14px, **400**†, `--text-2`, 15 / 12px† below.
-- The first group uses **elevated links** at 28 / 24 / 21px†, 600, `--text`, no chevron, 11 / 9 / 8px† apart, the group 50% wide† (75% at M†, 100% at S†). Other groups: links 17 / 14px†, 600, 14 / 11px† apart, 25% wide†. At S the groups stack, 26px† apart (42px† at M). Every link is at least 44px tall.
+- Apple's end-of-page Index†, inside `<nav aria-label="Site index">` with one H2 per group. Group titles 19 / 16px, **400**†, `--text-2`, 17 / 14px below.
+- The first group uses **elevated links** at 28 / 24 / 21px†, 600, `--text`, no chevron, 11 / 9 / 8px† apart, the group 50% wide† (75% at M†, 100% at S†). Other groups: links 19 / 16px, 600, 14 / 11px† apart, 25% wide†. At S the groups stack, 26px† apart (42px† at M). Every link is at least 44px tall.
 - Links fade in with the list link-in motion (§5.11) when the index top crosses 70% of the viewport†.
 
 ### 5.11 Motion
@@ -719,7 +721,7 @@ Used on Home, Projects and the Blog pages.
 The per-component rules above already cover phones. These apply everywhere at S:
 
 - `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">`; pinch zoom is never disabled.
-- Every tap target is at least **44 × 44px** with at least 8px between neighbours, including in-page text links such as "View in experiences ›" (pad them to 44px tall). Long tokens (chips, URLs) never break mid-word: `overflow-wrap: anywhere` applies only to card bodies and article prose, never to `body`, and chips use `white-space: nowrap`.
+- Every tap target is at least **44 × 44px** with at least 8px between neighbours, including in-page text links such as "View in experiences ›" (pad them to 44px tall). Long tokens (chips, URLs) never break mid-word: `overflow-wrap: anywhere` applies only to card bodies, article prose, and headings, subheads, intro, lockup and eyebrow text outside cards (it breaks only a word wider than the line, WCAG 1.4.10), never to `body`, and chips use `white-space: nowrap`.
 - Grids and card lists are one column; Home units and grid tiles run edge to edge.
 - Motion as §5.11 (no scroll-linked effects). Only one bar is stuck at a time: the global nav (48px) on Home and 404, the local nav (48px) elsewhere.
 - Code blocks run to the screen edges and scroll inside; the copy button stays visible.
@@ -1834,7 +1836,7 @@ y=0    nav 44
 
 **375×812 (index):** hero eyebrow 208 → H1 40 (2 lines) → subhead 19 (2 lines) → pad 48 → rows with a 72px thumbnail beside the kicker, title and meta (no description).
 
-**Post:** local nav (series title + "All posts ›") → **header** (white, start-aligned in the 653†/576†/87.5% column, padding-top 80 / 64 / 48): Newsroom eyebrow 12/700 uppercase grey → date 14/600, 4px† below → **20px†** → H1 48/40/32 at 700† → 16 → subhead 24/21/21 → 16 → meta line (reading time · tags) → **keyline 653px†, 1px `--border`, 44/36/32† below** (§4.5) → hero image when `heroImage` is set (200px, 144px at S, radius 18, credit caption, 44/36/32 above) → series box (`--surface-2`, radius 18, padding 24) → body 19/1.4211† with paragraph spacing 1.4211em† → H2 24 (21† at M) / 700 with 52/48/44† above → TOC fixed right at ≥1280: `left: calc(50% + 653px/2 + 64px)`, width 220, Caption 12 links at 26px pitch, current item `--text`, the rest `--text-2`.
+**Post:** local nav (series title + "All posts ›") → **header** (white, start-aligned in the 653†/576†/87.5% column, padding-top 80 / 64 / 48): Newsroom eyebrow 14/700 (16 at L) uppercase grey → date 16/600, 4px† below → **20px†** → H1 48/40/32 at 700† → 16 → subhead 24/21/21 → 16 → meta line (reading time · tags) → **keyline 653px†, 1px `--border`, 44/36/32† below** (§4.5) → hero image when `heroImage` is set (480px at L, 400px at M, full column at S, radius 18, credit caption, 44/36/32 above) → series box (`--surface-2`, radius 18, padding 24) → body 19 (21 at L)/1.4211† with paragraph spacing 1.4211em† → H2 28 / 24 / 24, 700, with 52/48/44† above → TOC fixed right at ≥1280: `left: calc(50% + 653px/2 + 64px)`, width 240, Caption 14 links at a 26px pitch for single-line items, current item `--text`, the rest `--text-2`.
 
 ```
 1440×900 (post):

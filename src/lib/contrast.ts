@@ -38,3 +38,19 @@ export function ensureContrast(fg: string, bg: string, min = 4.5): string {
   }
   return target === 0 ? '#000000' : '#FFFFFF';
 }
+
+/** 6-digit lowercase hex of `fg` at `alpha` composited over `bg` (both 6-digit hex). */
+export function composite(fg: string, alpha: number, bg: string): string {
+  const f = channels(fg);
+  const b = channels(bg);
+  return (
+    '#' +
+    f
+      .map((c, i) =>
+        Math.round(c * alpha + b[i] * (1 - alpha))
+          .toString(16)
+          .padStart(2, '0'),
+      )
+      .join('')
+  );
+}
