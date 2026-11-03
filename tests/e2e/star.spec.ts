@@ -1,11 +1,29 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('STAR', () => {
+  test('hero art is themed by tokens', async ({ page }) => {
+    await page.goto('/star/');
+    const fill = () =>
+      page.evaluate(
+        () =>
+          getComputedStyle(document.querySelector('.hero svg.page-art rect:last-of-type')!).fill,
+      );
+    expect(await fill()).toBe('rgb(0, 80, 159)');
+    await page.evaluate(() => {
+      document.documentElement.dataset.theme = 'dark';
+    });
+    expect(await fill()).toBe('rgb(92, 176, 255)');
+  });
+
   test('hero, chapters by role with a start-aligned header and View in experiences', async ({
     page,
   }) => {
     await page.goto('/star/');
     await expect(page.locator('h1')).toHaveText('Stories from the work.');
+    await expect(page.locator('.hero svg.page-art[role="img"]')).toHaveAttribute(
+      'aria-label',
+      /^Illustration: four rising steps/,
+    );
     await expect(page.locator('.hero')).toContainText('1 story across 1 role.');
     await expect(page.locator('section[data-star-group] h2')).toHaveText([
       'Data Engineer (Data & Platform)',
@@ -131,14 +149,16 @@ test.describe('STAR', () => {
   });
 
   test('peek rule at 1440x900 and 375x812', async ({ page }) => {
-    for (const [w, h] of [
-      [1440, 900],
-      [375, 812],
-    ]) {
-      await page.setViewportSize({ width: w, height: h });
-      await page.goto('/star/');
-      const y = (await page.locator('section[data-star-group]').boundingBox())!.y;
-      expect(h - y, `${w}`).toBeGreaterThanOrEqual(64);
+    for (const path of ['/star/', '/vi/star/']) {
+      for (const [w, h] of [
+        [1440, 900],
+        [375, 812],
+      ]) {
+        await page.setViewportSize({ width: w, height: h });
+        await page.goto(path);
+        const y = (await page.locator('section[data-star-group]').first().boundingBox())!.y;
+        expect(h - y, `${path} ${w}`).toBeGreaterThanOrEqual(64);
+      }
     }
   });
 

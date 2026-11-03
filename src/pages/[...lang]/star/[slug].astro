@@ -98,6 +98,17 @@ const eyebrow = role
       padding-bottom: 56px;
     }
   }
+  /* Story titles run to two lines: they keep Apple's 80 / 64 so the stepper band still peeks (m13 M4). */
+  @media (min-width: 735px) {
+    :global(.hero .t-hero) {
+      font-size: 4rem;
+    }
+  }
+  @media (min-width: 1069px) {
+    :global(.hero .t-hero) {
+      font-size: 5rem;
+    }
+  }
   .story-lead {
     margin-top: 28px;
     text-align: center;

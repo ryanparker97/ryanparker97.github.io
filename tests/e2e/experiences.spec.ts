@@ -90,6 +90,10 @@ test.describe('Experiences structure', () => {
 
   test('tech stack, STAR pill and closing tile actions', async ({ page }) => {
     await page.goto('/experiences/');
+    await expect(page.locator('#more svg.page-art[role="img"]')).toHaveAttribute(
+      'aria-label',
+      'Illustration: a line of milestones rising step by step to the current role.',
+    );
     await expect(
       page.locator('#datum-security-bank-data-engineer ul[aria-label="Tech stack"]'),
     ).toContainText('DBT');
@@ -285,6 +289,10 @@ test('Vietnamese page renders translated chrome', async ({ page }) => {
   await expect(page.locator('h1')).toHaveText('Kinh nghiệm');
   await expect(page.locator('#more h2')).toHaveText('Muốn xem toàn cảnh?');
   await expect(page.locator('.current-chip')).toHaveText('Hiện tại');
+  await expect(page.locator('#more svg.page-art')).toHaveAttribute(
+    'aria-label',
+    /^Hình minh họa: /,
+  );
 });
 
 for (const path of ['/experiences/', '/vi/experiences/']) {

@@ -76,6 +76,31 @@ test.describe('Projects', () => {
     expect(box.height).toBeGreaterThanOrEqual(380);
   });
 
+  test('the tile shows its cover art with localised alt text', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/projects/');
+    const img = tile(page).locator('img.cover');
+    await expect(img).toHaveCount(1);
+    await expect(img).toHaveAttribute(
+      'alt',
+      'Illustration: one central node coordinating three agent nodes around a loop of work stages.',
+    );
+    await expect(img).toHaveAttribute('src', /project-agentic-loop\.[^/]*svg$/);
+    await expect(img).toHaveAttribute('width', '640');
+    const box = (await img.boundingBox())!;
+    expect(Math.abs(box.width - 640)).toBeLessThanOrEqual(1);
+    expect(Math.abs(box.height - (box.width * 9) / 16)).toBeLessThanOrEqual(1);
+    await page.setViewportSize({ width: 375, height: 812 });
+    const small = (await img.boundingBox())!;
+    const visual = (await tile(page).locator('.visual').boundingBox())!;
+    expect(Math.abs(small.width - visual.width)).toBeLessThanOrEqual(1);
+    await page.goto('/vi/projects/');
+    await expect(tile(page).locator('img.cover')).toHaveAttribute(
+      'alt',
+      'Hình minh họa: một nút trung tâm điều phối ba nút tác tử quanh một vòng các bước công việc.',
+    );
+  });
+
   test('plus-disc summary is at least 44x44 and named "Learn more about ..."', async ({ page }) => {
     await page.goto('/projects/');
     const summary = tile(page).locator('summary');

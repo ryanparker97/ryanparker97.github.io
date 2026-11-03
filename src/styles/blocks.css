@@ -730,8 +730,8 @@ a.grid-tile:hover {
 
 /* Gradient text (§5.10.8): the one swipe per page, on the Home hero role. */
 .text-gradient {
-  --g1: light-dark(#0066cc, #2997ff);
-  --g2: light-dark(#0f7b6c, #64d2b4);
+  --g1: light-dark(#00509f, #5cb0ff);
+  --g2: light-dark(#0b5d52, #64d2b4);
   color: transparent;
   background: linear-gradient(
       90deg,
@@ -1424,4 +1424,49 @@ a.hl-row:hover .hl-title {
 }
 .hl-soon {
   color: var(--text-2);
+}
+
+/* Page art (spec §5.10.11): inline token-coloured SVG, centred; width per placement. */
+.page-art {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+}
+.page-art--closing {
+  width: 480px;
+  aspect-ratio: 2 / 1;
+}
+.page-art--steps {
+  width: 360px;
+  aspect-ratio: 12 / 5;
+  margin-bottom: 32px;
+}
+.page-art--nf {
+  width: 288px;
+  aspect-ratio: 4 / 3;
+}
+@media (max-width: 1068px) {
+  .page-art--closing {
+    width: 400px;
+  }
+  .page-art--steps {
+    width: 360px;
+    margin-bottom: 28px;
+  }
+  .page-art--nf {
+    width: 280px;
+  }
+}
+@media (max-width: 734px) {
+  .page-art--closing {
+    width: 280px;
+  }
+  .page-art--steps {
+    width: 280px;
+    margin-bottom: 24px;
+  }
+  .page-art--nf {
+    width: 240px;
+  }
 }

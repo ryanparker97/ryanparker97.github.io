@@ -85,6 +85,7 @@ test.describe('Part A: review r3 fixes', () => {
     expect(Math.abs(m.h1 - m.quote)).toBeLessThanOrEqual(4);
     expect(m.align).toBe('center');
     expect(m.band).toBeLessThanOrEqual(900 - 64);
+    expect(await page.locator('h1').evaluate((e) => getComputedStyle(e).fontSize)).toBe('80px');
   });
 
   test('the Home skills grid uses the wide content width (B8)', async ({ page }) => {

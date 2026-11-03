@@ -503,7 +503,7 @@ test('topic pages are excluded from the search index', async ({ page }) => {
   }
 });
 
-test('post page shows the part cover with no credit caption', async ({ page }) => {
+test('post page shows the part cover with alt text and no credit caption', async ({ page }) => {
   for (const [path, n] of [
     [PARTS[0], '1'],
     [PARTS[4], '5'],
@@ -511,7 +511,10 @@ test('post page shows the part cover with no credit caption', async ({ page }) =
     await page.goto(path);
     const img = page.locator('figure.post-hero img');
     await expect(img).toHaveCount(1);
-    await expect(img).toHaveAttribute('alt', '');
+    await expect(img).toHaveAttribute(
+      'alt',
+      new RegExp(`^Cover art: Neovim setup guide, Part ${n}: `),
+    );
     await expect(img).toBeVisible();
     await expect(img).toHaveAttribute('src', new RegExp(`part-${n}\\.[^/]*svg$`));
   }
@@ -528,6 +531,10 @@ test('post page shows the part cover with no credit caption', async ({ page }) =
     /\/og-default\.png$/,
   );
   await page.goto(`/vi${PARTS[0]}`);
+  await expect(page.locator('figure.post-hero img')).toHaveAttribute(
+    'alt',
+    'Ảnh bìa: Hướng dẫn thiết lập Neovim, Phần 1: từ con số 0 đến trình soạn thảo chạy được',
+  );
   await expect(page.locator('figure.post-hero figcaption')).toHaveCount(0);
   await expect(page.locator('main')).not.toContainText(/Ảnh bìa|Jason Long/);
 });

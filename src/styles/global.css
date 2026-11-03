@@ -259,16 +259,16 @@
   }
   @media (min-width: 735px) {
     .t-hero {
-      font-size: 4rem;
+      font-size: 4.5rem;
     }
     .t-unit {
-      font-size: 3rem;
+      font-size: 3.5rem;
     }
     .t-section {
-      font-size: 2.5rem;
+      font-size: 3rem;
     }
     .t-promo {
-      font-size: 2rem;
+      font-size: 2.25rem;
     }
     .t-subhead {
       font-size: 1.5rem;
@@ -328,16 +328,16 @@
       line-height: 1.2;
     }
     .t-hero {
-      font-size: 5rem;
+      font-size: 6rem;
     }
     .t-unit {
-      font-size: 3.5rem;
+      font-size: 4rem;
     }
     .t-section {
-      font-size: 3rem;
+      font-size: 3.5rem;
     }
     .t-promo {
-      font-size: 2.5rem;
+      font-size: 3rem;
     }
     .t-subhead {
       font-size: 1.75rem;
@@ -431,7 +431,7 @@
   .btn-primary,
   a.btn-primary {
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
   }
   .btn-secondary,
   a.btn-secondary {

@@ -47,21 +47,19 @@ const hex7: [string, string][] = [
   ['--text-2', '--surface-2'],
   ['--text-2', '--nav-solid'],
   ['--menu-ink', '--nav-solid'],
-];
-
-const hex45: [string, string][] = [
-  ['--text-2', '--fill'],
   ['--link', '--bg'],
   ['--link', '--surface-2'],
-  ['#fff', '--accent'],
-  ['#fff', '--accent-hover'],
-  ['#fff', '--accent-active'],
+  ['--on-accent', '--accent'],
+  ['--on-accent', '--accent-hover'],
+  ['--on-accent', '--accent-active'],
   ['--on-link', '--link'],
 ];
 
+const hex45: [string, string][] = [['--text-2', '--fill']];
+
 const fgHex = (fg: string, i: number) => (fg === '#fff' ? '#ffffff' : token(fg)[i]);
 
-describe('token contrast (7:1 text, 4.5:1 named exceptions; both themes)', () => {
+describe('token contrast (7:1 text and blues, 4.5:1 named exceptions; both themes)', () => {
   for (const [fg, bg] of hex7)
     for (const i of themes)
       it(`7:1 ${fg} on ${bg} (${label(i)})`, () => {

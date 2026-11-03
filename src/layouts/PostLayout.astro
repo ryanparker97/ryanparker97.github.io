@@ -116,7 +116,7 @@ const more = neighbors
       <figure class="post-hero" data-pagefind-ignore>
         <Image
           src={d.heroImage}
-          alt=""
+          alt={t('blog.coverAlt', { title: d.title })}
           width={480}
           height={480}
           loading="eager"

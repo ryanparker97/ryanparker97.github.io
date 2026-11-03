@@ -33,8 +33,8 @@ test.describe('hover lift under reduced motion', () => {
 
 test.describe('in-context promo headline', () => {
   for (const [width, size, line] of [
-    [1440, '40px', '44px'],
-    [900, '32px', '35.2px'],
+    [1440, '48px', '52.8px'],
+    [900, '36px', '39.6px'],
     [375, '32px', '35.2px'],
   ] as const) {
     test(`grid-tile h2 is ${size}/${line} at ${width}`, async ({ page }) => {

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 240" width="480" height="240">
+  <path d="M40 208H440" style="fill:none;stroke:var(--text-2)" stroke-width="2"/>
+  <path d="M80 200v16M160 200v16M240 200v16M320 200v16M400 200v16" style="fill:none;stroke:var(--text-2)" stroke-width="2"/>
+  <path d="M80 186V200M160 160V200M240 128V200M320 88V200M400 52V200" style="fill:none;stroke:var(--text-2)" stroke-width="2" stroke-dasharray="2 6"/>
+  <path d="M80 186L160 160L240 128L320 88L400 52" style="fill:none;stroke:var(--text-2)" stroke-width="4" opacity=".5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="80" cy="186" r="9" style="fill:var(--bg);stroke:var(--link)" stroke-width="4"/>
+  <circle cx="160" cy="160" r="9" style="fill:var(--bg);stroke:var(--link)" stroke-width="4"/>
+  <circle cx="240" cy="128" r="9" style="fill:var(--bg);stroke:var(--link)" stroke-width="4"/>
+  <circle cx="320" cy="88" r="9" style="fill:var(--bg);stroke:var(--link)" stroke-width="4"/>
+  <circle cx="400" cy="52" r="26" style="fill:var(--link)" opacity=".16"/>
+  <circle cx="400" cy="52" r="14" style="fill:var(--link)"/>
+</svg>

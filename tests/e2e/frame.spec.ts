@@ -61,8 +61,8 @@ test.describe('tokens and fonts', () => {
     });
     expect(v.bg).toBe('rgb(255, 255, 255)');
     expect(v.surface2).toBe('rgb(245, 245, 247)');
-    expect(v.link).toBe('rgb(0, 102, 204)');
-    expect(v.pill).toBe('rgb(0, 113, 227)');
+    expect(v.link).toBe('rgb(0, 80, 159)');
+    expect(v.pill).toBe('rgb(0, 83, 166)');
     expect(v.pillText).toBe('rgb(255, 255, 255)');
     expect(v.pillFont).toBe('19px');
     expect(parseFloat(v.pillRadius)).toBeGreaterThan(100);
@@ -77,10 +77,10 @@ test.describe('tokens and fonts', () => {
 
 test.describe('type scale (§5.4)', () => {
   const EXPECTED: Record<string, Record<number, number>> = {
-    't-hero': { 1440: 80, 900: 64, 375: 40 },
-    't-unit': { 1440: 56, 900: 48, 375: 32 },
-    't-section': { 1440: 48, 900: 40, 375: 32 },
-    't-promo': { 1440: 40, 900: 32, 375: 32 },
+    't-hero': { 1440: 96, 900: 72, 375: 40 },
+    't-unit': { 1440: 64, 900: 56, 375: 32 },
+    't-section': { 1440: 56, 900: 48, 375: 32 },
+    't-promo': { 1440: 48, 900: 36, 375: 32 },
     't-subhead': { 1440: 28, 900: 24, 375: 21 },
     't-body': { 1440: 19, 900: 19, 375: 19 },
   };

@@ -6,6 +6,8 @@ summary: 'Hệ thống lập trình dùng một orchestrator duy nhất điều 
 start: '2025'
 end:
 tech: ['Claude', 'Gemini', 'Codex', 'tmux', 'hcom', 'AI-DLC']
+image: '../../../assets/art/project-agentic-loop.svg'
+imageAlt: 'Hình minh họa: một nút trung tâm điều phối ba nút tác tử quanh một vòng các bước công việc.'
 featured: true
 ---
 
