@@ -7,7 +7,7 @@
 @theme static {
   --font-sans:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue',
-    'Inter Variable', Helvetica, Arial, sans-serif;
+    'Inter Variable', 'Inter Fallback', Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
   --breakpoint-sm: 735px;
   --breakpoint-md: 834px;

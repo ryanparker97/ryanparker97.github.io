@@ -106,6 +106,12 @@ const sorted = [...skills].sort((a, b) => a.data.order - b.data.order);
     font-weight: 500;
     hyphens: manual;
   }
+  @media (max-width: 734px) {
+    /* Inter (the Linux fallback) is wider than SF: 16px keeps the longest item whole at 375px. */
+    .skill-items {
+      font-size: 1rem;
+    }
+  }
   .more {
     margin: 32px 0 0;
   }

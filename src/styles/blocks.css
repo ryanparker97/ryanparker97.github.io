@@ -1443,7 +1443,7 @@ a.hl-row:hover .hl-title {
   margin-bottom: 32px;
 }
 .page-art--nf {
-  width: 288px;
+  width: 256px;
   aspect-ratio: 4 / 3;
 }
 @media (max-width: 1068px) {
@@ -1455,7 +1455,7 @@ a.hl-row:hover .hl-title {
     margin-bottom: 28px;
   }
   .page-art--nf {
-    width: 280px;
+    width: 256px;
   }
 }
 @media (max-width: 734px) {
