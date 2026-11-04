@@ -252,7 +252,7 @@ const attrs = (l: LocalNavLink) => ({
     align-items: center;
     min-height: 44px;
     color: var(--nav-ink);
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     letter-spacing: -0.01em;
     white-space: nowrap;
     transition: color 320ms var(--ease-nav);
@@ -276,12 +276,17 @@ const attrs = (l: LocalNavLink) => ({
   .links :is(a, button) {
     line-height: 1.3334;
   }
+  @media (min-width: 834px) and (max-width: 1068px) {
+    .links {
+      gap: 10px;
+    }
+  }
   .solo-link {
     flex: none;
     max-width: 66%;
     margin-inline-start: auto;
     color: var(--link);
-    font-size: 0.875rem;
+    font-size: 1rem;
   }
   .solo-link > span:first-child {
     min-width: 0;
@@ -303,7 +308,7 @@ const attrs = (l: LocalNavLink) => ({
   }
   .pill {
     flex: none;
-    color: #fff;
+    color: var(--on-accent);
   }
   @media (max-width: 833px) {
     .local-nav::after {
@@ -365,7 +370,7 @@ const attrs = (l: LocalNavLink) => ({
       min-height: 44px;
       padding-inline-start: 16px;
       color: var(--nav-ink);
-      font-size: 0.875rem;
+      font-size: 1rem;
       letter-spacing: -0.02em;
     }
     .tray a[aria-current='true'] {

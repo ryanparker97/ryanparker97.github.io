@@ -61,10 +61,10 @@ test.describe('tokens and fonts', () => {
     });
     expect(v.bg).toBe('rgb(255, 255, 255)');
     expect(v.surface2).toBe('rgb(245, 245, 247)');
-    expect(v.link).toBe('rgb(0, 102, 204)');
-    expect(v.pill).toBe('rgb(0, 113, 227)');
+    expect(v.link).toBe('rgb(0, 80, 159)');
+    expect(v.pill).toBe('rgb(0, 83, 166)');
     expect(v.pillText).toBe('rgb(255, 255, 255)');
-    expect(v.pillFont).toBe('17px');
+    expect(v.pillFont).toBe('19px');
     expect(parseFloat(v.pillRadius)).toBeGreaterThan(100);
   });
 
@@ -77,12 +77,12 @@ test.describe('tokens and fonts', () => {
 
 test.describe('type scale (§5.4)', () => {
   const EXPECTED: Record<string, Record<number, number>> = {
-    't-hero': { 1440: 80, 900: 64, 375: 40 },
-    't-unit': { 1440: 56, 900: 48, 375: 32 },
-    't-section': { 1440: 48, 900: 40, 375: 32 },
-    't-promo': { 1440: 40, 900: 32, 375: 32 },
-    't-subhead': { 1440: 28, 900: 24, 375: 19 },
-    't-body': { 1440: 17, 900: 17, 375: 17 },
+    't-hero': { 1440: 96, 900: 72, 375: 40 },
+    't-unit': { 1440: 64, 900: 56, 375: 32 },
+    't-section': { 1440: 56, 900: 48, 375: 32 },
+    't-promo': { 1440: 48, 900: 36, 375: 32 },
+    't-subhead': { 1440: 28, 900: 24, 375: 21 },
+    't-body': { 1440: 19, 900: 19, 375: 19 },
   };
   for (const w of [1440, 900, 375]) {
     test(`sizes at ${w}px`, async ({ page }) => {
@@ -524,7 +524,7 @@ test.describe('chrome alignment, transparency and the sticky bar (§5.2, §5.7, 
     expect(v.top + 7).toBeGreaterThanOrEqual(0);
   });
 
-  test('the small pill is 24px tall with a 44px tap area that touches no neighbour', async ({
+  test('the small pill is ~26.7px tall (24px at compact chrome) with a 44px tap area that touches no neighbour', async ({
     page,
   }) => {
     for (const w of [1440, 375]) {
@@ -545,7 +545,10 @@ test.describe('chrome alignment, transparency and the sticky bar (§5.2, §5.7, 
           gap: tapLeft - prev.getBoundingClientRect().right,
         };
       }, w);
-      expect(v.h, `${w}`).toBe(24);
+      // 14px type at full chrome (3px padding, 1px border): about 26.67px; 24px at compact chrome.
+      if (w > 833) expect(v.h, `${w}`).toBeCloseTo(26.67, 0);
+      else expect(v.h, `${w}`).toBe(24);
+      expect(v.h, `${w}`).toBeGreaterThanOrEqual(24);
       expect(v.bw).toBeGreaterThanOrEqual(44);
       expect(v.bh).toBeGreaterThanOrEqual(44);
       expect(v.gap, `${w}`).toBeGreaterThanOrEqual(8);
@@ -610,7 +613,7 @@ test.describe('local nav dropdown at 375px (§5.8)', () => {
     });
     expect(v.bar).toBe('rgb(250, 250, 252)');
     expect(v.tray).toBe('rgb(250, 250, 252)');
-    expect(v.size).toBe('14px');
+    expect(v.size).toBe('16px');
     expect(v.h).toBeGreaterThanOrEqual(44);
     expect(v.after).not.toContain('✓');
     expect(parseFloat(v.before)).toBeCloseTo(1.2, 1);
@@ -647,7 +650,7 @@ test.describe('mobile menu rows at 375px (§5.7)', () => {
     });
     expect(v.short).toEqual([]);
     expect(new Set(v.more.map((m) => m.join('|'))).size).toBe(1);
-    expect(v.more[0][1]).toBe('17px');
+    expect(v.more[0][1]).toBe('19px');
     expect(v.more[0][2]).toBe('600');
     expect(v.firstTop).toBeLessThanOrEqual(56);
     expect(v.mainColor).toBe('rgb(51, 51, 54)');
@@ -726,19 +729,19 @@ test.describe('search panel frame (§5.7)', () => {
     expect(v.outline).toBe('none');
     expect(v.shadow).toBe('none');
     expect(v.navBg).toBe('rgb(250, 250, 252)');
-    expect(v.size).toBe('12px');
+    expect(v.size).toBe('14px');
     expect(v.arrow).toContain('→');
     expect(v.close).toBe('none');
   });
 
-  test('quick links are 17px and at least 44px tall at 375px; the ✕ shows; results use plurals', async ({
+  test('quick links are 19px and at least 44px tall at 375px; the ✕ shows; results use plurals', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/projects/');
     await page.getByRole('button', { name: 'Search' }).first().click();
     const q = page.locator('#search-quick a').first();
-    expect(await q.evaluate((e) => getComputedStyle(e).fontSize)).toBe('17px');
+    expect(await q.evaluate((e) => getComputedStyle(e).fontSize)).toBe('19px');
     expect((await q.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expect(page.locator('#search-dialog .close')).toBeVisible();
     await page.locator('#search-input').fill('lazy-loaded plugins');

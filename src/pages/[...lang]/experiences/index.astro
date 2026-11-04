@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import ExperiencesArt from '~/assets/art/experiences-path.svg';
 import Chapter from '~/components/experiences/Chapter.astro';
 import HighlightsGallery from '~/components/experiences/HighlightsGallery.astro';
 import Section from '~/components/tile/Section.astro';
@@ -71,5 +72,6 @@ const jsonLd = personLd(profile, new URL(localePath('/experiences/', lang), Astr
         </a>
       </Fragment>
     </SectionHeader>
+    <ExperiencesArt class="page-art page-art--closing" role="img" aria-label={t('exp.more.art')} />
   </Section>
 </BaseLayout>

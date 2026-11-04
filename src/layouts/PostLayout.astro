@@ -1,6 +1,7 @@
 ---
 import '~/styles/prose.css';
 import { Image } from 'astro:assets';
+import interLatin from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import BaseLayout from './BaseLayout.astro';
 import SeriesBox from '~/components/blog/SeriesBox.astro';
 import MoreFrom from '~/components/blog/MoreFrom.astro';
@@ -82,6 +83,7 @@ const more = neighbors
     series ? localePath(`/blog/series/${series.slug}/`, lang) : undefined,
   )}
 >
+  <link slot="head" rel="preload" as="font" type="font/woff2" href={interLatin} crossorigin />
   <article class="post">
     <header class="head">
       <p class="t-news-cat">{category}</p>
@@ -116,10 +118,11 @@ const more = neighbors
       <figure class="post-hero" data-pagefind-ignore>
         <Image
           src={d.heroImage}
-          alt=""
+          alt={t('blog.coverAlt', { title: d.title })}
           width={480}
           height={480}
           loading="eager"
+          fetchpriority="high"
           class="post-hero-img"
         />
         {d.heroImageCredit && (
@@ -165,7 +168,8 @@ const more = neighbors
   }
   .post-hero-img {
     display: block;
-    width: 200px;
+    width: min(100%, 480px);
+    margin-inline: auto;
     height: auto;
     aspect-ratio: 1;
     border-radius: 18px;
@@ -194,7 +198,7 @@ const more = neighbors
   .date {
     margin-top: 4px !important;
     color: var(--text-2);
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 600;
     line-height: 1.4286;
   }
@@ -214,14 +218,14 @@ const more = neighbors
   }
   .meta-line :global(a) {
     display: inline-block;
-    line-height: 1.4286;
+    line-height: 20px;
     padding-block: 12px;
     margin-block: -12px;
   }
   .meta-line {
     margin: 4px 0 -12px !important;
     color: var(--text-2);
-    font-size: 0.875rem;
+    font-size: 1rem;
     line-height: 44px;
   }
   .keyline {
@@ -238,6 +242,9 @@ const more = neighbors
     .post-hero {
       margin-top: 36px;
     }
+    .post-hero-img {
+      width: min(100%, 400px);
+    }
     .series {
       margin-top: 36px;
     }
@@ -250,7 +257,7 @@ const more = neighbors
       margin-top: 32px;
     }
     .post-hero-img {
-      width: 144px;
+      width: 100%;
     }
     .series {
       margin-top: 32px;

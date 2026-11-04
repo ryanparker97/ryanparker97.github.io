@@ -4,6 +4,10 @@ test.describe('404 site index', () => {
   test('hero, three groups, and every index link resolves', async ({ page, request }) => {
     await page.goto('/nope-not-here/');
     await expect(page.locator('h1')).toHaveText('Page not found.');
+    await expect(page.locator('.hero svg.page-art[role="img"]')).toHaveAttribute(
+      'aria-label',
+      'Illustration: a magnifying glass over an empty page outline.',
+    );
     await expect(page.getByRole('link', { name: 'Go home' })).toHaveAttribute('href', '/');
     await expect(page.getByRole('button', { name: 'Search' }).first()).toBeVisible();
     const nav = page.getByRole('navigation', { name: 'Site index' });
@@ -105,7 +109,12 @@ test.describe('motion: reduced', () => {
               (s.transform !== 'none' && !e.closest('.plus-disc, summary')) || Number(s.opacity) < 1
             );
           })
-          .filter((e) => e.getClientRects().length && !e.closest('.paddle, [disabled], .icon-btn'))
+          .filter(
+            (e) =>
+              e.getClientRects().length &&
+              !e.closest('.paddle, [disabled], .icon-btn') &&
+              !e.parentElement?.closest('svg.page-art'),
+          )
           .map((e) => e.className),
       );
       expect(bad, path).toEqual([]);
@@ -162,6 +171,11 @@ test.describe('secondary button hover contrast', () => {
       const btn = page.locator('.btn-secondary').first();
       await btn.hover();
       await expect(btn).toHaveCSS('color', fg);
+    });
+    test(`${theme}: primary pill text is ${fg}`, async ({ page }) => {
+      await page.addInitScript((t) => localStorage.setItem('theme', t), theme);
+      await page.goto('/');
+      await expect(page.locator('.btn-primary').first()).toHaveCSS('color', fg);
     });
   }
 });

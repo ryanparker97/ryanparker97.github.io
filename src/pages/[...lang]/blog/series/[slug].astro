@@ -1,5 +1,6 @@
 ---
 import type { GetStaticPaths } from 'astro';
+import { Image } from 'astro:assets';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import Hero from '~/components/tile/Hero.astro';
 import PartRows from '~/components/blog/PartRows.astro';
@@ -26,6 +27,7 @@ const listParts = parts.map((p) => ({
   title: p.title,
   post: p.post && toListPost(p.post),
 }));
+const art = parts.find((p) => p.post?.data.heroImage)?.post?.data.heroImage;
 ---
 
 <BaseLayout
@@ -37,16 +39,58 @@ const listParts = parts.map((p) => ({
   switchHref={switchTarget(entry.available, lang, `/blog/series/${entry.slug}/`, '/blog/series/')}
   localNav={blogNav(lang, 'series')}
 >
-  <Hero
-    tight
-    eyebrow={t('series.title')}
-    title={entry.data.title}
-    subline={t('series.progress', { n: published, total: parts.length })}
-    copy={entry.data.description}
-  />
+  {art ? (
+    <Hero
+      tight
+      eyebrow={t('series.title')}
+      title={entry.data.title}
+      subline={t('series.progress', { n: published, total: parts.length })}
+      copy={entry.data.description}
+    >
+      <Image
+        src={art}
+        alt={t('blog.coverAlt', { title: entry.data.title })}
+        width={480}
+        height={480}
+        loading="eager"
+        class="series-art"
+      />
+    </Hero>
+  ) : (
+    <Hero
+      tight
+      eyebrow={t('series.title')}
+      title={entry.data.title}
+      subline={t('series.progress', { n: published, total: parts.length })}
+      copy={entry.data.description}
+    />
+  )}
   <section class="section section--tight">
     <div class="section-inner">
       <PartRows {lang} parts={listParts} label={entry.data.title} />
     </div>
   </section>
 </BaseLayout>
+
+<style>
+  .series-art {
+    display: block;
+    width: 280px;
+    height: auto;
+    aspect-ratio: 1;
+    margin-inline: auto;
+    border-radius: 18px;
+    outline: 1px solid var(--keyline);
+    outline-offset: -1px;
+  }
+  @media (max-width: 1068px) {
+    .series-art {
+      width: 240px;
+    }
+  }
+  @media (max-width: 734px) {
+    .series-art {
+      width: 200px;
+    }
+  }
+</style>

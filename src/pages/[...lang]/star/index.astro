@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import StarArt from '~/assets/art/star-steps.svg';
 import StarGroup from '~/components/star/StarGroup.astro';
 import CompetencyFilter from '~/components/star/CompetencyFilter.astro';
 import Hero from '~/components/tile/Hero.astro';
@@ -42,6 +43,7 @@ const subline = t('star.subline', {
   }}
 >
   <Hero tight eyebrow={t('star.title')} title={t('star.hero')} {subline}>
+    <StarArt class="page-art page-art--steps" role="img" aria-label={t('star.art')} />
     <CompetencyFilter {lang} {present} />
   </Hero>
   {groups.map((g, i) => (

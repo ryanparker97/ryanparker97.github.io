@@ -98,15 +98,27 @@ const eyebrow = role
       padding-bottom: 56px;
     }
   }
+  /* Story titles run to two lines: they keep Apple's 80 / 64 so the stepper band still peeks (m13 M4). */
+  @media (min-width: 735px) {
+    :global(.hero .t-hero) {
+      font-size: 4rem;
+    }
+  }
+  @media (min-width: 1069px) {
+    :global(.hero .t-hero) {
+      font-size: 5rem;
+    }
+  }
   .story-lead {
-    margin-top: 32px;
+    margin-top: 28px;
     text-align: center;
   }
   .story-lead :global(.quote blockquote) {
     text-wrap: balance;
   }
+  /* Trimmed 48 -> 40px so the +2px type scale keeps the peek (hero band <= 836 at 1440 x 900). */
   .stat-wrap {
-    margin-top: 48px;
+    margin-top: 40px;
   }
   :global(.story-steps .section-inner) {
     max-width: 760px;
@@ -116,7 +128,7 @@ const eyebrow = role
     padding: 10px 14px;
     border-radius: 12px;
     background: var(--bg);
-    font-size: 0.9375rem;
+    font-size: 1.0625rem;
   }
   .closing {
     display: flex;

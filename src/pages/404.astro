@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import NotFoundArt from '~/assets/art/not-found.svg';
 import Hero from '~/components/tile/Hero.astro';
 import SiteIndex from '~/components/ui/SiteIndex.astro';
 import { getPosts } from '~/lib/blog-content';
@@ -44,7 +45,7 @@ const groups = [
   switchHref="/vi/"
   noindex
 >
-  <Hero title={t('notFound.hero')} subline={t('notFound.text')}>
+  <Hero title={t('notFound.hero')} subline={t('notFound.text')} tight>
     <Fragment slot="actions">
       <a href="/" class="btn btn-primary">
         {t('common.goHome')}
@@ -53,6 +54,7 @@ const groups = [
         {t('search.open')}
       </button>
     </Fragment>
+    <NotFoundArt class="page-art page-art--nf" role="img" aria-label={t('notFound.art')} />
   </Hero>
   <section class="section section--surface" aria-label={t('notFound.index')}>
     <SiteIndex label={t('notFound.index')} {groups} />

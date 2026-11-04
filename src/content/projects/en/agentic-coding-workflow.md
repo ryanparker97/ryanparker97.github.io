@@ -6,6 +6,8 @@ summary: 'A single-orchestrator coding system that coordinates Claude, Gemini an
 start: '2025'
 end:
 tech: ['Claude', 'Gemini', 'Codex', 'tmux', 'hcom', 'AI-DLC']
+image: '../../../assets/art/project-agentic-loop.svg'
+imageAlt: 'Illustration: one central node coordinating three agent nodes around a loop of work stages.'
 featured: true
 ---
 

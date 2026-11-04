@@ -51,7 +51,14 @@ const moreTech = d.tech.length - shownTech.length;
   </Lockup>
   <div slot="visual" class="visual">
     {d.image && (
-      <Image src={d.image} alt="" width={640} height={360} loading="lazy" class="cover" />
+      <Image
+        src={d.image}
+        alt={d.imageAlt ?? ''}
+        width={640}
+        height={360}
+        loading="lazy"
+        class="cover"
+      />
     )}
     {shownTech.length > 0 && (
       <ul class="chips" aria-label={t('common.tech')}>
@@ -113,7 +120,7 @@ const moreTech = d.tech.length - shownTech.length;
   .dates {
     margin: 8px 0 0;
     color: var(--text-2);
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 600;
     line-height: 1.4286;
   }
@@ -133,6 +140,8 @@ const moreTech = d.tech.length - shownTech.length;
     height: auto;
     aspect-ratio: 16 / 9;
     border-radius: 18px;
+    outline: 1px solid var(--keyline);
+    outline-offset: -1px;
     object-fit: cover;
   }
   .chips {

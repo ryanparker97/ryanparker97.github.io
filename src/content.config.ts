@@ -80,9 +80,14 @@ const projects = defineCollection({
         repo: optionalUrl,
         demo: optionalUrl,
         image: image().optional(),
+        imageAlt: optionalText,
         featured: z.boolean().default(false),
         inPdf: z.boolean().optional(),
         role: optionalText,
+      })
+      .refine((d) => !d.image || !!d.imageAlt?.trim(), {
+        message: 'imageAlt is required when image is set',
+        path: ['imageAlt'],
       })
       .transform((d) => ({ ...d, inPdf: d.inPdf ?? d.featured })),
 });
