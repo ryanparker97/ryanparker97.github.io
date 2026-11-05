@@ -13,42 +13,52 @@ interface Props {
   /** Newest published post; absent shows the empty state. */
   post?: Post;
   seriesTitle?: string;
-  /** Parts in the post's series, for the progress segments. */
-  seriesTotal?: number;
+  seriesTagline?: string;
+  /** Code lines for the editor visual. */
+  snippet?: string[];
   span?: boolean;
 }
-const { lang, post, seriesTitle, seriesTotal = 0, span = false } = Astro.props;
+const { lang, post, seriesTitle, seriesTagline, snippet, span = false } = Astro.props;
 const t = useT(lang);
 const meta = post
   ? `${formatDate(post.data.pubDate, lang)} · ${t('blog.readingTime', { n: post.minutes })}`
   : undefined;
 const part = post?.data.seriesPart ?? 0;
+const inSeries = !!post && !!seriesTitle && part > 0;
+const title = post
+  ? inSeries
+    ? seriesTitle!
+    : tileHeadline(post.data.title)
+  : t('home.writing.empty');
+const subline = post ? (inSeries && seriesTagline ? seriesTagline : meta) : undefined;
+const read = inSeries ? t('home.writing.readPart', { n: part }) : t('home.posts.read');
+const code = (snippet ?? []).slice(0, 4);
 const art = post?.data.heroImage;
-const showProgress = !!post && seriesTotal > 1 && part > 0;
 ---
 
-<GridTile id="writing" {span} stack={!art} labelledby="writing-title">
+<GridTile
+  id="writing"
+  {span}
+  variant={post && code.length ? 'bleed' : undefined}
+  stack={!post || (!code.length && !art)}
+  labelledby="writing-title"
+>
   <Lockup
     id="writing-title"
     size="promo"
-    title={post ? tileHeadline(post.data.title) : t('home.writing.empty')}
+    {title}
     eyebrow={t('home.writing.eyebrow')}
-    subline={meta}
+    {subline}
     reveal
   >
-    {post && seriesTitle && (
-      <a slot="extra" class="chip" href={localePath(`/blog/series/${post.data.series}/`, lang)}>
-        {t('series.chip', { title: seriesTitle, n: part })}
-      </a>
-    )}
     {post && (
       <Fragment slot="actions">
         <a
           href={localePath(`/blog/${post.slug}/`, lang)}
           class="btn btn-primary"
-          aria-label={`${t('home.posts.read')}: ${post.data.title}`}
+          aria-label={`${read}: ${post.data.title}`}
         >
-          {t('home.posts.read')}
+          {read}
         </a>
         <a href={localePath('/blog/', lang)} class="btn btn-secondary">
           {t('home.posts.all')}
@@ -56,28 +66,37 @@ const showProgress = !!post && seriesTotal > 1 && part > 0;
       </Fragment>
     )}
   </Lockup>
-  {post && (art || showProgress) && (
+  {post && code.length > 0 && (
+    <div slot="visual" class="code-window" aria-hidden="true" data-code>
+      <ol>
+        {code.map((l) => {
+          const at = l.indexOf(' = ');
+          return (
+            <li>
+              {at > 0 ? (
+                <>
+                  <span class="k">{l.slice(0, at)}</span>
+                  {l.slice(at)}
+                </>
+              ) : (
+                l
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  )}
+  {post && !code.length && art && (
     <div slot="visual">
-      {art && (
-        <Image
-          src={art}
-          alt={t('blog.coverAlt', { title: post.data.title })}
-          width={480}
-          height={480}
-          loading="lazy"
-          class="writing-art"
-        />
-      )}
-      {showProgress && (
-        <div class="progress" data-series-progress>
-          <p>{t('home.writing.part', { n: part, total: seriesTotal })}</p>
-          <ol aria-hidden="true">
-            {Array.from({ length: seriesTotal }, (_, i) => (
-              <li class:list={{ on: i + 1 === part }}>{i + 1}</li>
-            ))}
-          </ol>
-        </div>
-      )}
+      <Image
+        src={art}
+        alt={t('blog.coverAlt', { title: post.data.title })}
+        width={480}
+        height={480}
+        loading="lazy"
+        class="writing-art"
+      />
     </div>
   )}
 </GridTile>
@@ -103,38 +122,42 @@ const showProgress = !!post && seriesTotal > 1 && part > 0;
       width: 200px;
     }
   }
-  /* Part numerals at Promo size, the current part in --text and the rest in --border. */
-  /* The series chip may wrap at 200% text. */
-  .chip {
-    white-space: normal;
+  .code-window {
+    width: min(92%, 520px);
+    height: 200px;
+    padding: 18px 20px;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    text-align: start;
+    font: 0.8125rem/1.9 var(--font-mono);
   }
-  .progress p {
-    margin: 0 0 12px;
-    color: var(--text-2);
-    font-size: 0.875rem;
-    line-height: 1.3334;
+  @media (min-width: 735px) {
+    .code-window {
+      height: 250px;
+      padding: 22px;
+      font-size: 0.9375rem;
+    }
   }
-  .progress ol {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 24px;
+  .code-window ol {
     margin: 0;
     padding: 0;
     list-style: none;
+    counter-reset: ln;
   }
-  .progress li {
-    color: var(--border);
-    font-size: 2rem;
-    font-weight: 600;
-    line-height: 1.1;
+  .code-window li {
+    counter-increment: ln;
+    white-space: pre;
   }
-  @media (min-width: 1069px) {
-    .progress li {
-      font-size: 2.5rem;
-    }
+  .code-window li::before {
+    content: counter(ln);
+    display: inline-block;
+    width: 2ch;
+    margin-inline-end: 1ch;
+    color: var(--text-2);
   }
-  .progress li.on {
-    color: var(--text);
+  .code-window .k {
+    color: var(--link);
   }
 </style>

@@ -49,6 +49,11 @@
   --section-pad-tight: 80px;
   --head-gap: 48px;
   --eyebrow-room: 56px;
+  /* Radius family (§5.5). */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 28px;
+  --radius-pill: 980px;
 
   /* Bars (§5.7, §5.8): one source of truth for every sticky offset. */
   --nav-h: 44px;

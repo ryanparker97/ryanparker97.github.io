@@ -2,9 +2,9 @@
 import type { Localized } from '~/lib/content';
 import { useT, type Lang } from '~/i18n';
 import { localePath } from '~/i18n/routes';
-import DotList from '~/components/ui/DotList.astro';
 import GridTile from '~/components/tile/GridTile.astro';
 import Lockup from '~/components/tile/Lockup.astro';
+import TerminalPanes from '~/components/media/TerminalPanes.astro';
 
 interface Props {
   lang: Lang;
@@ -16,7 +16,7 @@ const t = useT(lang);
 const d = project.data;
 ---
 
-<GridTile id="work" {span} stack labelledby="work-title">
+<GridTile id="work" {span} variant="bleed" labelledby="work-title">
   <Lockup
     id="work-title"
     size="promo"
@@ -25,13 +25,13 @@ const d = project.data;
     subline={d.subtitle}
     reveal
   >
-    <span slot="extra" class="chip">
-      {t(`projects.kind.${d.kind}`)}
-    </span>
     <Fragment slot="actions">
-      <a href={localePath(`/projects/#${project.slug}`, lang)} class="btn btn-primary">
-        {t('common.learnMore')}
-        <span class="sr-only"> {t('common.aboutTitle', { title: d.title })}</span>
+      <a
+        href={localePath(`/projects/#${project.slug}`, lang)}
+        class="btn btn-primary"
+        aria-label={`${t('projects.view')}: ${d.title}`}
+      >
+        {t('projects.view')}
       </a>
       <a href={localePath('/projects/', lang)} class="btn btn-secondary">
         {t('home.projects.all')}
@@ -39,36 +39,16 @@ const d = project.data;
     </Fragment>
   </Lockup>
   {d.tech.length > 0 && (
-    <p slot="visual" class="tech" data-tech>
-      <DotList items={d.tech.slice(0, 4)} />
-    </p>
+    <div slot="visual" class="tile-visual">
+      <TerminalPanes window panes={d.tech.slice(0, 3).map((x) => x.toLowerCase())} />
+    </div>
   )}
 </GridTile>
 
 <style>
-  /* The tile's visual: tech names as one centred line at Card headline size, at most two lines. */
-  .tech {
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
-    margin: 0;
-    overflow: hidden;
-    color: var(--text-2);
-    font-size: 1.3125rem;
-    font-weight: 600;
-    line-height: 1.1429;
-    letter-spacing: 0.007em;
-    text-wrap: balance;
-  }
-  @media (min-width: 735px) {
-    .tech {
-      font-size: 1.5rem;
-    }
-  }
-  @media (min-width: 1069px) {
-    .tech {
-      font-size: 1.75rem;
-    }
+  .tile-visual {
+    display: flex;
+    justify-content: center;
+    width: 100%;
   }
 </style>

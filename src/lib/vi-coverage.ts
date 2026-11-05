@@ -28,6 +28,7 @@ export function viPageHasContent(pathname: string): boolean {
   if (path.startsWith('/blog/')) return hasFile('blog', slug('/blog/'));
   if (path.startsWith('/star/') && slug('/star/')) return hasFile('star', slug('/star/'));
   if (path === '/star/') return translated('star');
+  if (path.startsWith('/skills/')) return translated('skills', 'certifications', 'profile');
   if (path.startsWith('/experiences/')) return translated('profile', 'experience');
   if (path.startsWith('/projects/')) return translated('projects');
   return translated('profile'); // home

@@ -1,46 +1,69 @@
 ---
 import type { Localized } from '~/lib/content';
-import { formatCvDate } from '~/lib/cv';
 import { useT, type Lang } from '~/i18n';
 import { localePath } from '~/i18n/routes';
-import type { Rail } from '~/lib/home';
+import type { Rail, Stat } from '~/lib/home';
 import CareerRail from './CareerRail.astro';
 import Lockup from '~/components/tile/Lockup.astro';
+import StatStrip from '~/components/tile/StatStrip.astro';
 import Unit from '~/components/tile/Unit.astro';
 
 interface Props {
   lang: Lang;
   role: Localized<'experience'>;
   rail: Rail;
-  years: string;
+  stats: Stat[];
 }
-const { lang, role, rail, years } = Astro.props;
+const { lang, role, rail, stats } = Astro.props;
 const t = useT(lang);
 const subline = t('home.experience.subline', {
+  role: role.data.role,
   company: role.data.company,
-  date: formatCvDate(role.data.start, lang).replace(' ', '\u00a0'),
-  years: `${years}\u00a0${t('home.years')}`,
 });
 ---
 
-<Unit id="experience" tone="surface" revealVisual={false} labelledby="experience-title">
+<Unit id="experience" tone="dark" revealVisual={false} labelledby="experience-title">
   <Lockup
     id="experience-title"
     size="unit"
-    title={role.data.role}
+    title={t('home.experience.title')}
     eyebrow={t('home.experience.eyebrow')}
     {subline}
     reveal
   >
     <Fragment slot="actions">
       <a href={localePath('/experiences/', lang)} class="btn btn-primary">
-        {t('common.learnMore')}
-        <span class="sr-only"> {t('home.experienceSuffix')}</span>
+        {t('home.experience.cta')}
       </a>
       <a href={localePath('/cv.pdf', lang)} download="Ryan-Parker-CV.pdf" class="btn btn-secondary">
         {t('common.download')}
       </a>
     </Fragment>
   </Lockup>
-  <CareerRail slot="visual" {lang} {rail} />
+  <div slot="visual" class="exp-visual">
+    <CareerRail {lang} {rail} />
+    {stats.length > 0 && <StatStrip {stats} label={t('home.highlights')} variant="big" />}
+  </div>
 </Unit>
+
+<style>
+  .exp-visual {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+  }
+  @media (min-width: 735px) {
+    .exp-visual {
+      gap: 48px;
+    }
+  }
+  @media (min-width: 1069px) {
+    .exp-visual {
+      gap: 64px;
+    }
+  }
+  .exp-visual :global(.stat-strip) {
+    width: 100%;
+  }
+</style>

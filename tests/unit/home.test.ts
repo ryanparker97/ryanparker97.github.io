@@ -6,6 +6,7 @@ import {
   highlightStats,
   isLongCopy,
   pickStory,
+  sentenceList,
   skillNames,
   tileHeadline,
   uniqueCompanies,
@@ -146,5 +147,19 @@ describe('clampSubline', () => {
     expect(out.endsWith('…')).toBe(true);
     expect(s.startsWith(out.slice(0, -1))).toBe(true);
     expect(s[out.length - 1]).toBe(' ');
+  });
+});
+
+describe('sentenceList', () => {
+  it('lower-cases all but the first label', () => {
+    expect(sentenceList(['Ownership', 'Technical depth', 'Customer focus'], 'en')).toBe(
+      'Ownership, technical depth, customer focus.',
+    );
+    expect(sentenceList(['Làm chủ', 'Chiều sâu kỹ thuật'], 'vi')).toBe(
+      'Làm chủ, chiều sâu kỹ thuật.',
+    );
+  });
+  it('returns an empty string for no labels', () => {
+    expect(sentenceList([], 'en')).toBe('');
   });
 });

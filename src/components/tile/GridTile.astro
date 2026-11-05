@@ -9,6 +9,8 @@ interface Props {
   span?: boolean;
   /** A visual under 120px is not split: lockup and visual are centred together (spec §5.10.2). */
   stack?: boolean;
+  /** bleed: the visual sits flush on the bottom edge; fill: the visual is centred in the space under the lockup */
+  variant?: 'bleed' | 'fill';
   labelledby?: string;
   ariaLabel?: string;
   [attr: string]: unknown;
@@ -19,6 +21,7 @@ const {
   tag = 'section',
   span = false,
   stack = false,
+  variant,
   labelledby,
   ariaLabel,
   ...rest
@@ -29,7 +32,15 @@ const Tag = href ? 'a' : tag;
 <Tag
   id={id}
   href={href}
-  class:list={['grid-tile', { 'grid-tile--span': span, 'grid-tile--stack': stack }]}
+  class:list={[
+    'grid-tile',
+    {
+      'grid-tile--span': span,
+      'grid-tile--stack': stack,
+      'grid-tile--bleed': variant === 'bleed',
+      'grid-tile--fill': variant === 'fill',
+    },
+  ]}
   aria-labelledby={href ? undefined : labelledby}
   aria-label={ariaLabel}
   {...rest}

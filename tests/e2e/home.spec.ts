@@ -1,14 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const SKILLS = [
-  'Data Engineering',
-  'Cloud Platform',
-  'DevOps & IaC',
-  'Backend Engineering',
-  'AI Engineering',
-  'Methodologies',
-];
-const ANCHORS = ['experience', 'skills', 'work', 'stories', 'writing', 'certifications', 'contact'];
+const ANCHORS = ['experience', 'work', 'stories', 'writing', 'certifications'];
 
 // Layout is measured without the reveal animation (its translate would skew the numbers).
 test.use({ reducedMotion: 'reduce' });
@@ -33,25 +25,16 @@ const blocks = (page: Page) =>
   );
 
 test.describe('Home structure', () => {
-  test('units run Hero, Experiences, Skills, tile grid, Contact', async ({ page }) => {
+  test('units run Hero, Experiences, then the tile grid', async ({ page }) => {
     await page.goto('/');
     const ids = await page
       .locator('main .unit, main .grid-tile')
       .evaluateAll((els) => els.map((e) => e.id));
-    expect(ids).toEqual([
-      'top',
-      'experience',
-      'skills',
-      'work',
-      'stories',
-      'writing',
-      'certifications',
-      'contact',
-    ]);
+    expect(ids).toEqual(['top', 'experience', 'work', 'stories', 'writing', 'certifications']);
     await expect(page.locator('main .tiles-2up .grid-tile')).toHaveCount(4);
   });
 
-  test('one H1, an H2 per unit and tile, H3 for skills and certifications, no skipped levels', async ({
+  test('one H1, an H2 per unit and tile, H3 for certification cards, no skipped levels', async ({
     page,
   }) => {
     await page.goto('/');
@@ -62,8 +45,8 @@ test.describe('Home structure', () => {
       .evaluateAll((els) => els.map((e) => Number(e.tagName[1])));
     expect(levels[0]).toBe(1);
     levels.slice(1).forEach((level, i) => expect(level).toBeLessThanOrEqual(levels[i] + 1));
-    await expect(page.locator('main h2')).toHaveCount(7);
-    await expect(page.locator('main h3')).toHaveCount(SKILLS.length + 2);
+    await expect(page.locator('main h2')).toHaveCount(5);
+    await expect(page.locator('main h3')).toHaveCount(2);
     // Every unit headline is at most 6 words; the Writing headline follows its own 8-word rule.
     const words = await page
       .locator('main :is(h1,h2)')
@@ -83,9 +66,9 @@ test.describe('Home structure', () => {
       await expect(unit).toHaveCSS('text-align', 'center');
       expect(await unit.locator('.actions > a').count()).toBeLessThanOrEqual(2);
     }
-    for (const id of ['top', 'experience', 'stories', 'writing', 'contact'])
+    for (const id of ['top', 'experience', 'stories', 'writing'])
       expect(await page.locator(`#${id} .actions > a`).count()).toBe(2);
-    await expect(page.locator('#certifications .btn')).toHaveCount(0);
+    await expect(page.locator('#certifications .actions > a')).toHaveCount(1);
     await expect(page.locator('#work .actions > a')).toHaveCount(2);
   });
 
@@ -101,12 +84,10 @@ test.describe('Home structure', () => {
     }
   });
 
-  test('at 375px every .lockup--long is start-aligned', async ({ page }) => {
+  test('Home has no long lockup at 375px (every lockup stays centred)', async ({ page }) => {
     await page.setViewportSize(size(375, 812));
     await page.goto('/');
-    const longs = page.locator('.lockup--long');
-    expect(await longs.count()).toBeGreaterThan(0);
-    for (const el of await longs.all()) await expect(el).toHaveCSS('text-align', 'start');
+    await expect(page.locator('.lockup--long')).toHaveCount(0);
   });
 
   test('no Home-specific script, rail or section index', async ({ page }) => {
@@ -120,30 +101,66 @@ test.describe('Home structure', () => {
 });
 
 test.describe('Hero and stats', () => {
-  test('shows location, name, headline, positioning, two pills and 3 numeric stats', async ({
-    page,
-  }) => {
+  test('shows the role, name, one line and two pills; no location or tagline', async ({ page }) => {
     await page.goto('/');
     const hero = page.locator('#top');
-    await expect(hero).toContainText('Ho Chi Minh City, Vietnam');
-    await expect(hero).toContainText(
-      'Senior Data Engineer & Team Lead — DBT, Airflow, PySpark, AWS & GitLab CI/CD',
+    await expect(hero).toContainText('Senior Data Engineer & Team Lead');
+    await expect(hero).toContainText('Data pipelines and cloud platforms for banking markets.');
+    await expect(hero).not.toContainText('Ho Chi Minh City');
+    await expect(hero).not.toContainText('DBT, Airflow, PySpark, AWS & GitLab CI/CD');
+    await expect(hero.locator('.t-eyebrow svg')).toHaveCount(0);
+    await expect(hero.locator('.t-eyebrow .text-gradient')).toHaveText(
+      'Senior Data Engineer & Team Lead',
     );
-    await expect(hero).toContainText('I design, build and run data pipelines');
     await expect(
       hero.getByRole('link', { name: 'Learn more about my experience' }),
     ).toHaveAttribute('href', '/experiences/');
     const pdf = hero.getByRole('link', { name: 'Download PDF' });
     await expect(pdf).toHaveAttribute('href', '/cv.pdf');
     await expect(pdf).toHaveAttribute('download', 'Ryan-Parker-CV.pdf');
-    const stats = hero.locator('.stat-strip > li');
+    const stats = page.locator('#experience .stat-strip > li');
     await expect(stats).toHaveCount(3);
     await expect(stats.nth(0)).toContainText('5+');
     await expect(stats.nth(0)).toContainText('years of experience');
     await expect(stats.nth(1)).toHaveText(/Led\s*7\s*engineers/);
     await expect(stats.nth(2)).toHaveText(/Cut\s*>50%\s*EMR costs/);
-    for (const v of await hero.locator('.stat-value').allTextContents()) expect(v).toMatch(/\d/);
-    await expect(hero.getByLabel('At a glance')).toBeVisible();
+    for (const v of await page.locator('#experience .stat-value').allTextContents())
+      expect(v).toMatch(/\d/);
+    await expect(page.locator('#experience').getByLabel('At a glance')).toBeVisible();
+    await expect(hero.locator('.stat-strip')).toHaveCount(0);
+  });
+
+  test('the pipeline: four stages, one row at 1440, two columns at 375, Observe in dark', async ({
+    page,
+  }) => {
+    await page.setViewportSize(size(1440));
+    await page.goto('/');
+    const li = page.locator('#top [data-pipeline] > li');
+    await expect(li).toHaveCount(4);
+    const pairs = [
+      ['Ingest', 'PySpark · EMR'],
+      ['Transform', 'DBT · Airflow'],
+      ['Store', 'S3 · Redshift'],
+      ['Observe', 'Datadog SLOs'],
+    ];
+    for (const [i, [step, tools]] of pairs.entries()) {
+      const text = await li.nth(i).innerText();
+      expect(text).toContain(step);
+      expect(text).toContain(tools);
+    }
+    const axis = (axisName: 'x' | 'y') =>
+      li.evaluateAll(
+        (els, a) =>
+          new Set(els.map((e) => Math.round(e.getBoundingClientRect()[a as 'x' | 'y']))).size,
+        axisName,
+      );
+    expect(await axis('x')).toBe(4);
+    expect(await axis('y')).toBe(1);
+    await expect(li.first().locator('.tools')).toHaveCSS('font-size', '24px');
+    await expect(li.nth(3)).toHaveCSS('background-color', 'rgb(29, 29, 31)');
+    await expect(li.nth(0)).toHaveCSS('background-color', 'rgb(245, 245, 247)');
+    await page.setViewportSize(size(375, 812));
+    expect(await axis('x')).toBe(2);
   });
 
   test('stats sit in one row at 1440px and stay three across at 375px (compact)', async ({
@@ -153,13 +170,13 @@ test.describe('Hero and stats', () => {
     await page.goto('/');
     const tops = () =>
       page
-        .locator('#top .stat-strip > li')
+        .locator('#experience .stat-strip > li')
         .evaluateAll(
           (els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().top))).size,
         );
     expect(await tops()).toBe(1);
     await page.setViewportSize(size(375, 812));
-    await expect(page.locator('#top .stat-strip')).toHaveClass(/stat-strip--compact/);
+    await expect(page.locator('#experience .stat-strip')).toHaveClass(/stat-strip--compact/);
     expect(await tops()).toBe(1);
   });
 
@@ -197,61 +214,40 @@ test.describe('Hero and stats', () => {
   });
 });
 
-test.describe('Experiences and skills', () => {
-  test('Experiences shows the current role, company line and two actions', async ({ page }) => {
+test.describe('Experiences', () => {
+  test('Experiences is a black tile: headline, role line, rail, two actions', async ({ page }) => {
     await page.goto('/');
     const unit = page.locator('#experience');
-    await expect(unit.locator('h2')).toHaveText('Senior Data Engineer (Team Lead)');
-    await expect(unit).toContainText('FPT Software · since Aug 2026 · 5+ years of experience');
+    await expect(unit.locator('h2')).toHaveText('Five years. One focus.');
+    await expect(unit).toContainText('Senior Data Engineer (Team Lead) at FPT Software.');
     await expect(unit.locator('.rail > li')).toHaveCount(3);
     await expect(unit.locator('.rail > li .sr-only').first()).toHaveText(
       'FPT Software: 2020 to 2021, and 2026 to now.',
     );
-    await expect(unit.getByRole('link', { name: 'Download PDF' })).toBeVisible();
-  });
-
-  test('one skill cell per category in order with at most 5 names plus "+N more"', async ({
-    page,
-  }) => {
-    await page.goto('/');
-    const cells = page.locator('#skills [data-skill]');
-    await expect(cells.locator('h3')).toHaveText(SKILLS);
-    for (const cell of await cells.all()) {
-      await expect(cell.locator('svg[data-skill-icon]')).toBeVisible();
-      const text = (await cell.locator('[data-skill-items]').textContent()) ?? '';
-      const names = text.replace(/\s*·\s*\+\d+ more$/, '').split(' · ');
-      expect(names.length).toBeLessThanOrEqual(5);
-    }
-    await expect(
-      cells.filter({ hasText: 'Data Engineering' }).locator('[data-skill-items]'),
-    ).toContainText('+9 more');
-    await expect(page.getByRole('link', { name: 'See where I used them' })).toHaveAttribute(
+    await expect(unit.getByRole('link', { name: 'See every role' })).toHaveAttribute(
       'href',
       '/experiences/',
     );
+    await expect(unit.getByRole('link', { name: 'Download PDF' })).toBeVisible();
+    await expect(unit).toHaveCSS('background-color', 'rgb(0, 0, 0)');
+    await expect(unit.locator('h2')).toHaveCSS('color', 'rgb(245, 245, 247)');
+    await expect(unit.locator('.t-eyebrow')).toHaveCSS('color', 'rgb(174, 174, 178)');
+    await expect(unit.locator('.btn-primary')).toHaveCSS('background-color', 'rgb(92, 176, 255)');
+    await expect(unit.locator('.btn-primary')).toHaveCSS('color', 'rgb(0, 0, 0)');
+    await expect(page.locator('#top')).toHaveCSS('background-color', 'rgb(255, 255, 255)');
   });
 
-  for (const [width, columns] of [
-    [1440, 3],
-    [800, 2],
-    [400, 1],
-  ] as const) {
-    test(`skill grid has ${columns} column(s) at ${width}px, with no card chrome`, async ({
-      page,
-    }) => {
-      await page.setViewportSize(size(width));
+  test('the big stats are 72px at 1440, 48px at 900 and 28px at 375', async ({ page }) => {
+    for (const [w, px] of [
+      [1440, '72px'],
+      [900, '48px'],
+      [375, '28px'],
+    ] as const) {
+      await page.setViewportSize(size(w, 900));
       await page.goto('/');
-      const xs = await page
-        .locator('#skills [data-skill]')
-        .evaluateAll(
-          (els) => new Set(els.map((e) => Math.round(e.getBoundingClientRect().x))).size,
-        );
-      expect(xs).toBe(columns);
-      const cell = page.locator('#skills [data-skill]').first();
-      await expect(cell).toHaveCSS('box-shadow', 'none');
-      await expect(cell).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
-    });
-  }
+      await expect(page.locator('#experience .stat-value').first()).toHaveCSS('font-size', px);
+    }
+  });
 });
 
 test.describe('Backgrounds and grid geometry', () => {
@@ -292,12 +288,12 @@ test.describe('Backgrounds and grid geometry', () => {
       expect(t[1].right).toBe(width - 12);
       expect(t[0].top).toBe(t[1].top);
       expect(t[0].height).toBeCloseTo(t[1].height, 0);
-      expect(t[0].height).toBeGreaterThanOrEqual(380);
+      expect(t[0].height).toBeGreaterThanOrEqual(600);
       expect(t[2].top - t[0].bottom).toBeCloseTo(12, 0);
     });
   }
 
-  test('tiles stack in one column with no side padding at 375px, min-height 340px', async ({
+  test('tiles stack in one column with no side padding at 375px, min-height 500px', async ({
     page,
   }) => {
     await page.setViewportSize(size(375, 812));
@@ -306,7 +302,7 @@ test.describe('Backgrounds and grid geometry', () => {
     for (const tile of t) {
       expect(tile.left).toBe(0);
       expect(tile.right).toBe(375);
-      expect(tile.height).toBeGreaterThanOrEqual(340);
+      expect(tile.height).toBeGreaterThanOrEqual(500);
     }
   });
 
@@ -356,6 +352,14 @@ test.describe('Backgrounds and grid geometry', () => {
       .not.toBe(before);
   });
 
+  test('the footer sits flush under the tile grid', async ({ page }) => {
+    await page.goto('/');
+    const grid = (await page.locator('main .tiles-2up').boundingBox())!;
+    const footer = (await page.locator('footer').boundingBox())!;
+    expect(Math.abs(footer.y - (grid.y + grid.height))).toBeLessThanOrEqual(1);
+    await expect(page.locator('footer .crumbs')).toHaveCount(0);
+  });
+
   test('has no horizontal scroll from 320px', async ({ page }) => {
     for (const width of [320, 375, 768, 1440]) {
       await page.setViewportSize(size(width, 700));
@@ -371,26 +375,42 @@ test.describe('Backgrounds and grid geometry', () => {
 
 test.describe('Grid tile content', () => {
   test('project tile', async ({ page }) => {
+    await page.setViewportSize(size(1440, 1000));
     await page.goto('/');
     const tile = page.locator('#work');
     await expect(tile.locator('h2')).toHaveText('Multi-Agent Coding System');
-    await expect(tile).toContainText('Personal');
-    await expect(tile.locator('[data-tech]')).toContainText('Claude · Gemini · Codex · tmux');
+    await expect(tile.locator('.chip')).toHaveCount(0);
+    await expect(tile.locator('[data-panes] .pane__name')).toHaveText([
+      'claude',
+      'gemini',
+      'codex',
+    ]);
     await expect(
-      tile.getByRole('link', { name: 'Learn more about Multi-Agent Coding System' }),
+      tile.getByRole('link', { name: 'See the project: Multi-Agent Coding System' }),
     ).toHaveAttribute('href', '/projects/#agentic-coding-workflow');
     await expect(tile.getByRole('link', { name: 'All projects' })).toHaveAttribute(
       'href',
       '/projects/',
     );
+    const panes = await tile.locator('[data-panes]').boundingBox();
+    const box = await tile.boundingBox();
+    expect(Math.abs(panes!.y + panes!.height - (box!.y + box!.height))).toBeLessThanOrEqual(1);
   });
 
-  test('STAR story tile shows chips, the super stat and two actions', async ({ page }) => {
+  test('STAR story tile: competencies as a line, the huge figure and two actions', async ({
+    page,
+  }) => {
+    await page.setViewportSize(size(1440, 1000));
     await page.goto('/');
     const tile = page.locator('#stories');
     await expect(tile.locator('h2')).toHaveText('Cutting EMR costs by more than half');
-    await expect(tile.locator('[data-competencies] .chip')).toHaveCount(3);
-    await expect(tile.locator('.stat--super .stat-value')).toHaveText('>50%');
+    await expect(tile.locator('.chip')).toHaveCount(0);
+    await expect(tile).toContainText('Ownership, technical depth, customer focus.');
+    await expect(tile.locator('[data-figure] [aria-hidden="true"]')).toHaveText('>50%');
+    await expect(tile.locator('[data-figure] .sr-only')).toHaveText('Cut >50% EMR costs');
+    expect(await tile.locator('[data-figure]').evaluate((e) => getComputedStyle(e).fontSize)).toBe(
+      '200px',
+    );
     await expect(tile.getByRole('link', { name: /Read the story/ })).toHaveAttribute(
       'href',
       '/star/emr-cost-optimization/',
@@ -398,75 +418,48 @@ test.describe('Grid tile content', () => {
     await expect(tile.getByRole('link', { name: 'All stories' })).toHaveAttribute('href', '/star/');
   });
 
-  test('writing tile shows the newest post, series chip, progress and two actions', async ({
+  test('writing tile: the series, its line, Read part 5, and the editor window', async ({
     page,
   }) => {
     await page.goto('/');
     const tile = page.locator('#writing');
-    await expect(tile.locator('h2')).toHaveText('Neovim setup guide, Part 5');
-    await expect(tile).toContainText('12 min read');
-    await expect(tile.locator('a.chip')).toHaveText('Neovim setup guide · Part 5');
-    await expect(tile.locator('[data-series-progress] li')).toHaveCount(5);
-    await expect(tile.locator('[data-series-progress]')).toContainText('Part 5 of 5');
-    await expect(tile.locator('.actions > a')).toHaveCount(2);
-    const art = tile.locator('img.writing-art');
-    await expect(art).toHaveCount(1);
-    await expect(art).toHaveAttribute('alt', /^Cover art: /);
-    await expect(art).toHaveAttribute('src', /part-5\.[^/]*svg$/);
-    const box = await art.boundingBox();
-    expect(Math.abs(box!.width - 280)).toBeLessThanOrEqual(1);
+    await expect(tile.locator('h2')).toHaveText('Neovim setup guide');
+    await expect(tile).toContainText('Five parts, from zero to a working editor.');
+    await expect(tile.locator('a.chip')).toHaveCount(0);
+    await expect(
+      tile.getByRole('link', {
+        name: 'Read part 5: Neovim setup guide, Part 5: debugging, testing and the daily workflow',
+      }),
+    ).toHaveAttribute('href', '/blog/neovim-setup-5-debugging-and-workflow/');
+    await expect(tile.getByRole('link', { name: 'All posts' })).toHaveAttribute('href', '/blog/');
+    await expect(tile.locator('[data-code] li')).toHaveCount(4);
+    await expect(tile.locator('[data-code] li').first()).toContainText('vim.g.mapleader');
+    await expect(tile.locator('img')).toHaveCount(0);
     await page.goto('/vi/');
-    await expect(page.locator('#writing img.writing-art')).toHaveAttribute('alt', /^Ảnh bìa: /);
+    await expect(page.locator('#writing h2')).toHaveText('Hướng dẫn thiết lập Neovim');
   });
 
-  test('certifications: newest first, issuer logos, no Verify link without a URL', async ({
+  test('certifications: two cards newest first, issuers as the subhead, no logos', async ({
     page,
   }) => {
     await page.goto('/');
     const tile = page.locator('#certifications');
     await expect(tile.locator('h2')).toHaveText('Certified on the platforms I use.');
+    await expect(tile).toContainText('Amazon Web Services and Datadog.');
     const rows = tile.locator('[data-cert]');
     await expect(rows).toHaveCount(2);
     await expect(rows.locator('.cert-name')).toHaveText([
       'Datadog Certified: Datadog Fundamentals',
       'AWS Certified Solutions Architect – Associate',
     ]);
-    await expect(rows.locator('[data-logo] svg')).toHaveCount(2);
-    await expect(rows.locator('[data-monogram]')).toHaveCount(0);
-    await expect(tile.getByRole('link')).toHaveCount(0);
-    await expect(tile.locator('[data-cert-more]')).toHaveCount(0);
-  });
-});
-
-test.describe('Contact', () => {
-  test('has the closing line, two actions, social icons and spoken languages', async ({ page }) => {
-    await page.goto('/');
-    const unit = page.locator('#contact');
-    await expect(unit.locator('h2')).toHaveText("Let's talk.");
-    await expect(unit.getByRole('link', { name: 'Email me' })).toHaveAttribute('href', /^mailto:/);
-    await expect(unit.getByRole('link', { name: 'Download PDF' })).toBeVisible();
-    await expect(unit.getByRole('list', { name: 'Social links' }).locator('a')).toHaveCount(4);
-    await expect(unit.locator('[data-spoken-languages]')).toContainText(
-      'English — Professional working proficiency',
+    await expect(rows.first()).toContainText('Datadog · 2023');
+    await expect(tile.locator('svg, img')).toHaveCount(0);
+    await expect(tile.getByRole('link')).toHaveCount(1);
+    await expect(tile.getByRole('link', { name: 'See all skills' })).toHaveAttribute(
+      'href',
+      '/skills/',
     );
-    await expect(unit.locator('[data-real-name]')).toHaveText('Legal name: Tran Thanh Hai');
-    await expect(page.locator('#top')).not.toContainText('Tran Thanh Hai');
-  });
-
-  test('footer sits flush under Contact and has no breadcrumbs', async ({ page }) => {
-    await page.goto('/');
-    const contact = (await page.locator('#contact').boundingBox())!;
-    const footer = (await page.locator('footer').boundingBox())!;
-    expect(Math.abs(footer.y - (contact.y + contact.height))).toBeLessThanOrEqual(1);
-    await expect(page.locator('footer .crumbs')).toHaveCount(0);
-  });
-
-  test('skill descriptions are hidden below 735px', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 800 });
-    await page.goto('/');
-    await expect(page.locator('#skills .skill-desc').first()).toBeHidden();
-    await page.setViewportSize({ width: 1024, height: 800 });
-    await expect(page.locator('#skills .skill-desc').first()).toBeVisible();
+    await expect(tile.locator('[data-cert-more]')).toHaveCount(0);
   });
 });
 
@@ -477,7 +470,7 @@ test.describe('Anchors and motion', () => {
       await page.waitForTimeout(300);
       const top = (await page.locator(`#${id}`).boundingBox())!.y;
       expect(top).toBeGreaterThanOrEqual(0);
-      if (!['contact', 'certifications'].includes(id)) expect(top).toBeLessThan(80);
+      if (!['certifications'].includes(id)) expect(top).toBeLessThan(80);
     });
   }
 
@@ -504,7 +497,7 @@ test.describe('Anchors and motion', () => {
       await page.locator('main .unit[data-reveal], main .grid-tile[data-reveal]').count(),
     ).toBe(0);
     await expect(page.locator('html')).toHaveClass(/\breveal\b/);
-    const item = page.locator('#skills [data-skill]').nth(1);
+    const item = page.locator('#stories h2');
     // The hidden state fades in over 900ms from the visible server render; wait for it to settle.
     await expect.poll(() => item.evaluate((e) => getComputedStyle(e).opacity)).toBe('0');
     const css = await item.evaluate((e) => {
@@ -566,15 +559,56 @@ test.describe('Deep links and metadata', () => {
     await expect(page.getByRole('note')).toHaveCount(0);
     await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
     await expect(page.locator('h1')).toHaveCount(1);
-    await expect(page.locator('main h2')).toHaveCount(7);
-    await expect(page.locator('#skills h2')).toHaveText('Những công cụ tôi dùng để xây dựng.');
-    await expect(page.locator('#contact h2')).toHaveText('Cùng trò chuyện nhé.');
-    await expect(page.locator('#skills [data-skill] h3').first()).toHaveText('Kỹ thuật dữ liệu');
-    await expect(page.locator('#contact [data-spoken-languages]')).toContainText('Tiếng Anh');
+    await expect(page.locator('main h2')).toHaveCount(5);
+    await expect(page.locator('#experience h2')).toHaveText('Năm năm. Một trọng tâm.');
     await expect(page.getByRole('link', { name: 'Tải PDF' }).first()).toHaveAttribute(
       'href',
       '/vi/cv.pdf',
     );
     await expect(page.locator('link[hreflang="vi"]')).toHaveCount(1);
   });
+});
+
+test.describe('Feature tile visuals', () => {
+  for (const w of [1440, 900, 390]) {
+    test(`terminal and editor windows are sized per spec at ${w}`, async ({ page }) => {
+      await page.setViewportSize(size(w));
+      await page.goto('/');
+      const m = await page.evaluate(() => {
+        const box = (el: Element) => el.getBoundingClientRect();
+        const win = (sel: string) => {
+          const el = document.querySelector(sel) as HTMLElement;
+          const tile = el.closest('.grid-tile') as HTMLElement;
+          const cs = getComputedStyle(tile);
+          const inner = box(tile).width - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+          return { width: box(el).width, inner, tileRight: box(tile).right, right: box(el).right };
+        };
+        const over = (sel: string) =>
+          [...document.querySelectorAll(sel)].filter((e) => e.scrollWidth > e.clientWidth).length;
+        return {
+          term: win('#work .panes--window'),
+          editor: win('#writing .code-window'),
+          paneNames: over('#work .pane__name'),
+          editorLines: over('#writing .code-window li'),
+          editorBox: over('#writing .code-window'),
+          docW: document.documentElement.scrollWidth,
+        };
+      });
+      for (const v of [m.term, m.editor]) {
+        // 520 per spec, or 92% of the tile's content box when that is narrower (M); S only has to fit.
+        if (w >= 735) {
+          expect(Math.abs(v.width - Math.min(520, v.inner * 0.92))).toBeLessThanOrEqual(1);
+        } else {
+          expect(v.width).toBeGreaterThanOrEqual(250);
+          expect(v.width).toBeLessThanOrEqual(v.inner);
+        }
+        expect(v.right).toBeLessThanOrEqual(v.tileRight + 0.5);
+        if (w >= 1069) expect(Math.abs(v.width - 520)).toBeLessThanOrEqual(1);
+      }
+      expect(m.paneNames).toBe(0);
+      expect(m.editorLines).toBe(0);
+      expect(m.editorBox).toBe(0);
+      expect(m.docW).toBeLessThanOrEqual(w);
+    });
+  }
 });
