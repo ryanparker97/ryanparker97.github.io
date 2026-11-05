@@ -71,21 +71,21 @@ test.describe('STAR', () => {
 });
 
 test.describe('footer rule', () => {
-  for (const p of ['/', '/vi/', '/experiences/']) {
-    test(`${p} ends on a white band and has no rule`, async ({ page }) => {
+  for (const p of ['/', '/vi/']) {
+    test(`${p} has a 1px rule above the footer`, async ({ page }) => {
       await page.goto(p);
       const v = await page
         .locator('.site-footer')
         .evaluate((e) => getComputedStyle(e).borderTopWidth);
-      expect(v).toBe('0px');
+      expect(v).toBe('1px');
     });
   }
-  test('/star/ ends on a grey band and has a 1px rule', async ({ page }) => {
-    await page.goto('/star/');
+  test('/experiences/ has no rule', async ({ page }) => {
+    await page.goto('/experiences/');
     const v = await page
       .locator('.site-footer')
       .evaluate((e) => getComputedStyle(e).borderTopWidth);
-    expect(v).toBe('1px');
+    expect(v).toBe('0px');
   });
 });
 
@@ -121,14 +121,14 @@ test.describe('search panel', () => {
   });
 });
 
-test('nav links use the 12/1.3334 caption line height', async ({ page }) => {
+test('nav links use the 14/1.3334 line height', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto('/');
   const lh = await page
     .locator('[data-nav] .links a')
     .first()
     .evaluate((e) => parseFloat(getComputedStyle(e).lineHeight));
-  expect(Math.abs(lh - 16)).toBeLessThanOrEqual(0.1);
+  expect(Math.abs(lh - 18.67)).toBeLessThanOrEqual(0.1);
 });
 
 test('post tag links in a wrapped meta line do not overlap', async ({ page }) => {

@@ -1,4 +1,4 @@
-/* Blog post body (spec §4.5): SF stack, Article body size (19 / 17 / 17px), 1.42 line height. */
+/* Blog post body (spec §4.5): SF stack, Article body size (21 / 19 / 19px), 1.42 line height. */
 .prose {
   font-family: var(--font-sans);
   color: var(--text);
@@ -14,7 +14,7 @@
 .prose h2 {
   margin-top: 44px;
   margin-bottom: 16px;
-  font-size: 1.3125rem;
+  font-size: 1.5rem;
   line-height: 1.1667;
   letter-spacing: 0.009em;
   font-weight: 700;
@@ -27,6 +27,9 @@
 @media (min-width: 1069px) {
   .prose h2 {
     margin-top: 52px;
+    font-size: 1.75rem;
+  }
+  .prose h3 {
     font-size: 1.5rem;
   }
 }
@@ -72,7 +75,7 @@
   font-size: 0.9em;
 }
 .prose pre {
-  font-size: 0.875rem;
+  font-size: 1rem;
   line-height: 1.6;
 }
 .prose table {
@@ -81,7 +84,7 @@
   overflow-x: auto;
   border-collapse: collapse;
   font-family: var(--font-sans);
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
   line-height: 1.5;
 }
 .prose :is(th, td) {

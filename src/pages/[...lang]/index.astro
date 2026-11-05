@@ -3,11 +3,13 @@ import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import HeroUnit from '~/components/home/HeroUnit.astro';
 import ExperienceUnit from '~/components/home/ExperienceUnit.astro';
+import SkillsUnit from '~/components/home/SkillsUnit.astro';
 import TileGrid from '~/components/tile/TileGrid.astro';
 import ProjectTile from '~/components/home/ProjectTile.astro';
 import StoryTile from '~/components/home/StoryTile.astro';
 import WritingTile from '~/components/home/WritingTile.astro';
 import CertificationsTile from '~/components/home/CertificationsTile.astro';
+import ContactUnit from '~/components/home/ContactUnit.astro';
 import { getPosts, getSeriesList } from '~/lib/blog-content';
 import { getLocalized, getProfile } from '~/lib/content';
 import { sortProjects, sortRoles } from '~/lib/cv';
@@ -22,6 +24,7 @@ export const getStaticPaths = (() => langStaticPaths()) satisfies GetStaticPaths
 const lang = getLang(Astro.params.lang);
 const t = useT(lang);
 const { data: p, fallback: f1 } = await getProfile(lang);
+const { items: skills, fallback: f2 } = await getLocalized('skills', lang);
 const { items: certs, fallback: f3 } = await getLocalized('certifications', lang);
 const { items: roles, fallback: f4 } = await getLocalized('experience', lang);
 const { items: allProjects } = await getLocalized('projects', lang);
@@ -50,33 +53,32 @@ const stats = highlightStats({
 const plan = gridPlan({ project: !!project, story: !!story, certs: certs.length > 0 });
 const postSeries = series.find((s) => s.slug === post?.data.series);
 const seriesTitle = postSeries?.data.title;
+const seriesTotal = postSeries?.data.parts.length ?? 0;
 // Banner only when something shown on the page is really untranslated.
 const shown = [...(story ? [story] : []), ...(post ? [post] : []), ...(project ? [project] : [])];
-const fallback = f1 || f3 || f4 || (lang !== 'en' && shown.some((i) => i.contentLang !== lang));
+const fallback =
+  f1 || f2 || f3 || f4 || (lang !== 'en' && shown.some((i) => i.contentLang !== lang));
 const jsonLd = personLd(p, new URL(localePath('/', lang), Astro.site).href, lang);
 ---
 
 <BaseLayout title={t('home.title')} description={t('home.description')} {lang} {fallback} {jsonLd}>
-  <HeroUnit {lang} profile={p} />
+  <HeroUnit {lang} profile={p} {stats} />
   {role && (
-    <ExperienceUnit {lang} {role} rail={careerRail(sortedRoles.map((r) => r.data))} {stats} />
+    <ExperienceUnit
+      {lang}
+      {role}
+      rail={careerRail(sortedRoles.map((r) => r.data))}
+      years={p.yearsOfExperience}
+    />
   )}
-  <TileGrid feature>
+  <SkillsUnit {lang} {skills} />
+  <TileGrid>
     {plan.map(({ id, span }) => {
       if (id === 'work' && project) return <ProjectTile {lang} {project} {span} />;
       if (id === 'stories' && story) return <StoryTile {lang} {story} {span} />;
-      if (id === 'writing')
-        return (
-          <WritingTile
-            {lang}
-            {post}
-            {seriesTitle}
-            seriesTagline={postSeries?.data.tagline}
-            snippet={postSeries?.data.snippet ?? []}
-            {span}
-          />
-        );
+      if (id === 'writing') return <WritingTile {lang} {post} {seriesTitle} {seriesTotal} {span} />;
       return <CertificationsTile {lang} certs={sortedCerts} {span} />;
     })}
   </TileGrid>
+  <ContactUnit {lang} profile={p} />
 </BaseLayout>

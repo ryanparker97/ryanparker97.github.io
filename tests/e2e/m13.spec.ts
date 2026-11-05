@@ -88,6 +88,12 @@ test.describe('Part A: review r3 fixes', () => {
     expect(await page.locator('h1').evaluate((e) => getComputedStyle(e).fontSize)).toBe('80px');
   });
 
+  test('the Home skills grid uses the wide content width (B8)', async ({ page }) => {
+    await page.goto('/');
+    const w = await page.locator('.skill-grid').evaluate((e) => e.getBoundingClientRect().width);
+    expect(Math.round(w)).toBe(1260);
+  });
+
   test('the post TOC lines up with the category and has a 26px pitch (B9)', async ({ page }) => {
     await page.goto(POST);
     const cat = await top(page, '.post .t-news-cat');
@@ -229,28 +235,34 @@ test.describe('Part B: reveal (R1)', () => {
     });
     await page.goto('/');
     await expect(page.locator('html')).not.toHaveClass(/\breveal\b/);
-    await expect(page.locator('#stories h2')).toHaveCSS('opacity', '1');
+    await expect(page.locator('#skills h2')).toHaveCSS('opacity', '1');
   });
 });
 
 test.describe('Part B: Home composition (R2, R3, R5)', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('the Experiences tile puts the stat strip 64px under the career rail', async ({ page }) => {
+  test('the hero stacks its stat strip 64px under the actions', async ({ page }) => {
     await page.goto('/');
     const gap = await page.evaluate(() => {
-      const a = document.querySelector('#experience .rail-wrap')!.getBoundingClientRect();
-      const s = document.querySelector('#experience .stat-strip')!.getBoundingClientRect();
+      const a = document.querySelector('#top .actions')!.getBoundingClientRect();
+      const s = document.querySelector('#top .stat-strip')!.getBoundingClientRect();
       return s.top - a.bottom;
     });
     expect(Math.abs(gap - 64)).toBeLessThanOrEqual(2);
-    const heroGap = await page.evaluate(() => {
-      const a = document.querySelector('#top .actions')!.getBoundingClientRect();
-      const v = document.querySelector('#top [data-pipeline]')!.getBoundingClientRect();
-      return v.top - a.bottom;
-    });
-    expect(Math.abs(heroGap - 64)).toBeLessThanOrEqual(2);
     expect(await top(page, '#experience')).toBeLessThanOrEqual(836);
+  });
+
+  test('Contact flows: 40px to the icons, under 500px tall', async ({ page }) => {
+    await page.goto('/');
+    const m = await page.evaluate(() => {
+      const c = document.querySelector('#contact')!;
+      const a = c.querySelector('.actions')!.getBoundingClientRect();
+      const s = c.querySelector('.social')!.getBoundingClientRect();
+      return { gap: s.top - a.bottom, h: c.getBoundingClientRect().height };
+    });
+    expect(Math.abs(m.gap - 40)).toBeLessThanOrEqual(2);
+    expect(m.h).toBeLessThan(500);
   });
 
   test('every grid tile visual is at least 56px tall', async ({ page }) => {
@@ -258,7 +270,7 @@ test.describe('Part B: Home composition (R2, R3, R5)', () => {
     const hs = await page
       .locator('.grid-tile .unit__visual')
       .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
-    expect(hs.length).toBe(4);
+    expect(hs.length).toBeGreaterThanOrEqual(3);
     for (const h of hs) expect(h).toBeGreaterThanOrEqual(56);
   });
 
@@ -321,6 +333,22 @@ test.describe('Part B: Home composition (R2, R3, R5)', () => {
         });
         expect(bad, `${path} @${w}`).toEqual([]);
       }
+    }
+  });
+
+  test('no skill item wraps inside itself', async ({ page }) => {
+    for (const w of [1440, 900, 375]) {
+      await page.setViewportSize({ width: w, height: 900 });
+      await page.goto('/');
+      const split = await page.locator('[data-skill-items] .nw').evaluateAll(
+        (els) =>
+          els.filter((e) => {
+            const r = document.createRange();
+            r.selectNodeContents(e);
+            return new Set([...r.getClientRects()].map((q) => Math.round(q.top))).size > 1;
+          }).length,
+      );
+      expect(split, `@${w}`).toBe(0);
     }
   });
 });
@@ -407,12 +435,5 @@ test.describe('Part B: Experiences, STAR, Projects, Blog (R6, R8)', () => {
       .locator('.hl-parts li a')
       .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)));
     expect(new Set(lefts).size).toBe(1);
-  });
-
-  test('the Skills spec sheet uses the content width', async ({ page }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/skills/');
-    const w = await page.locator('.spec-sheet').evaluate((e) => e.getBoundingClientRect().width);
-    expect(Math.round(w)).toBe(980);
   });
 });

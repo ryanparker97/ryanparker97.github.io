@@ -1,12 +1,6 @@
 ---
 title: 'Neovim setup guide'
 description: 'Build a fast, minimal Neovim 0.12 setup for web, data engineering and SRE work, one step at a time.'
-tagline: 'Five parts, from zero to a working editor.'
-snippet:
-  - 'vim.g.mapleader = " "'
-  - 'vim.g.maplocalleader = " "'
-  - 'vim.g.loaded_netrw = 1'
-  - 'vim.g.loaded_netrwPlugin = 1'
 topic: developer-tools
 parts:
   - part: 1

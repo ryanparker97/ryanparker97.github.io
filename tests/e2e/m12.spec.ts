@@ -87,11 +87,12 @@ test.describe('motion', () => {
   test('a revealed 3-item group is fully visible 1.6s after entering view', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    const grid = page.locator('#experience .rail');
+    const grid = page.locator('#skills .skill-grid');
     await grid.scrollIntoViewIfNeeded();
     await page.evaluate(() => window.scrollBy(0, 150));
     await page.waitForTimeout(1600);
-    for (const el of await grid.locator('li').all()) await expect(el).toHaveCSS('opacity', '1');
+    for (const el of await grid.locator('[data-skill]').all())
+      await expect(el).toHaveCSS('opacity', '1');
   });
 });
 
