@@ -11,6 +11,7 @@ describe('viPageHasContent', () => {
     '/vi/star/emr-cost-optimization/',
     '/vi/experiences/',
     '/vi/projects/',
+    '/vi/skills/',
   ])('has Vietnamese content: %s', (path) => {
     expect(viPageHasContent(path)).toBe(true);
   });

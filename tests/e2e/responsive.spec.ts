@@ -4,6 +4,7 @@ const ROUTES = [
   '/',
   '/experiences/',
   '/projects/',
+  '/skills/',
   '/star/',
   '/blog/',
   '/blog/neovim-setup-1-zero-to-editor/',

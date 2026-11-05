@@ -42,7 +42,7 @@
   body {
     background: var(--bg);
     color: var(--text);
-    font: 400 1.1875rem/1.4706 var(--font-sans);
+    font: 400 1.0625rem/1.4706 var(--font-sans);
     letter-spacing: -0.022em;
     -webkit-font-smoothing: antialiased;
     font-synthesis: none;
@@ -162,7 +162,7 @@
     font-weight: 600;
   }
   .t-subhead {
-    font-size: 1.3125rem;
+    font-size: 1.1875rem;
     line-height: 1.1429;
     letter-spacing: 0.007em;
     font-weight: 400;
@@ -174,19 +174,19 @@
     font-weight: 600;
   }
   .t-eyebrow {
-    font-size: 1.1875rem;
+    font-size: 1.0625rem;
     line-height: 1;
     letter-spacing: 0.011em;
     font-weight: 600;
     color: var(--text-2);
   }
   .t-intro {
-    font-size: 1.3125rem;
+    font-size: 1.1875rem;
     line-height: 1.381;
     letter-spacing: 0.011em;
   }
   .t-lockup {
-    font-size: 1.3125rem;
+    font-size: 1.1875rem;
     line-height: 1.421;
     letter-spacing: 0.012em;
     font-weight: 600;
@@ -208,12 +208,12 @@
     letter-spacing: 0.009em;
   }
   .t-article-body {
-    font-size: 1.1875rem;
+    font-size: 1.0625rem;
     line-height: 1.42;
     letter-spacing: 0.012em;
   }
   .t-article-section {
-    font-size: 1.5rem;
+    font-size: 1.3125rem;
     line-height: 1.1667;
     letter-spacing: 0.009em;
     font-weight: 700;
@@ -229,7 +229,7 @@
     font-weight: 700;
   }
   .t-news-cat {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     line-height: 1.2858;
     letter-spacing: 0;
     font-weight: 700;
@@ -243,32 +243,36 @@
     font-weight: 400;
   }
   .t-body {
-    font-size: 1.1875rem;
+    font-size: 1.0625rem;
     line-height: 1.4706;
     letter-spacing: -0.022em;
   }
   .t-reduced {
-    font-size: 1rem;
+    font-size: 0.875rem;
     line-height: 1.4286;
     letter-spacing: -0.016em;
   }
   .t-caption {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     line-height: 1.3334;
     letter-spacing: -0.01em;
   }
   @media (min-width: 735px) {
     .t-hero {
-      font-size: 4.5rem;
+      font-size: 4rem;
+      letter-spacing: -0.022em;
     }
     .t-unit {
-      font-size: 3.5rem;
+      font-size: 3rem;
+      letter-spacing: -0.012em;
     }
     .t-section {
-      font-size: 3rem;
+      font-size: 2.5rem;
+      letter-spacing: -0.009em;
     }
     .t-promo {
-      font-size: 2.25rem;
+      font-size: 2rem;
+      letter-spacing: -0.005em;
     }
     .t-subhead {
       font-size: 1.5rem;
@@ -277,7 +281,7 @@
       font-size: 1.5rem;
     }
     .t-eyebrow {
-      font-size: 1.3125rem;
+      font-size: 1.1875rem;
     }
     .t-intro {
       font-size: 1.3125rem;
@@ -291,10 +295,10 @@
       font-size: 2.5rem;
     }
     .t-article-body {
-      font-size: 1.1875rem;
+      font-size: 1.0625rem;
     }
     .t-news-cat {
-      font-size: 0.875rem;
+      font-size: 0.75rem;
     }
     .t-quote {
       font-size: 2rem;
@@ -312,16 +316,14 @@
       font-size: 1.5rem;
     }
     .t-article-body {
-      font-size: 1.3125rem;
+      font-size: 1.1875rem;
     }
-    .t-article-section {
-      font-size: 1.75rem;
-    }
+    .t-article-section,
     .t-news-title {
       font-size: 1.5rem;
     }
     .t-news-cat {
-      font-size: 1rem;
+      font-size: 0.875rem;
     }
     .t-quote {
       font-size: 2.5rem;
@@ -331,13 +333,13 @@
       font-size: 6rem;
     }
     .t-unit {
-      font-size: 4rem;
-    }
-    .t-section {
       font-size: 3.5rem;
     }
-    .t-promo {
+    .t-section {
       font-size: 3rem;
+    }
+    .t-promo {
+      font-size: 2.5rem;
     }
     .t-subhead {
       font-size: 1.75rem;
@@ -370,7 +372,7 @@
     padding-block: 64px 32px;
   }
   .meta {
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 500;
     color: var(--text-2);
   }
@@ -380,13 +382,13 @@
     display: inline-block;
     max-width: 100%;
     min-height: 28px;
-    padding: 5px 12px;
+    padding: 6px 12px;
     border-radius: 980px;
     background: var(--fill);
     color: var(--text);
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 500;
-    line-height: 1.2858;
+    line-height: 1.3334;
     letter-spacing: -0.01em;
     white-space: nowrap;
     vertical-align: middle;
@@ -401,7 +403,7 @@
   }
   .chip-sm {
     min-height: 24px;
-    padding: 3px 10px;
+    padding: 4px 10px;
   }
 
   /* Buttons (spec §5.6). */
@@ -412,10 +414,10 @@
     justify-content: center;
     gap: 8px;
     min-height: 44px;
-    padding: 10px 21px;
+    padding: 11px 21px;
     border: 1px solid transparent;
     border-radius: 980px;
-    font-size: 1.1875rem;
+    font-size: 1.0625rem;
     font-weight: 400;
     line-height: 1.1765;
     letter-spacing: -0.022em;
@@ -455,14 +457,9 @@
   .btn-sm {
     min-height: 24px;
     padding: 3px 10px;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     line-height: 1.3334;
     letter-spacing: -0.01em;
-  }
-  @media (max-width: 833px) {
-    .btn-sm {
-      font-size: 0.75rem;
-    }
   }
   .btn-sm::before {
     content: '';
@@ -650,7 +647,7 @@
     width: 100%;
     min-height: 48px;
     color: var(--menu-ink);
-    font-size: 1.1875rem;
+    font-size: 1.0625rem;
     font-weight: 600;
     text-align: left;
     cursor: pointer;
@@ -744,7 +741,7 @@ html:not(.js) [data-js-only] {
   min-height: 44px;
   padding: 0 12px 0 16px;
   border-bottom: 1px solid var(--border);
-  font: 500 0.9375rem var(--font-sans);
+  font: 500 0.8125rem var(--font-sans);
   color: var(--text-2);
 }
 .code-title {
@@ -800,14 +797,14 @@ html:not(.js) [data-js-only] {
   padding: 1px 8px;
   border-radius: 999px;
   background: var(--fill);
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 .hit .excerpt,
 .hit .sub > span {
   display: block;
   color: var(--text-2);
-  font-size: 1.0625rem;
+  font-size: 0.9375rem;
   line-height: 1.45;
 }
 .hit .sub {

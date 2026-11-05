@@ -23,6 +23,12 @@ export function gridPlan(has: { project: boolean; story: boolean; certs: boolean
   return ids.map((id, i) => ({ id, span: ids.length % 2 === 1 && i === ids.length - 1 }));
 }
 
+/** "Ownership, technical depth, customer focus." (spec §4.1.5): first label as is, the rest lower-cased. */
+export function sentenceList(labels: string[], lang: 'en' | 'vi'): string {
+  if (!labels.length) return '';
+  return labels.map((l, i) => (i === 0 ? l : l.toLocaleLowerCase(lang))).join(', ') + '.';
+}
+
 /** Soft guard for the 120-character subline rule: cut at a word boundary and add an ellipsis. */
 export function clampSubline(s: string, max = 120): string {
   const text = s.trim();

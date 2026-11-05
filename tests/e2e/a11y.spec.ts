@@ -7,6 +7,7 @@ const ROUTES = [
   '/',
   '/experiences/',
   '/projects/',
+  '/skills/',
   '/star/',
   '/star/emr-cost-optimization/',
   '/blog/',

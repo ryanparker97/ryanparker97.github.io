@@ -164,6 +164,10 @@ const series = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
+    /** One short line for the Home Writing tile. */
+    tagline: optionalText,
+    /** Up to 6 code lines copied verbatim from a part, shown as the Home tile's editor visual. */
+    snippet: z.array(z.string()).max(6).default([]),
     topic: topicRef,
     parts: z.array(
       z.object({
