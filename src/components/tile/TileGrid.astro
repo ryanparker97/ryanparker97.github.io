@@ -4,14 +4,12 @@ interface Props {
   /** Projects and Blog: tiles hold more text, so 420px instead of 580px at L. */
   dense?: boolean;
   label?: string;
-  /** Home: tall tiles with large visuals (Layout A) */
-  feature?: boolean;
 }
-const { dense = false, label, feature = false } = Astro.props;
+const { dense = false, label } = Astro.props;
 ---
 
 <div
-  class:list={['tiles-2up', { 'tiles-2up--dense': dense, 'tiles-2up--feature': feature }]}
+  class:list={['tiles-2up', { 'tiles-2up--dense': dense }]}
   role={label ? 'group' : undefined}
   aria-label={label}
 >

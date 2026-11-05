@@ -152,12 +152,6 @@
 .unit--bg {
   background: var(--bg);
 }
-/* Dark tone (§5.10.2): the same tokens under color-scheme: dark, so text and pills keep 7:1. */
-.unit--dark {
-  color-scheme: dark;
-  background: var(--bg);
-  color: var(--text);
-}
 .unit + .unit {
   margin-top: 12px;
 }
@@ -206,7 +200,7 @@
   }
 }
 /* Visual mass rule (§5.10.2): a visual under 120px is not split. `.unit--stack` and
-   `.grid-tile--stack` centre the lockup and the visual together; `.unit--flow` (content-heavy units)
+   `.grid-tile--stack` centre the lockup and the visual together; `.unit--flow` (Skills, Contact)
    takes its height from its content. */
 .unit--stack .unit-inner,
 .grid-tile.grid-tile--stack {
@@ -240,6 +234,13 @@
   .unit--flow .unit__lockup {
     width: 100%;
   }
+}
+/* Contact: lockup, 40px, icons, 16px, languages; under 500px tall at L. */
+#contact.unit--flow {
+  padding-block: 56px 63px;
+}
+#contact.unit--flow .unit-inner {
+  gap: 40px;
 }
 
 /* Tile grid (§5.10.3): two columns, 12px gaps, full viewport width; one column at S. */
@@ -282,7 +283,7 @@
 }
 .grid-tile .lockup .t-subhead {
   margin-top: 3px;
-  font-size: 1.1875rem;
+  font-size: 1.3125rem;
   line-height: 1.2105;
   letter-spacing: 0.012em;
 }
@@ -325,39 +326,6 @@
   .tiles-2up--dense .grid-tile {
     min-height: 0;
   }
-}
-/* Home feature grid (§5.10.3): tall tiles, lockup on top, a large visual below. */
-.tiles-2up--feature .grid-tile {
-  min-height: 500px;
-  padding: 40px 24px;
-  gap: 32px;
-}
-@media (min-width: 735px) {
-  .tiles-2up--feature .grid-tile {
-    min-height: 560px;
-    padding: 44px 32px;
-  }
-}
-@media (min-width: 1069px) {
-  .tiles-2up--feature .grid-tile {
-    min-height: 600px;
-    padding: 52px 40px;
-  }
-}
-.tiles-2up--feature .grid-tile.grid-tile--bleed {
-  padding-bottom: 0;
-}
-.grid-tile.grid-tile--bleed > .unit__visual {
-  display: flex;
-  justify-content: center;
-  margin-top: auto;
-}
-.grid-tile.grid-tile--fill > .unit__visual {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
 }
 @media (hover: hover) {
   .grid-tile:hover {
@@ -433,7 +401,7 @@ a.grid-tile:hover {
 .news-tile .news-meta {
   margin-top: 16px;
   color: var(--text-2);
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.4286;
 }
@@ -471,7 +439,7 @@ a.grid-tile:hover {
 }
 @media (max-width: 734px) {
   .card .card-body {
-    font-size: 0.875rem;
+    font-size: 1rem;
     line-height: 1.4286;
     letter-spacing: -0.016em;
   }
@@ -494,7 +462,7 @@ a.grid-tile:hover {
 }
 .stat-cap {
   color: var(--text);
-  font-size: 0.875rem;
+  font-size: 1rem;
   line-height: 1.2858;
   letter-spacing: -0.016em;
 }
@@ -547,7 +515,7 @@ a.grid-tile:hover {
   letter-spacing: -0.015em;
 }
 .stat--super .stat-cap {
-  font-size: 1.0625rem;
+  font-size: 1.1875rem;
 }
 @media (min-width: 735px) {
   .stat--super .stat-value {
@@ -615,28 +583,6 @@ a.grid-tile:hover {
   }
 }
 
-/* Big strip (Home Experiences tile): no hairlines, larger values at M and L; S keeps 28px so 320px holds. */
-.stat-strip--big {
-  max-width: 860px;
-}
-.stat-strip--big > li + li {
-  border-top: 0;
-  border-left: 0;
-}
-.stat-strip--big .stat-value {
-  letter-spacing: -0.015em;
-}
-@media (min-width: 735px) {
-  .stat-strip--big .stat-value {
-    font-size: 3rem;
-  }
-}
-@media (min-width: 1069px) {
-  .stat-strip--big .stat-value {
-    font-size: 4.5rem;
-  }
-}
-
 /* Graph bars (§5.10.9). */
 .stat-graph {
   display: grid;
@@ -659,7 +605,7 @@ a.grid-tile:hover {
 }
 .graph-bars .bar-label {
   color: var(--text-2);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.3334;
 }
 .graph-bars hr {
@@ -721,7 +667,7 @@ a.grid-tile:hover {
 }
 .gallery-card .gc-label {
   color: var(--text-2);
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 600;
   line-height: 1.2858;
 }
@@ -731,7 +677,7 @@ a.grid-tile:hover {
 .gallery-card .gc-body {
   margin-top: 12px;
   color: var(--text-2);
-  font-size: 0.875rem;
+  font-size: 1rem;
   line-height: 1.4286;
   letter-spacing: -0.016em;
 }
@@ -748,10 +694,10 @@ a.grid-tile:hover {
     padding: 28px;
   }
   .gallery-card .gc-label {
-    font-size: 1.0625rem;
+    font-size: 1.1875rem;
   }
   .gallery-card .gc-body {
-    font-size: 1.0625rem;
+    font-size: 1.1875rem;
     line-height: 1.4706;
     letter-spacing: -0.022em;
   }
@@ -855,7 +801,7 @@ a.grid-tile:hover {
 .quote figcaption {
   margin-top: 24px;
   color: var(--text-2);
-  font-size: 1.0625rem;
+  font-size: 1.1875rem;
   font-weight: 600;
   line-height: 1.4706;
 }
@@ -948,7 +894,7 @@ a.grid-tile:hover {
 .site-index h2 {
   margin-bottom: 15px;
   color: var(--text-2);
-  font-size: 1.0625rem;
+  font-size: 1.1875rem;
   font-weight: 400;
   line-height: 1.2353;
   letter-spacing: 0;
@@ -966,7 +912,7 @@ a.grid-tile:hover {
   align-items: center;
   min-height: 44px;
   color: var(--text);
-  font-size: 1.0625rem;
+  font-size: 1.1875rem;
   font-weight: 600;
   line-height: 1.2353;
 }
@@ -986,11 +932,11 @@ a.grid-tile:hover {
     width: 25%;
   }
   .site-index h2 {
-    font-size: 0.875rem;
+    font-size: 1rem;
     margin-bottom: 12px;
   }
   .site-index a {
-    font-size: 0.875rem;
+    font-size: 1rem;
   }
   .site-index .si-group:first-child a {
     font-size: 1.5rem;
@@ -1033,7 +979,7 @@ a.grid-tile:hover {
   pointer-events: none;
 }
 .plus-row .plus-label {
-  font-size: 1.0625rem;
+  font-size: 1.1875rem;
 }
 @media (max-width: 1068px) {
   .plus-row .plus-label {
@@ -1305,7 +1251,7 @@ mark.tech.tech--start {
   border-radius: 980px;
   background: var(--mint-tint);
   color: var(--text);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   vertical-align: middle;
 }
@@ -1421,17 +1367,17 @@ a.hl-row:hover .hl-title {
   display: block;
 }
 .hl-title {
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 600;
 }
 .hl-desc {
   margin: 0;
   color: var(--text-2);
-  font-size: 15px;
+  font-size: 17px;
 }
 .hl-meta {
   color: var(--text-2);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
 }
 .hl-soon > .chip {
@@ -1472,7 +1418,7 @@ a.hl-row:hover .hl-title {
 }
 .hl-num {
   color: var(--text-2);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   text-transform: uppercase;
 }
@@ -1522,13 +1468,5 @@ a.hl-row:hover .hl-title {
   }
   .page-art--nf {
     width: 240px;
-  }
-}
-
-/* S: the editor window's longest line must fit inside its box (WebKit's mono is wider). */
-@media (max-width: 734px) {
-  .grid-tile .unit__visual .code-window {
-    padding-inline: 14px;
-    font-size: 0.75rem;
   }
 }

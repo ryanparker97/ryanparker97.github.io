@@ -5,7 +5,7 @@
  */
 interface Props {
   id?: string;
-  tone?: 'bg' | 'surface' | 'dark';
+  tone?: 'bg' | 'surface';
   labelledby?: string;
   /** The Home hero: intro animation on the visual and the scroll fade. */
   hero?: boolean;
@@ -29,15 +29,7 @@ const {
 
 <section
   id={id}
-  class:list={[
-    'unit',
-    {
-      'unit--bg': tone === 'bg',
-      'unit--dark': tone === 'dark',
-      'unit--flow': flow,
-      'unit--stack': stack,
-    },
-  ]}
+  class:list={['unit', { 'unit--bg': tone === 'bg', 'unit--flow': flow, 'unit--stack': stack }]}
   aria-labelledby={labelledby}
 >
   <div class="unit-inner" data-hero={hero ? '' : undefined}>

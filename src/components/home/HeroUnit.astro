@@ -1,19 +1,22 @@
 ---
+import { Icon } from 'astro-icon/components';
 import type { CollectionEntry } from 'astro:content';
 import { useT, type Lang } from '~/i18n';
 import { localePath } from '~/i18n/routes';
-import { isLongCopy } from '~/lib/home';
+import { isLongCopy, type Stat } from '~/lib/home';
 import Lockup from '~/components/tile/Lockup.astro';
+import StatStrip from '~/components/tile/StatStrip.astro';
 import Unit from '~/components/tile/Unit.astro';
-import Pipeline from '~/components/home/Pipeline.astro';
 
 interface Props {
   lang: Lang;
   profile: CollectionEntry<'profile'>['data'];
+  stats: Stat[];
 }
-const { lang, profile: p } = Astro.props;
+const { lang, profile: p, stats } = Astro.props;
 const t = useT(lang);
-const subline = t('home.hero.subline');
+const copy = t('home.positioning');
+const subline = `${p.headline} — ${p.tagline}`;
 ---
 
 <Unit id="top" tone="bg" hero stack labelledby="top-title">
@@ -23,11 +26,17 @@ const subline = t('home.hero.subline');
     size="hero"
     title={p.name}
     {subline}
-    long={isLongCopy(p.headline, subline)}
+    {copy}
+    long={isLongCopy(subline, copy.replace(/\*\*/g, ''))}
     intro
   >
     <Fragment slot="eyebrow">
+      <Icon name="lucide:map-pin" size={18} class="pin" />
+      {p.location}
+    </Fragment>
+    <Fragment slot="subline">
       <span class="text-gradient">{p.headline}</span>
+      {` — ${p.tagline}`}
     </Fragment>
     <Fragment slot="actions">
       <a href={localePath('/experiences/', lang)} class="btn btn-primary">
@@ -39,5 +48,17 @@ const subline = t('home.hero.subline');
       </a>
     </Fragment>
   </Lockup>
-  <Pipeline slot="visual" {lang} />
+  {stats.length > 0 && (
+    <Fragment slot="visual">
+      <StatStrip {stats} label={t('home.highlights')} />
+    </Fragment>
+  )}
 </Unit>
+
+<style>
+  .pin {
+    display: inline-block;
+    margin-inline-end: 6px;
+    vertical-align: -2px;
+  }
+</style>

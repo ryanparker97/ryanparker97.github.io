@@ -93,16 +93,8 @@ test('inline code is 0.9em of its paragraph', async ({ page }) => {
 });
 
 test('lockup strong inherits the lockup weight', async ({ page }) => {
-  // No built page currently ships bold inside a lockup (the Home positioning line was
-  // removed), but Lockup renders **bold** copy as <strong>; inject one into a real lockup.
-  await page.goto('/blog/topics/developer-tools/');
-  const lockup = page.locator('.t-lockup').first();
-  await lockup.evaluate((n) => {
-    const s = document.createElement('strong');
-    s.textContent = 'bold';
-    n.appendChild(s);
-  });
-  const strong = lockup.locator('strong').first();
-  const parent = await lockup.evaluate((n) => getComputedStyle(n).fontWeight);
+  await page.goto('/');
+  const strong = page.locator('.t-lockup strong').first();
+  const parent = await strong.evaluate((n) => getComputedStyle(n.closest('.t-lockup')!).fontWeight);
   await expect(strong).toHaveCSS('font-weight', parent);
 });

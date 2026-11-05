@@ -383,7 +383,7 @@ test('in-page heading targets (search sub-results) land with eyebrow and H2 belo
 
 test('Home tile heading ids land below the nav with the eyebrow visible', async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 900 });
-  for (const id of ['experience', 'stories']) {
+  for (const id of ['experience', 'skills']) {
     await page.goto(`/#${id}-title`);
     await page.waitForTimeout(150);
     const m = await page.evaluate((i) => {

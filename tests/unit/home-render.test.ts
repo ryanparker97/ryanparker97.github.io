@@ -23,7 +23,7 @@ describe('WritingTile', () => {
     expect(html).toContain('id="writing"');
   });
 
-  it('shows the series title, its line, Read part N and the editor', async () => {
+  it('shows a short headline, the date and two actions for a post', async () => {
     const post = {
       slug: 'p',
       minutes: 7,
@@ -38,21 +38,15 @@ describe('WritingTile', () => {
       lang: 'en',
       post,
       seriesTitle: 'Neovim setup guide',
-      seriesTagline: 'Five parts.',
-      snippet: ['a = 1', 'b'],
     });
-    expect(html).toMatch(/<h2[^>]*>Neovim setup guide<\/h2>/);
-    expect(html).toContain('Five parts.');
-    expect(html).toContain('Read part 1');
+    expect(html).toMatch(/<h2[^>]*>Neovim setup guide, Part 1<\/h2>/);
     expect(html.match(/class="btn /g)).toHaveLength(2);
-    expect(html).toContain('data-code');
-    expect(html).toContain('<span class="k"');
-    expect(html).not.toContain('class="chip');
+    expect(html).toContain('/blog/series/neovim-setup-guide/');
   });
 });
 
 describe('CertificationsTile', () => {
-  it('shows 3 rows, "+N more", and Verify only with a URL', async () => {
+  it('shows 3 rows, "+N more", a monogram fallback and Verify only with a URL', async () => {
     const certs = [
       cert(1, { credentialUrl: 'https://example.com/v' }),
       cert(2),
@@ -63,28 +57,21 @@ describe('CertificationsTile', () => {
     const html = await render(CertificationsTile as never, { lang: 'en', certs });
     expect(html.match(/\sdata-cert(?=[\s>])/g)).toHaveLength(3);
     expect(html).toContain('+2 more');
+    expect(html).toContain('data-monogram');
     expect(html.match(/>\s*Verify\s*</g)).toHaveLength(1);
     expect(html).toContain('rel="noopener noreferrer"');
     expect(html).toContain('target="_blank"');
-    expect(html.match(/class="btn /g)).toHaveLength(1);
+    expect(html).not.toContain('class="btn');
   });
 
-  it('never renders issuer logos or monograms', async () => {
+  it('shows the issuer logo instead of the monogram when one is set', async () => {
     const html = await render(CertificationsTile as never, {
       lang: 'en',
       certs: [cert(1, { logo: 'logos:aws' })],
     });
-    expect(html).not.toContain('data-logo');
-    expect(html).not.toContain('<svg');
+    expect(html).toContain('data-logo');
+    expect(html).toContain('<svg');
     expect(html).not.toContain('data-monogram');
-  });
-
-  it('lists the issuers oldest first as the subhead', async () => {
-    const html = await render(CertificationsTile as never, {
-      lang: 'en',
-      certs: [cert(1, { issuer: 'B', year: '2023' }), cert(2, { issuer: 'A', year: '2022' })],
-    });
-    expect(html).toContain('A and B.');
   });
 
   it('omits "+N more" at three or fewer', async () => {
@@ -118,15 +105,14 @@ describe('StoryTile', () => {
       },
     }) as never;
 
-  it('shows the figure, the competencies as one line and two actions', async () => {
+  it('shows the super stat, max 3 chips and two actions', async () => {
     const html = await render(StoryTile as never, {
       lang: 'en',
       story: story([{ label: 'jobs migrated', value: '120' }]),
     });
-    expect(html).toContain('data-figure');
+    expect(html).toContain('stat--super');
     expect(html).toContain('jobs migrated');
-    expect(html).not.toContain('class="chip"');
-    expect(html).toContain('Leadership, ownership, technical depth.');
+    expect(html.match(/class="chip"/g)).toHaveLength(3);
     expect(html.match(/class="btn /g)).toHaveLength(2);
     expect(html).toContain('/star/s/');
   });
@@ -136,7 +122,7 @@ describe('StoryTile', () => {
       lang: 'en',
       story: story([{ label: 'x', value: 'unchanged' }]),
     });
-    expect(html).not.toContain('data-figure');
+    expect(html).not.toContain('stat--super');
   });
 });
 

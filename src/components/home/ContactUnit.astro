@@ -1,0 +1,74 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import SocialLinks from '~/components/ui/SocialLinks.astro';
+import Lockup from '~/components/tile/Lockup.astro';
+import Unit from '~/components/tile/Unit.astro';
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+
+interface Props {
+  lang: Lang;
+  profile: CollectionEntry<'profile'>['data'];
+}
+const { lang, profile: p } = Astro.props;
+const t = useT(lang);
+---
+
+<Unit id="contact" tone="surface" flow labelledby="contact-title">
+  <Lockup
+    id="contact-title"
+    size="unit"
+    title={t('home.contact.title')}
+    subline={t('home.contact.text')}
+    reveal
+  >
+    <Fragment slot="actions">
+      <a href={`mailto:${p.email}`} class="btn btn-primary">
+        {t('home.contact.email')}
+      </a>
+      <a href={localePath('/cv.pdf', lang)} download="Ryan-Parker-CV.pdf" class="btn btn-secondary">
+        {t('common.download')}
+      </a>
+    </Fragment>
+  </Lockup>
+  <div slot="visual" class="visual">
+    <div class="social">
+      <SocialLinks profile={p} {lang} />
+    </div>
+    {p.realName && (
+      <p class="real-name" data-real-name>
+        {t('home.contact.realName', { name: p.realName })}
+      </p>
+    )}
+    <ul class="langs" data-spoken-languages>
+      {p.spokenLanguages.map((l) => (
+        <li>
+          {l.language} — {l.proficiency}
+        </li>
+      ))}
+    </ul>
+  </div>
+</Unit>
+
+<style>
+  .social :global(ul) {
+    justify-content: center;
+    gap: 16px;
+  }
+  .real-name,
+  .langs {
+    margin: 16px 0 0;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    line-height: 1.3334;
+  }
+  .real-name + .langs {
+    margin-top: 2px;
+  }
+  .langs {
+    display: grid;
+    gap: 2px;
+    padding: 0;
+    list-style: none;
+  }
+</style>

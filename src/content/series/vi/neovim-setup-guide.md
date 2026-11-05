@@ -1,12 +1,6 @@
 ---
 title: 'Hướng dẫn thiết lập Neovim'
 description: 'Xây dựng cấu hình Neovim 0.12 nhanh và tối giản cho công việc web, kỹ thuật dữ liệu và SRE, từng bước một.'
-tagline: 'Năm phần, từ con số 0 đến trình soạn thảo chạy được.'
-snippet:
-  - 'vim.g.mapleader = " "'
-  - 'vim.g.maplocalleader = " "'
-  - 'vim.g.loaded_netrw = 1'
-  - 'vim.g.loaded_netrwPlugin = 1'
 topic: developer-tools
 parts:
   - part: 1
