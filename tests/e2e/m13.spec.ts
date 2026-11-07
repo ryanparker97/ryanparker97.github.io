@@ -40,27 +40,25 @@ test.describe('Part A: review r3 fixes', () => {
     expect(gap).toBeLessThanOrEqual(50);
   });
 
-  test('the gallery card body is cut at a word boundary (M2)', async ({ page }) => {
-    await page.goto('/experiences/');
-    const bodies = await page.locator('.gc-body').allInnerTexts();
-    for (const b of bodies) {
-      expect(b.length).toBeLessThanOrEqual(140);
-      if (b.endsWith('…')) expect(b.slice(0, -1)).not.toMatch(/\s$/);
-    }
-    expect(bodies.join(' ')).not.toMatch(/metri…/);
-  });
-
-  for (const path of ['/star/', '/blog/tags/', '/blog/series/', '/vi/star/']) {
+  for (const path of [
+    '/star/',
+    '/blog/tags/',
+    '/blog/series/',
+    '/vi/star/',
+    '/experiences/datum-security-bank-data-engineer/',
+  ]) {
     test(`the footer has a top rule when the last band is grey: ${path} (M3)`, async ({ page }) => {
       await page.goto(path);
       await expect(page.locator('.site-footer')).toHaveCSS('border-top-width', '1px');
     });
   }
 
-  test('the footer has no rule when the last band is white (M3)', async ({ page }) => {
-    await page.goto('/experiences/');
-    await expect(page.locator('.site-footer')).toHaveCSS('border-top-width', '0px');
-  });
+  for (const path of ['/projects/', '/experiences/']) {
+    test(`the footer has no rule when the last band is white (M3): ${path}`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.locator('.site-footer')).toHaveCSS('border-top-width', '0px');
+    });
+  }
 
   test('the STAR story hero is centred and the local nav title is the role (M4)', async ({
     page,
@@ -136,9 +134,10 @@ test.describe('Part A: review r3 fixes', () => {
   }) => {
     await page.goto('/blog/');
     await expect(page.locator('main .chip-mint')).toHaveCount(0);
-    await expect(page.locator('.post-rows .hl-meta').first()).toHaveText(/\d{4} · \d+ min read/);
     await page.goto('/');
     await expect(page.locator('#writing .chip-mint')).toHaveCount(0);
+    await page.goto('/blog/');
+    await expect(page.locator('.post-rows .hl-meta').first()).toHaveText(/\d{4} · \d+ min read/);
   });
 
   test('"Permalink ›" has no underline at rest (B5)', async ({ page }) => {
@@ -199,7 +198,7 @@ test.describe('Part B: reveal (R1)', () => {
     test(`in-view content shows at once on ${path}`, async ({ page }) => {
       await page.goto(path);
       await page.waitForTimeout(1500);
-      for (const sel of ['#experience .t-eyebrow', '#experience h2'])
+      for (const sel of ['#top .t-eyebrow', '#top h1'])
         await expect(page.locator(sel)).toHaveCSS('opacity', '1');
     });
   }
@@ -229,58 +228,12 @@ test.describe('Part B: reveal (R1)', () => {
     });
     await page.goto('/');
     await expect(page.locator('html')).not.toHaveClass(/\breveal\b/);
-    await expect(page.locator('#stories h2')).toHaveCSS('opacity', '1');
+    await expect(page.locator('#story h2')).toHaveCSS('opacity', '1');
   });
 });
 
 test.describe('Part B: Home composition (R2, R3, R5)', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
-
-  test('the Experiences tile puts the stat strip 64px under the career rail', async ({ page }) => {
-    await page.goto('/');
-    const gap = await page.evaluate(() => {
-      const a = document.querySelector('#experience .rail-wrap')!.getBoundingClientRect();
-      const s = document.querySelector('#experience .stat-strip')!.getBoundingClientRect();
-      return s.top - a.bottom;
-    });
-    expect(Math.abs(gap - 64)).toBeLessThanOrEqual(2);
-    const heroGap = await page.evaluate(() => {
-      const a = document.querySelector('#top .actions')!.getBoundingClientRect();
-      const v = document.querySelector('#top [data-pipeline]')!.getBoundingClientRect();
-      return v.top - a.bottom;
-    });
-    expect(Math.abs(heroGap - 64)).toBeLessThanOrEqual(2);
-    expect(await top(page, '#experience')).toBeLessThanOrEqual(836);
-  });
-
-  test('every grid tile visual is at least 56px tall', async ({ page }) => {
-    await page.goto('/');
-    const hs = await page
-      .locator('.grid-tile .unit__visual')
-      .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
-    expect(hs.length).toBe(4);
-    for (const h of hs) expect(h).toBeGreaterThanOrEqual(56);
-  });
-
-  test('the career rail has one row per company and bars inside the span', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('#experience .rail > li')).toHaveCount(3);
-    const bars = await page.locator('#experience .rail hr').evaluateAll((els) =>
-      els.map((e) => ({
-        s: parseFloat(getComputedStyle(e).getPropertyValue('--s')),
-        w: parseFloat(getComputedStyle(e).getPropertyValue('--w')),
-      })),
-    );
-    expect(bars.length).toBeGreaterThanOrEqual(3);
-    for (const b of bars) {
-      expect(b.w).toBeGreaterThan(0);
-      expect(b.w).toBeLessThanOrEqual(1);
-      expect(b.s + b.w).toBeLessThanOrEqual(1.001);
-    }
-    expect(
-      await page.locator('#experience .rail').evaluate((e) => e.scrollWidth <= e.clientWidth),
-    ).toBe(true);
-  });
 
   test('centred subheads and copy are balanced (R3)', async ({ page }) => {
     for (const w of [1440, 900, 375]) {
@@ -328,38 +281,9 @@ test.describe('Part B: Home composition (R2, R3, R5)', () => {
 test.describe('Part B: Experiences, STAR, Projects, Blog (R6, R8)', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test('every chapter with a card is sticky at L, with a one-line eyebrow (R6)', async ({
-    page,
-  }) => {
-    await page.goto('/experiences/');
-    const rows = await page.locator('.chapter').evaluateAll((els) =>
-      els.map((c) => {
-        const head = c.querySelector('.chapter-side .section-header')!.getBoundingClientRect();
-        const wide = c.querySelector('.chapter-grid')!.getBoundingClientRect().width;
-        const eb = c.querySelector('.t-eyebrow') as HTMLElement;
-        return {
-          cards: c.querySelectorAll('.hl-card').length,
-          sticky: c.classList.contains('chapter--sticky'),
-          ratio: head.width / wide,
-          lines: eb.getBoundingClientRect().height / parseFloat(getComputedStyle(eb).fontSize),
-        };
-      }),
-    );
-    for (const r of rows) {
-      if (r.cards >= 1) {
-        expect(r.sticky).toBe(true);
-        expect(Math.abs(r.ratio - 0.4)).toBeLessThanOrEqual(0.01);
-      }
-      expect(r.lines).toBeLessThanOrEqual(2.4);
-    }
-    await page.setViewportSize({ width: 900, height: 1000 });
-    const stacked = await page
-      .locator('.chapter-grid')
-      .evaluateAll((els) => els.map((e) => getComputedStyle(e).display));
-    expect(new Set(stacked)).toEqual(new Set(['flex']));
-  });
-
   test('STAR Expand all ends at the story card edge, 12px above it (R8)', async ({ page }) => {
+    // Measured without the reveal animation: its translate moves the cards while we measure.
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/star/');
     const m = await page.evaluate(() => {
       const b = document.querySelector('[data-expand=toggle]')!.getBoundingClientRect();
@@ -370,30 +294,6 @@ test.describe('Part B: Experiences, STAR, Projects, Blog (R6, R8)', () => {
     if (m.cards === 1) expect(Math.abs(m.right - m.card)).toBeLessThanOrEqual(10);
     expect(m.gap).toBeGreaterThanOrEqual(8);
     expect(m.gap).toBeLessThanOrEqual(16);
-  });
-
-  test("the Projects disc is the tile's last row, at the lockup column edge (R8)", async ({
-    page,
-  }) => {
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/projects/');
-    const m = await page.evaluate(() => {
-      const tile = document.querySelector('[data-project]')!;
-      const disc = tile.querySelector('summary')!.getBoundingClientRect();
-      const lock = tile.querySelector('.unit__lockup')!.getBoundingClientRect();
-      const chips = tile.querySelector('.chips')!.getBoundingClientRect();
-      const t = tile.getBoundingClientRect();
-      return {
-        disc: disc.right,
-        col: lock.right,
-        discTop: disc.top,
-        chipsBottom: chips.bottom,
-        tail: t.bottom - disc.bottom,
-      };
-    });
-    expect(Math.abs(m.disc - m.col)).toBeLessThanOrEqual(2);
-    expect(m.discTop).toBeGreaterThanOrEqual(m.chipsBottom + 16);
-    expect(m.tail).toBeLessThanOrEqual(41);
   });
 
   test('topic page parts-list shows every part published, with no Coming soon chips (R8)', async ({

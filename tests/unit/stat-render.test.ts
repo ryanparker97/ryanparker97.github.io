@@ -28,6 +28,18 @@ describe('stat strip', () => {
     { value: '2019', below: 'first role' },
   ];
 
+  it('renders a footnote ref after the lower caption, outside the value', async () => {
+    const html = await render(Stat as never, {
+      value: '>50%',
+      below: 'EMR costs',
+      ref: { n: 2, label: 'Footnote 2' },
+    });
+    expect(html).toContain('href="#fn-2"');
+    expect(html).toContain('id="fnref-2"');
+    expect(html).toContain('aria-label="Footnote 2"');
+    expect(html).toMatch(/class="stat-value">&gt;50%<\/span>/);
+  });
+
   it('is a labelled list that stays three across at S when values are short', async () => {
     const html = await render(StatStrip as never, { stats, label: 'At a glance' });
     expect(html).toContain('<ul');

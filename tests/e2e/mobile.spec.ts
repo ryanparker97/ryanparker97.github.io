@@ -3,7 +3,15 @@ import { expect, test } from '@playwright/test';
 // Runs on the `iPhone 13` (WebKit) and `Pixel 7` (Chromium) projects (spec §5.13, §5.15).
 test.use({ reducedMotion: 'reduce' });
 
-const PAGES = ['/', '/experiences/', '/projects/', '/star/', '/blog/', '/vi/blog/'];
+const PAGES = [
+  '/',
+  '/experiences/',
+  '/experiences/datum-security-bank-data-engineer/',
+  '/projects/',
+  '/star/',
+  '/blog/',
+  '/vi/blog/',
+];
 
 test('no horizontal scroll and a 48px nav on phones', async ({ page }) => {
   for (const path of PAGES) {

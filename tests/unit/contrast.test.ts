@@ -53,6 +53,10 @@ const hex7: [string, string][] = [
   ['--on-accent', '--accent-hover'],
   ['--on-accent', '--accent-active'],
   ['--on-link', '--link'],
+  ...[1, 2, 3, 4].flatMap((n): [string, string][] => [
+    [`--hl-${n}`, '--bg'],
+    [`--hl-${n}`, '--surface-2'],
+  ]),
 ];
 
 const hex45: [string, string][] = [['--text-2', '--fill']];

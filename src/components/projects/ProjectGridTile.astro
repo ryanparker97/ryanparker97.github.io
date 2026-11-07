@@ -1,16 +1,14 @@
 ---
 /**
- * One project tile (spec §4.6): the lockup on top, tech chips and links below, and a plus disc
- * that opens the labelled bullets in place. The plus disc is the tile's last row and moves below
- * the bullets when open. The tile has no per-project page.
+ * Apple lineup tile (spec §4.6): kind, name, one line, See the project (and repo / live / role),
+ * the cover in a laptop frame. The full story is on `/projects/<slug>/`.
  */
 import { Image } from 'astro:assets';
 import type { Localized } from '~/lib/content';
-import { companyLabel, formatDateRange, parseHighlights } from '~/lib/cv';
+import { companyLabel } from '~/lib/cv';
+import DeviceFrame from '~/components/media/DeviceFrame.astro';
 import GridTile from '~/components/tile/GridTile.astro';
-import HighlightCards from '~/components/tile/HighlightCards.astro';
 import Lockup from '~/components/tile/Lockup.astro';
-import ChevronLink from '~/components/ui/ChevronLink.astro';
 import { externalAttrs } from '~/lib/links';
 import { useT, type Lang } from '~/i18n';
 import { localePath } from '~/i18n/routes';
@@ -24,14 +22,25 @@ interface Props {
 const { project, lang, role } = Astro.props;
 const t = useT(lang);
 const d = project.data;
-const cards = parseHighlights(project.body ?? '');
-const shownTech = d.tech.slice(0, 6);
-const moreTech = d.tech.length - shownTech.length;
+const view = t('projects.view');
+const second = d.repo
+  ? { href: d.repo, label: `${t('projects.repo')} ↗`, ext: true }
+  : d.demo
+    ? { href: d.demo, label: `${t('projects.live')} ↗`, ext: true }
+    : role
+      ? {
+          href: localePath(`/experiences/${role.slug}/`, lang),
+          label: t('common.at', { company: companyLabel(role.data.company, role.data.client) }),
+          ext: false,
+        }
+      : undefined;
 ---
 
 <GridTile
   tag="article"
   id={project.slug}
+  variant={d.image ? 'fill' : undefined}
+  stack={!d.image}
   labelledby={`${project.slug}-title`}
   data-project={project.slug}
   data-kind={d.kind}
@@ -40,156 +49,39 @@ const moreTech = d.tech.length - shownTech.length;
     id={`${project.slug}-title`}
     size="promo"
     title={d.title}
-    eyebrow={t(`projects.kind.${d.kind}`)}
     subline={d.subtitle}
     reveal
   >
-    <Fragment slot="extra">
-      <p class="dates">{formatDateRange(d.start, d.end, lang)}</p>
-      <p class="summary">{d.summary}</p>
+    <Fragment slot="actions">
+      <a
+        href={localePath(`/projects/${project.slug}/`, lang)}
+        class="btn btn-primary"
+        aria-label={`${view}: ${d.title}`}
+      >
+        {view}
+      </a>
+      {second && (
+        <a
+          href={second.href}
+          class="btn btn-secondary"
+          {...(second.ext ? externalAttrs(second.href) : {})}
+        >
+          {second.label}
+        </a>
+      )}
     </Fragment>
   </Lockup>
-  <div slot="visual" class="visual">
-    {d.image && (
-      <Image
-        src={d.image}
-        alt={d.imageAlt ?? ''}
-        width={640}
-        height={360}
-        loading="lazy"
-        class="cover"
-      />
-    )}
-    {shownTech.length > 0 && (
-      <ul class="chips" aria-label={t('common.tech')}>
-        {shownTech.map((x) => (
-          <li class="chip chip-mint">{x}</li>
-        ))}
-        {moreTech > 0 && <li class="chip chip-mint">+{moreTech}</li>}
-      </ul>
-    )}
-    {(d.repo || d.demo) && (
-      <p class="links">
-        {d.repo && (
-          <a href={d.repo} {...externalAttrs(d.repo)} class="link-chevron">
-            {t('projects.repo')} ↗
-          </a>
-        )}
-        {d.demo && (
-          <a href={d.demo} {...externalAttrs(d.demo)} class="link-chevron">
-            {t('projects.live')} ↗
-          </a>
-        )}
-      </p>
-    )}
-  </div>
-  <details slot="after" class="more">
-    <summary class="plus-row" aria-label={t('common.learnAbout', { title: d.title })}>
-      <span class="plus-label" aria-hidden="true">
-        {t('common.learnMore')}
-      </span>
-      <span class="plus-disc" aria-hidden="true"></span>
-    </summary>
-    <div class="more-body">
-      <HighlightCards {cards} />
-      {role && (
-        <p class="at">
-          <ChevronLink href={localePath(`/experiences/#${role.slug}`, lang)}>
-            {t('common.at', { company: companyLabel(role.data.company, role.data.client) })}
-          </ChevronLink>
-        </p>
-      )}
+  {d.image && (
+    <div slot="visual" class="tile-visual">
+      <DeviceFrame kind="laptop">
+        <Image src={d.image} alt={d.imageAlt ?? ''} width={1280} height={720} loading="lazy" />
+      </DeviceFrame>
     </div>
-  </details>
+  )}
 </GridTile>
 
 <style>
-  :global(.grid-tile[data-project]) {
-    /* Lockup and chips stack from the top; the details (summary) take the remaining space so the
-       disc sits last. */
-    justify-content: flex-start;
-  }
-  :global(.grid-tile[data-project] > .more) {
-    max-width: none;
-    width: calc(100% - 0px);
-    display: flex;
-    flex-direction: column;
-    /* In a taller 2-up row the disc drops to the tile bottom. */
-    margin-top: auto;
-  }
-  .dates {
-    margin: 8px 0 0;
-    color: var(--text-2);
-    font-size: 0.875rem;
-    font-weight: 600;
-    line-height: 1.4286;
-  }
-  .summary {
-    max-width: 68ch;
-    margin: 8px auto 0;
-    text-wrap: balance;
-  }
-  .visual {
-    display: grid;
-    gap: 16px;
-    justify-items: center;
-  }
-  .cover {
+  .tile-visual {
     width: 100%;
-    max-width: 640px;
-    height: auto;
-    aspect-ratio: 16 / 9;
-    border-radius: 18px;
-    outline: 1px solid var(--keyline);
-    outline-offset: -1px;
-    object-fit: cover;
-  }
-  .chips {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-  .links {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 0 24px;
-    margin: 0;
-  }
-  /* After the content, at the lockup column's right edge. */
-  .more > summary {
-    order: 1;
-    align-self: flex-end;
-    margin-inline-end: max(0px, calc((100% - var(--content)) / 2));
-  }
-  .more-body {
-    width: min(100%, calc(var(--content-wide) - 64px));
-    margin: 32px auto;
-    text-align: start;
-  }
-  .at {
-    margin: 32px 0 0;
-    text-align: center;
-  }
-  @supports (interpolate-size: allow-keywords) {
-    @media (prefers-reduced-motion: no-preference) {
-      .more {
-        interpolate-size: allow-keywords;
-      }
-      .more::details-content {
-        height: 0;
-        overflow: hidden;
-        transition:
-          height 320ms var(--ease),
-          content-visibility 320ms allow-discrete;
-      }
-      .more[open]::details-content {
-        height: auto;
-      }
-    }
   }
 </style>

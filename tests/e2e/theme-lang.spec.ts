@@ -57,7 +57,9 @@ test.describe('language switch', () => {
     await expect(page.getByRole('note')).toHaveCount(0);
     await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
     await expect(page.locator('link[hreflang="vi"]')).toHaveCount(1);
-    await expect(page.getByRole('heading', { level: 1, name: 'Kinh nghiệm' })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Xây dựng cho dữ liệu ngân hàng.' }),
+    ).toBeVisible();
     await page.locator('.lang-switch a').click();
     await expect(page).toHaveURL(/\/experiences\/$/);
   });

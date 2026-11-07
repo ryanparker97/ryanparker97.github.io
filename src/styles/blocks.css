@@ -152,12 +152,6 @@
 .unit--bg {
   background: var(--bg);
 }
-/* Dark tone (§5.10.2): the same tokens under color-scheme: dark, so text and pills keep 7:1. */
-.unit--dark {
-  color-scheme: dark;
-  background: var(--bg);
-  color: var(--text);
-}
 .unit + .unit {
   margin-top: 12px;
 }
@@ -206,8 +200,7 @@
   }
 }
 /* Visual mass rule (§5.10.2): a visual under 120px is not split. `.unit--stack` and
-   `.grid-tile--stack` centre the lockup and the visual together; `.unit--flow` (content-heavy units)
-   takes its height from its content. */
+   `.grid-tile--stack` centre the lockup and the visual together. */
 .unit--stack .unit-inner,
 .grid-tile.grid-tile--stack {
   justify-content: center;
@@ -223,22 +216,6 @@
   .unit--stack .unit-inner,
   .grid-tile.grid-tile--stack {
     gap: 64px;
-  }
-}
-.unit.unit--flow {
-  min-height: 0;
-  padding-block: var(--section-pad);
-}
-.unit--flow .unit-inner {
-  justify-content: center;
-  width: var(--content-wide);
-}
-.unit--flow .unit__lockup {
-  width: min(var(--content), 100%);
-}
-@media (max-width: 734px) {
-  .unit--flow .unit__lockup {
-    width: 100%;
   }
 }
 
@@ -1190,31 +1167,31 @@ details[open] > .plus-row .plus-disc::after,
 .chapter-meta {
   order: 2;
 }
-@media (min-width: 1069px) {
-  .chapter--sticky .chapter-grid {
+@media (min-width: 1069px) and (prefers-reduced-motion: no-preference) {
+  html.js .chapter--sticky .chapter-grid {
     display: grid;
     grid-template-columns: 40% minmax(0, 1fr);
     column-gap: 80px;
     align-items: start;
   }
-  .chapter--sticky .chapter-side {
+  html.js .chapter--sticky .chapter-side {
     display: block;
     position: sticky;
     top: calc(var(--sticky-h) + 32px);
     grid-column: 1;
     grid-row: 1;
   }
-  .chapter--sticky .chapter-cards {
+  html.js .chapter--sticky .chapter-cards {
     grid-column: 2;
     grid-row: 1;
   }
-  .chapter--sticky .section-header {
+  html.js .chapter--sticky .section-header {
     margin: 0 0 24px;
   }
-  .chapter--sticky .section-header .lockup {
+  html.js .chapter--sticky .section-header .lockup {
     text-align: start;
   }
-  .chapter--sticky .chapter-meta {
+  html.js .chapter--sticky .chapter-meta {
     margin-top: 0;
     justify-content: flex-start;
   }
@@ -1259,8 +1236,8 @@ details[open] > .plus-row .plus-disc::after,
     max-width: 68ch;
   }
 }
-@media (min-width: 1069px) {
-  .chapter--sticky .hl-cards {
+@media (min-width: 1069px) and (prefers-reduced-motion: no-preference) {
+  html.js .chapter--sticky .hl-cards {
     grid-template-columns: minmax(0, 1fr);
   }
 }
@@ -1337,11 +1314,11 @@ mark.tech.tech--start {
     display: inline-block;
   }
 }
-@media (min-width: 1069px) {
-  .chapter--sticky .chapter-meta {
+@media (min-width: 1069px) and (prefers-reduced-motion: no-preference) {
+  html.js .chapter--sticky .chapter-meta {
     align-items: flex-start;
   }
-  .chapter--sticky .tech-stack {
+  html.js .chapter--sticky .tech-stack {
     justify-content: flex-start;
   }
 }
@@ -1366,8 +1343,8 @@ mark.tech.tech--start {
 .lockup--start :is(.t-eyebrow, .t-subhead, .t-lockup) {
   text-wrap: pretty;
 }
-@media (min-width: 1069px) {
-  .chapter--sticky .lockup :is(.t-eyebrow, .t-subhead, .t-lockup) {
+@media (min-width: 1069px) and (prefers-reduced-motion: no-preference) {
+  html.js .chapter--sticky .lockup :is(.t-eyebrow, .t-subhead, .t-lockup) {
     text-wrap: pretty;
   }
 }
@@ -1531,4 +1508,55 @@ a.hl-row:hover .hl-title {
     padding-inline: 14px;
     font-size: 0.75rem;
   }
+}
+
+/* STAR story stage (§4.4): the Action intro under the header. Stacked (M/S, reduced motion, no JS)
+   it sits at the S/T width, centred like the header, capped at 68ch, with a gap above the cards;
+   pinned at L it is start-aligned in the side column. */
+.stage .chapter-grid {
+  width: var(--content);
+}
+.stage-intro {
+  order: 0;
+  max-width: 68ch;
+  margin: 16px auto 32px;
+  color: var(--text-2);
+  font-size: 1.0625rem;
+  line-height: 1.47;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.stage .hl-cards {
+  counter-reset: step;
+}
+.stage .hl-card {
+  counter-increment: step;
+}
+.stage .hl-card::before {
+  content: counter(step);
+  content: counter(step) / '';
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text-2);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.2858;
+}
+.stage .hl-card .card-body::first-letter {
+  text-transform: uppercase;
+}
+@media (min-width: 1069px) and (prefers-reduced-motion: no-preference) {
+  html.js .stage .chapter-grid {
+    width: var(--content-wide);
+  }
+  html.js .stage-intro {
+    margin: 16px 0 0;
+    text-align: start;
+  }
+}
+.stage-intro p + p {
+  margin-top: 0.75em;
+}
+.stage-intro strong {
+  color: var(--text);
 }

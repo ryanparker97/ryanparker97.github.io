@@ -95,7 +95,7 @@ test.describe('mobile menu', () => {
     await expect(page.locator('#mobile-menu')).toBeVisible();
     const lang = page.locator('#mobile-menu a', { hasText: 'Language: Tiếng Việt' });
     await expect(lang).toHaveAttribute('href', '/vi/');
-    await expect(page.locator('#mobile-menu a', { hasText: 'Download PDF' })).toBeVisible();
+    await expect(page.locator('#mobile-menu a', { hasText: 'Download CV' })).toBeVisible();
   });
 
   test('the button, a link tap and resizing past compact chrome each close it', async ({

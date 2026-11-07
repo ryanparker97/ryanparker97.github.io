@@ -5,12 +5,18 @@
       "url": [
         "http://localhost/",
         "http://localhost/experiences/",
+        "http://localhost/experiences/datum-security-bank-data-engineer/",
         "http://localhost/projects/",
+        "http://localhost/projects/agentic-coding-workflow/",
         "http://localhost/star/",
+        "http://localhost/star/emr-cost-optimization/",
         "http://localhost/skills/",
         "http://localhost/blog/neovim-setup-1-zero-to-editor/",
         "http://localhost/vi/",
         "http://localhost/vi/experiences/",
+        "http://localhost/vi/experiences/datum-security-bank-data-engineer/",
+        "http://localhost/vi/star/emr-cost-optimization/",
+        "http://localhost/blog/",
         "http://localhost/vi/blog/neovim-setup-1-zero-to-editor/"
       ],
       "numberOfRuns": 3

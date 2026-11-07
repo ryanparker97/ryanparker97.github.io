@@ -1,5 +1,6 @@
 ---
 company: 'FPT Software'
+logo: '../../../assets/logos/fpt-software.png'
 role: 'Senior Data Engineer (Team Lead)'
 location: 'Ho Chi Minh City, Vietnam'
 start: '2026-08'

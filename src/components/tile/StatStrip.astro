@@ -3,7 +3,13 @@
 import Stat from './Stat.astro';
 
 interface Props {
-  stats: { value: string; above?: string; below?: string }[];
+  stats: {
+    value: string;
+    above?: string;
+    below?: string;
+    ref?: { n: number; label: string };
+    note?: string;
+  }[];
   /** Accessible name of the list, e.g. "At a glance". */
   label: string;
   /** `card` uses the smaller value sizes. */

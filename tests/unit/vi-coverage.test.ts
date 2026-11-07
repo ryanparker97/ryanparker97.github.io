@@ -10,6 +10,7 @@ describe('viPageHasContent', () => {
     '/vi/blog/topics/developer-tools/',
     '/vi/star/emr-cost-optimization/',
     '/vi/experiences/',
+    '/vi/experiences/datum-security-bank-data-engineer/',
     '/vi/projects/',
     '/vi/skills/',
   ])('has Vietnamese content: %s', (path) => {
@@ -21,6 +22,7 @@ describe('viPageHasContent', () => {
     '/vi/star/no-such-story/',
     '/vi/blog/series/no-such-series/',
     '/vi/blog/topics/no-such-topic/',
+    '/vi/experiences/no-such-role/',
   ])('falls back to English: %s', (path) => {
     expect(viPageHasContent(path)).toBe(false);
   });

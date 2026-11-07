@@ -1,0 +1,115 @@
+---
+/** Looping terminal transcript with a pause button; the caption carries the static transcript. */
+interface Props {
+  title: string;
+  lines: string[];
+  pauseLabel: string;
+  caption: string;
+}
+const { title, lines, pauseLabel, caption } = Astro.props;
+const id = 'term-' + title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+---
+
+<figure class="term" data-term aria-labelledby={`${id}-cap`}>
+  <div class="term__window" aria-hidden="true">
+    <p class="term__title">{title}</p>
+    <div class="term__screen" style={`--n:${lines.length}`}>
+      <ol class="term__lines">
+        {lines.map((l) => (
+          <li>
+            <span class="term__prompt">›</span> {l}
+          </li>
+        ))}
+      </ol>
+    </div>
+  </div>
+  <figcaption id={`${id}-cap`} class="sr-only">
+    {caption}: {lines.join(', ')}.
+  </figcaption>
+  <button
+    type="button"
+    class="btn btn-secondary term__toggle"
+    aria-pressed="false"
+    hidden
+    data-term-toggle
+  >
+    {pauseLabel}
+  </button>
+</figure>
+
+<style>
+  .term {
+    color-scheme: dark;
+    width: min(100%, 640px);
+    margin: 0 auto;
+  }
+  .term__window {
+    padding: 20px 24px 24px;
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+    color: var(--text);
+    text-align: start;
+  }
+  .term__title {
+    margin: 0 0 12px;
+    color: var(--text-2);
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .term__screen {
+    position: relative;
+    overflow: hidden;
+    font: 0.9375rem/1.6 var(--font-mono);
+  }
+  .term__lines {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .term__lines li {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .term__prompt {
+    color: var(--link);
+  }
+  .term__screen::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    display: none;
+    background: var(--surface-2);
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    :global(html.js) .term[data-ready] .term__screen::after {
+      display: block;
+      animation: term-reveal 12s steps(var(--n), end) infinite;
+    }
+    :global(html.js) .term[data-ready][data-paused='true'] .term__screen::after {
+      animation-play-state: paused;
+    }
+  }
+  @keyframes term-reveal {
+    0% {
+      translate: 0 0;
+    }
+    75%,
+    100% {
+      translate: 0 100%;
+    }
+  }
+  .term__toggle {
+    display: flex;
+    margin: 16px auto 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .term__toggle {
+      display: none !important;
+    }
+  }
+</style>
+
+<script>
+  import '~/scripts/terminal';
+</script>

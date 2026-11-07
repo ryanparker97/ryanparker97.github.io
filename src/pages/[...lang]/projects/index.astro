@@ -45,11 +45,10 @@ const roleFor = (slug?: string) => {
 >
   <Hero
     tight
-    eyebrow={t('projects.title')}
     title={t('projects.hero')}
     subline={t('projects.subline')}
   />
-  <TileGrid dense>
+  <TileGrid feature>
     {projects.map((p) => (
       <ProjectGridTile project={p} {lang} role={roleFor(p.data.role)} />
     ))}

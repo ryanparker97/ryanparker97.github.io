@@ -11,8 +11,11 @@ interface Props {
   id: string;
   /** Three cards or fewer: they share the row at L and do not scroll. */
   few?: boolean;
+  /** Paddle names; default "Previous / Next highlights". */
+  prevLabel?: string;
+  nextLabel?: string;
 }
-const { lang, labelledby, id, few = false } = Astro.props;
+const { lang, labelledby, id, few = false, prevLabel, nextLabel } = Astro.props;
 const t = useT(lang);
 ---
 
@@ -29,7 +32,7 @@ const t = useT(lang);
     <button
       type="button"
       class="paddle"
-      aria-label={t('gallery.prev')}
+      aria-label={prevLabel ?? t('gallery.prev')}
       aria-controls={id}
       disabled
       data-prev
@@ -48,7 +51,7 @@ const t = useT(lang);
     <button
       type="button"
       class="paddle"
-      aria-label={t('gallery.next')}
+      aria-label={nextLabel ?? t('gallery.next')}
       aria-controls={id}
       data-next
     >

@@ -1,0 +1,335 @@
+---
+title: 'Một cấu hình Git cho repo công việc và repo cá nhân'
+description: 'Chọn tên, email và khóa ký theo thư mục bằng includeIf, giữ các thiết lập chung trong một tệp, và kiểm tra repo đang dùng danh tính nào trước khi commit.'
+pubDate: 2026-11-07
+tags: ['git', 'dotfiles', 'developer-tools']
+topic: developer-tools
+heroImage: '../../../assets/blog/git-config/cover.svg'
+---
+
+import Callout from '~/components/blog/Callout.astro';
+
+Bạn có một chiếc laptop và nhiều hơn một danh tính Git. Các dự án cá nhân dùng email riêng của bạn. Các repo công việc cần email công việc, và có thể cần commit được ký. Git chỉ có một `user.email` toàn cục, nên sớm muộn cũng có một commit rơi vào repo công việc với sai địa chỉ. Chạy `git config user.email` trong từng bản clone thì dùng được cho đến khi bạn quên một bản.
+
+Hướng dẫn này thiết lập mọi thứ một lần. Bạn giữ các thiết lập chung trong một tệp, thêm một tệp nhỏ cho mỗi danh tính, và để Git tự chọn đúng danh tính theo thư mục chứa repo. Bạn có thể thêm danh tính thứ ba theo đúng cách như danh tính thứ hai.
+
+<Callout type="note" lang="vi">
+  **Đã thử với:** Git 2.54, macOS. Mọi cấu hình và lệnh bên dưới đều được chạy trên một thư mục home tạm, không phải trên
+  một thiết lập thật. Các bước ký bằng SSH được chạy trọn vẹn; biến thể OpenPGP thì chưa.
+</Callout>
+
+## Bạn sẽ có gì khi kết thúc
+
+Khi xong, bạn sẽ đã sửa một tệp và tạo thêm hai tệp. Khi đó bạn sẽ có:
+
+- **Một thư mục cho mỗi danh tính**, `~/code/personal/` và `~/code/work/`.
+- **Một tệp `~/.gitconfig` chung** với các mặc định hằng ngày và vài alias.
+- **Một overlay nhỏ cho mỗi danh tính**, chỉ đặt tên, email và việc ký.
+- **Tự động chuyển đổi**: mọi repo nằm trong một thư mục sẽ nhận danh tính của thư mục đó.
+- **Một lưới an toàn**: repo nằm ngoài mọi thư mục sẽ từ chối commit thay vì đoán bừa.
+- **Commit được ký (tùy chọn)** bằng khóa SSH.
+- **Hai lệnh** cho biết một repo nhận danh tính nào và vì sao.
+
+## Trước khi bắt đầu
+
+Bạn cần:
+
+- **Một bản Git gần đây.** Kiểm tra bằng `git --version`. Các ví dụ được thử với Git 2.54. Git quá cũ có thể âm thầm bỏ qua các khóa mới như `push.autoSetupRemote`, nên hãy cập nhật trước nếu một thiết lập có vẻ không có tác dụng.
+- **Một terminal.** Các lệnh dùng shell Unix.
+- **Tùy chọn: một khóa SSH hoặc khóa GPG** nếu bạn muốn ký commit (Bước 5).
+
+Các ví dụ dùng những giá trị mẫu sau. Hãy thay bằng giá trị của bạn:
+
+| Giá trị mẫu | Ý nghĩa |
+|---|---|
+| `Your Name` | Tên của bạn như muốn hiện trên commit |
+| `you@example.com` | Email cá nhân của bạn |
+| `you@work.example.com` | Email công việc của bạn |
+| `~/code/personal/`, `~/code/work/` | Các thư mục chứa bản clone của bạn |
+| `work.example.com` | Máy chủ Git mà công ty bạn dùng |
+
+## Bước 1: một thư mục cho mỗi danh tính
+
+Git quyết định danh tính theo nơi repo nằm, nên các thư mục chính là giao ước. Tạo một thư mục cho mỗi danh tính:
+
+```sh
+$ mkdir -p ~/code/personal ~/code/work
+```
+
+Từ giờ, hãy clone dự án cá nhân vào `~/code/personal/` và dự án công việc vào `~/code/work/`. Thư mục con thì ở độ sâu nào cũng được. Repo nằm ở bất kỳ chỗ nào khác sẽ không có danh tính, và Bước 2 biến điều đó thành một lỗi mà bạn nhìn thấy được.
+
+## Bước 2: các mặc định chung trong một tệp
+
+Đặt mọi thứ giống nhau cho mọi danh tính vào `~/.gitconfig`. Tạo hoặc sửa tệp:
+
+```ini title="~/.gitconfig" {4,5}
+[init]
+  defaultBranch = main
+
+[user]
+  useConfigOnly = true
+
+[core]
+  excludesFile = ~/.config/git/ignore
+
+[pull]
+  rebase = true
+
+[push]
+  autoSetupRemote = true
+
+[fetch]
+  prune = true
+
+[rebase]
+  autoStash = true
+  autoSquash = true
+
+[rerere]
+  enabled = true
+
+[diff]
+  algorithm = histogram
+
+[merge]
+  conflictStyle = zdiff3
+```
+
+Các thiết lập này làm gì:
+
+- **`init.defaultBranch`**: repo mới bắt đầu trên `main`.
+- **`pull.rebase`**: `git pull` rebase các commit cục bộ của bạn thay vì tạo một merge commit.
+- **`push.autoSetupRemote`**: lần `git push` đầu tiên của một nhánh mới tự đặt upstream cho bạn.
+- **`fetch.prune`**: các nhánh remote đã bị xóa cũng biến mất ở máy bạn khi fetch.
+- **`rebase.autoStash`** và **`rebase.autoSquash`**: rebase tự stash các tệp đang sửa dở trước, và gộp các commit `fixup!` vào đúng chỗ.
+- **`rerere.enabled`**: Git nhớ cách bạn đã giải quyết một xung đột và dùng lại.
+- **`diff.algorithm`** và **`merge.conflictStyle`**: `histogram` cho diff gọn hơn, `zdiff3` hiển thị cả phần tổ tiên chung bên trong xung đột.
+- **`core.excludesFile`**: danh sách bỏ qua toàn cục. Tạo `~/.config/git/ignore` và đưa vào đó những thứ như `.DS_Store`.
+
+Dòng cần chú ý là `user.useConfigOnly = true`. Nó bảo Git đừng bao giờ tự bịa danh tính từ tên người dùng và tên máy. Ở đây cố ý không có `name` hay `email`: chúng đến từ các overlay. Giờ một repo không khớp overlay nào sẽ lỗi khi commit thay vì lặng lẽ dùng một địa chỉ đoán bừa.
+
+## Bước 3: một overlay nhỏ cho mỗi danh tính
+
+Một overlay chỉ chứa những gì khác nhau giữa các danh tính. Không đặt thứ gì dùng chung vào đây, vì cái gì bạn lặp lại trong mọi overlay sẽ dần lệch nhau theo thời gian.
+
+Tạo overlay cá nhân:
+
+```ini title="~/.config/git/personal.gitconfig"
+[user]
+  name = Your Name
+  email = you@example.com
+```
+
+Tạo overlay công việc:
+
+```ini title="~/.config/git/work.gitconfig"
+[user]
+  name = Your Name
+  email = you@work.example.com
+```
+
+Đừng đặt tên tệp là `~/.config/git/config`. Git tự đọc đường dẫn đó như một cấu hình toàn cục, nên một overlay mang tên này sẽ áp dụng ở mọi nơi.
+
+## Bước 4: chuyển theo thư mục bằng includeIf
+
+Giờ hãy cho Git biết overlay nào thuộc về thư mục nào. Thêm các khối này vào cuối `~/.gitconfig`:
+
+```ini title="~/.gitconfig" {1,4}
+[includeIf "gitdir:~/code/personal/"]
+  path = ~/.config/git/personal.gitconfig
+
+[includeIf "gitdir:~/code/work/"]
+  path = ~/.config/git/work.gitconfig
+```
+
+Mỗi `includeIf` nói rằng: nếu thư mục `.git` của repo nằm dưới thư mục này, hãy đọc thêm tệp kia.
+
+Có ba chi tiết quan trọng:
+
+1. **Bắt đầu đường dẫn bằng `~/`.** Git mở rộng `~/` ở đầu một mẫu `gitdir:`. Nó không mở rộng `$HOME` hay `${HOME}`, nên các dạng đó không bao giờ khớp.
+2. **Kết thúc thư mục bằng dấu gạch chéo.** `gitdir:~/code/work/` khớp mọi repo bên dưới thư mục, ở độ sâu nào cũng được. Thiếu dấu gạch chéo, Git so mẫu với chính thư mục `.git`, nên nó không khớp repo thông thường nào. Để nhắm đúng một repo, hãy ghi thư mục `.git` của nó: `gitdir:~/code/work/app/.git`.
+3. **Đặt các include ở cuối.** Git đọc tệp từ trên xuống và giá trị sau cùng thắng. Các overlay ở cuối sẽ ghi đè mọi thứ phía trên.
+
+Nếu ổ đĩa của bạn không phân biệt hoa thường, như macOS thường làm, hãy dùng `gitdir/i:` thay cho `gitdir:`. Nó so sánh đường dẫn không phân biệt hoa thường, nên cả `~/Code/Work/` lẫn `~/code/work/` đều khớp:
+
+```ini title="~/.gitconfig"
+[includeIf "gitdir/i:~/code/work/"]
+  path = ~/.config/git/work.gitconfig
+```
+
+Cũng có một cách chọn overlay theo remote thay vì theo thư mục. Cách này áp dụng cho mọi repo có URL remote khớp, nằm ở đâu cũng được:
+
+```ini title="~/.gitconfig"
+[includeIf "hasconfig:remote.*.url:git@work.example.com:*/**"]
+  path = ~/.config/git/work.gitconfig
+```
+
+Nó chỉ nhìn thấy remote đã được đặt, nên chỉ hoạt động với repo đã có sẵn và đã có origin. Nó còn một giới hạn: tệp được include không thể tự đặt URL remote. Git sẽ dừng với `remote URLs cannot be configured in file directly or indirectly included by includeIf.hasconfig:remote.*.url`.
+
+## Bước 5: ký commit (tùy chọn)
+
+Chữ ký chứng minh một commit đến từ bạn. Nhiều nhóm yêu cầu điều này ở repo công việc nhưng không ở repo cá nhân. Vì nó nằm trong overlay, mỗi danh tính tự quyết định.
+
+Cách đơn giản nhất là dùng khóa SSH. Tạo một khóa nếu bạn chưa có:
+
+```sh
+$ ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_work
+```
+
+Thêm các thiết lập ký vào overlay công việc:
+
+```ini title="~/.config/git/work.gitconfig" {4,7,10,13,16,17}
+[user]
+  name = Your Name
+  email = you@work.example.com
+  signingKey = ~/.ssh/id_ed25519_work.pub
+
+[gpg]
+  format = ssh
+
+[gpg "ssh"]
+  allowedSignersFile = ~/.config/git/allowed_signers
+
+[commit]
+  gpgSign = true
+
+[tag]
+  gpgSign = true
+  forceSignAnnotated = true
+```
+
+Mỗi thiết lập làm gì:
+
+- **`gpg.format = ssh`**: ký bằng khóa SSH thay vì GPG.
+- **`user.signingKey`**: tệp khóa công khai dùng để ký.
+- **`commit.gpgSign`** và **`tag.gpgSign`**: ký mọi commit và mọi tag mà không cần truyền `-S`.
+- **`tag.forceSignAnnotated`**: tự động ký các annotated tag.
+- **`gpg.ssh.allowedSignersFile`**: danh sách các khóa Git tin cậy khi xác minh một chữ ký. Thiếu nó, Git ký được nhưng không thể cho biết chữ ký có hợp lệ hay không.
+
+Giờ tạo tệp signers với một dòng: email của bạn, rồi đến khóa công khai.
+
+```sh
+$ echo "you@work.example.com $(cut -d' ' -f1,2 ~/.ssh/id_ed25519_work.pub)" > ~/.config/git/allowed_signers
+```
+
+Tạo một commit trong repo công việc rồi xem nó:
+
+```sh
+$ git log --show-signature -1
+```
+
+Bạn sẽ thấy một dòng như `Good "git" signature for you@work.example.com with ED25519 key SHA256:...`.
+
+Hãy đăng ký khóa công khai với máy chủ Git của bạn như một khóa ký nữa, nếu không máy chủ sẽ hiển thị commit là chưa được xác minh.
+
+Nếu bạn dùng GPG, overlay công việc cần một mục `[gpg]` khác và id khóa của bạn:
+
+```ini title="~/.config/git/work.gitconfig"
+[user]
+  signingKey = YOUR_KEY_ID
+
+[gpg]
+  format = openpgp
+```
+
+Khi không có `user.signingKey`, Git hỏi GPG một khóa khớp với danh tính committer của bạn, nên hãy đặt nó tường minh nếu bạn có hơn một khóa.
+
+Overlay cá nhân có thể mang các dòng khóa giống vậy và tắt việc ký. Để bật lại sau này, đặt `gpgSign = true`:
+
+```ini title="~/.config/git/personal.gitconfig"
+[user]
+  signingKey = ~/.ssh/id_ed25519_personal.pub
+
+[gpg]
+  format = ssh
+
+[commit]
+  gpgSign = false
+```
+
+## Bước 6: kiểm tra repo nhận danh tính nào
+
+Trước commit thật đầu tiên trong một repo, hãy hỏi Git. Chạy lệnh này bên trong repo:
+
+```sh
+$ git config --show-origin --show-scope user.email
+```
+
+Kết quả cho biết phạm vi, tệp mà giá trị đến từ đó, và chính giá trị:
+
+```text
+global	file:/path/to/home/.config/git/work.gitconfig	you@work.example.com
+```
+
+Tên tệp là phần cần đọc. Nếu nó kết thúc bằng `work.gitconfig`, thư mục đã khớp. Git gọi một tệp được include là `global` vì nó đến từ cấu hình toàn cục của bạn.
+
+Để xem toàn bộ dòng tác giả mà một commit sẽ dùng, chạy:
+
+```sh
+$ git var GIT_AUTHOR_IDENT
+```
+
+```text
+Your Name <you@work.example.com> 1760000000 +0700
+```
+
+Trong một repo nằm ngoài mọi thư mục, `user.email` không in ra gì và `git var` thất bại, vì `user.useConfigOnly` đang bật. Một lệnh `git commit` ở đó dừng với `fatal: no email was given and auto-detection is disabled`. Đó là hành vi bạn muốn.
+
+## Các alias đáng có
+
+Alias không liên quan đến danh tính, nhưng chúng thuộc cùng tệp chung. Thêm khối này phía trên các dòng `includeIf`:
+
+```ini title="~/.gitconfig"
+[alias]
+  st = status --short --branch
+  co = checkout
+  lg = log --oneline --graph --decorate
+  last = show --stat --oneline HEAD
+  amend = commit --amend --no-edit
+  undo = reset --soft HEAD~1
+  branches = for-each-ref --sort=-committerdate --format='%(committerdate:short) %(refname:short)' refs/heads/
+```
+
+| Alias | Tác dụng |
+|---|---|
+| `git st` | Trạng thái ngắn kèm tên nhánh |
+| `git co` | Lối tắt cho `checkout` |
+| `git lg` | Mỗi commit một dòng, dạng đồ thị |
+| `git last` | Các tệp thay đổi trong commit gần nhất |
+| `git amend` | Thêm các thay đổi đã stage vào commit gần nhất, giữ nguyên message |
+| `git undo` | Hoàn tác commit gần nhất và giữ các thay đổi ở trạng thái đã stage |
+| `git branches` | Các nhánh cục bộ, nhánh commit gần đây nhất lên đầu |
+
+`git amend` thêm những gì đã stage vào commit cuối. Khi không có gì được stage, lệnh vẫn thành công và ghi lại commit cuối với ngày mới, nên hãy chạy `git add` trước.
+
+## Điều thiết lập này không làm: quyền push
+
+Thiết lập này chọn **tác giả** của một commit: tên và email được lưu bên trong nó. Nó không chọn tài khoản nào **push** commit đó. Việc đó do khóa SSH hoặc credential helper của bạn quyết định.
+
+Vì vậy một repo công việc có thể có đúng tác giả mà vẫn cố push bằng khóa SSH cá nhân của bạn, rồi thất bại. Một cách sửa gọn là cho overlay công việc khóa riêng của nó:
+
+```ini title="~/.config/git/work.gitconfig"
+[core]
+  sshCommand = ssh -i ~/.ssh/id_ed25519_work -o IdentitiesOnly=yes
+```
+
+Một SSH host alias trong `~/.ssh/config` cũng làm được việc đó. Dù chọn cách nào, hãy kiểm tra bằng một lần fetch thật: chạy `GIT_TRACE=1 git fetch` trong một repo công việc và xem lệnh mà Git chạy. `core.sshCommand` trong overlay cũng áp dụng cho `git clone` vào `~/code/work/`; hãy chạy `GIT_TRACE=1 git clone ...` và tìm khóa `-i` của bạn.
+
+## Khắc phục sự cố
+
+Nếu một repo nhận sai danh tính hoặc không nhận được danh tính nào, hãy xem ở đây trước.
+
+- **`${HOME}` hoặc `$HOME` trong mẫu `gitdir:`.** Nó không bao giờ khớp, và Git không báo gì. Hãy dùng `~/`.
+- **Thiếu dấu gạch chéo ở cuối.** `gitdir:~/code/work` được so với thư mục `.git`, nên không khớp repo thông thường nào. Hãy kết thúc thư mục bằng `/`, hoặc ghi thư mục `.git` của một repo.
+- **Một repo nằm ngoài mọi thư mục.** Nó không nhận overlay nào. Với `user.useConfigOnly`, nó lỗi khi commit, và đó chính là mục đích. Hãy chuyển bản clone, hoặc thêm một `includeIf` khác.
+- **Một đường dẫn trong `path =` không tồn tại.** Git lặng lẽ bỏ qua tệp include bị thiếu. Sau khi bạn di chuyển hoặc đổi tên các tệp overlay, hãy chạy `git config --get-regexp '^includeif'` và kiểm tra từng đường dẫn.
+- **Danh tính sai lại thắng.** Giá trị đứng sau thắng giá trị đứng trước. Nếu bạn đặt một `[commit] gpgSign = false` dùng chung bên dưới các include, nó sẽ ghi đè overlay công việc. Hãy giữ các include ở cuối.
+- **Một khóa trông đúng nhưng không có tác dụng.** Git bỏ qua các khóa không biết mà không cảnh báo, và `git config --get` vẫn vui vẻ in ra bất cứ thứ gì bạn đã viết. Một `tag.forceSignAnnotatedTags` viết sai sẽ im lặng. Hãy đối chiếu tên với danh sách từ `git help --config`. Lưu ý `push.autoSetupRemote` là khóa thật, còn `pull.autoSetupRemote` thì không.
+- **Các thiết lập bị lệch nhau.** Nếu bạn sao chép cùng một khối `[pull]` hoặc `[fetch]` vào mọi overlay, các bản sao sẽ dần khác nhau. Hãy giữ thiết lập chung trong `~/.gitconfig` và chỉ để phần khác biệt trong overlay.
+- **Không chắc cái gì đang áp dụng.** `git config --show-origin --list` in ra mọi thiết lập và tệp mà nó đến từ đó.
+
+## Tiếp theo
+
+Giờ bạn có một danh tính công việc và một danh tính cá nhân tự chuyển đổi, cùng một lệnh để kiểm tra repo đang dùng danh tính nào. Để tìm hiểu sâu hơn về conditional include, hãy đọc [tài liệu chính thức của `includeIf`](https://git-scm.com/docs/git-config#_conditional_includes).
+
+Nếu bạn giữ cấu hình trong một repo dotfiles, cách bố trí này rất hợp: một tệp chung, một tệp cho mỗi danh tính. [Hướng dẫn thiết lập Neovim](/vi/blog/neovim-setup-1-zero-to-editor/) chỉ cách giữ cấu hình trình soạn thảo trong cùng dotfiles.

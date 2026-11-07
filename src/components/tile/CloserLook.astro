@@ -1,0 +1,120 @@
+---
+/**
+ * Take a closer look (spec §5.10.14): a product image beside a list of labelled captions.
+ * Without JavaScript every caption shows; closer-look.ts turns the labels into buttons.
+ */
+import { Image } from 'astro:assets';
+import Spans from './Spans.astro';
+import type { Highlight } from '~/lib/cv';
+
+interface Props {
+  id: string;
+  items: Highlight[];
+  labelledby: string;
+  image?: ImageMetadata;
+  imageAlt?: string;
+}
+const { id, items, labelledby, image, imageAlt } = Astro.props;
+const shown = items.filter((h) => h.label);
+---
+
+<div class:list={['closer', { 'closer--media': !!image }]} data-closer id={id}>
+  {image && (
+    <div class="closer-media">
+      <Image src={image} alt={imageAlt ?? ''} width={1280} height={720} loading="lazy" />
+    </div>
+  )}
+  <ol class="closer-list" aria-labelledby={labelledby}>
+    {shown.map((item, i) => (
+      <li class="closer-item">
+        <h3 class="closer-label">{item.label}</h3>
+        <div class="closer-cap" id={`${id}-c${i}`}>
+          <p>
+            <Spans spans={item.body} />
+          </p>
+        </div>
+      </li>
+    ))}
+  </ol>
+</div>
+
+<style>
+  .closer {
+    display: grid;
+    gap: 40px;
+  }
+  .closer-media img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 18px;
+  }
+  .closer-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .closer-item {
+    border-top: 1px solid var(--border);
+    padding: 12px 0;
+  }
+  .closer-item:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+  .closer-label {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 600;
+    line-height: 1.19;
+    color: var(--text);
+  }
+  .closer-cap {
+    padding: 0 0 20px;
+    font-size: 17px;
+    line-height: 1.47;
+    color: var(--text-2);
+  }
+  .closer-cap p {
+    margin: 12px 0 0;
+  }
+  .closer-cap :global(strong) {
+    color: var(--text);
+  }
+  .closer :global(.closer-btn) {
+    background: none;
+    border: 0;
+    font: inherit;
+    color: inherit;
+    text-align: start;
+    width: 100%;
+    min-height: 44px;
+    padding: 12px 0;
+    cursor: pointer;
+  }
+  .closer :global(.closer-btn[aria-expanded='false']) {
+    color: var(--text-2);
+  }
+  .closer :global(.closer-btn:focus-visible) {
+    outline: 2px solid var(--link);
+    outline-offset: 3px;
+  }
+  @media (min-width: 1069px) {
+    .closer--media {
+      grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+      column-gap: 64px;
+      align-items: start;
+    }
+    .closer--media .closer-list {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .closer--media .closer-media {
+      grid-column: 2;
+      grid-row: 1;
+    }
+  }
+</style>
+
+<script>
+  import '~/scripts/closer-look';
+</script>

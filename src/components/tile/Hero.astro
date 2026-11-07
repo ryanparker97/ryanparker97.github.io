@@ -14,8 +14,19 @@ interface Props {
   id?: string;
   /** A grid or chapter follows: 80 / 64 / 48px below instead of the section padding. */
   tight?: boolean;
+  /** Headline in the page's one gradient span. */
+  gradient?: boolean;
 }
-const { title, eyebrow, subline, copy, long, id = 'hero', tight = false } = Astro.props;
+const {
+  title,
+  eyebrow,
+  subline,
+  copy,
+  long,
+  id = 'hero',
+  tight = false,
+  gradient = false,
+} = Astro.props;
 ---
 
 <section class:list={['hero', { 'hero--tight': tight }]} id={id} aria-labelledby={`${id}-title`}>
@@ -29,6 +40,7 @@ const { title, eyebrow, subline, copy, long, id = 'hero', tight = false } = Astr
       {subline}
       {copy}
       {long}
+      {gradient}
       intro
     >
       {Astro.slots.has('actions') && (

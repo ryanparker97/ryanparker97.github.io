@@ -87,18 +87,26 @@ test.describe('motion', () => {
   test('a revealed 3-item group is fully visible 1.6s after entering view', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
-    const grid = page.locator('#experience .rail');
-    await grid.scrollIntoViewIfNeeded();
+    const group = page.locator('#more [data-reveal-group]').first();
+    await group.scrollIntoViewIfNeeded();
     await page.evaluate(() => window.scrollBy(0, 150));
     await page.waitForTimeout(1600);
-    for (const el of await grid.locator('li').all()) await expect(el).toHaveCSS('opacity', '1');
+    for (const el of await group.locator('[data-reveal]').all())
+      await expect(el).toHaveCSS('opacity', '1');
   });
 });
 
 test.describe('motion: reduced', () => {
   test.use({ reducedMotion: 'reduce' });
   test('everything is static and visible after load', async ({ page }) => {
-    for (const path of ['/', '/experiences/', '/star/', '/projects/']) {
+    for (const path of [
+      '/',
+      '/experiences/',
+      '/experiences/datum-security-bank-data-engineer/',
+      '/star/',
+      '/projects/',
+      '/projects/agentic-coding-workflow/',
+    ]) {
       await page.goto(path);
       const bad = await page.evaluate(() =>
         [...document.querySelectorAll('main *')]
@@ -124,12 +132,13 @@ test.describe('motion: reduced', () => {
     for (const path of [
       '/',
       '/experiences/',
+      '/experiences/datum-security-bank-data-engineer/',
       '/projects/',
       '/blog/',
       '/blog/neovim-setup-3-data-engineering/',
     ]) {
       await page.goto(path);
-      if (path === '/') await page.locator('.grid-tile').first().hover();
+      if (path === '/') await page.locator('.btn-secondary').first().hover();
       const bad = await page.evaluate(() => {
         const zero = (v: string) => v.split(',').every((x) => x.trim() === '0s');
         const out: string[] = [];
@@ -153,7 +162,7 @@ test('Vietnamese pages use the new strings', async ({ page }) => {
   await expect(page.locator('h1')).toHaveText('Những câu chuyện từ công việc.');
   await page.goto('/vi/blog/');
   await expect(page.locator('h1')).toHaveText('Ghi chú về dữ liệu và công cụ.');
-  await page.goto('/vi/experiences/');
+  await page.goto('/vi/');
   await expect(page.locator('#highlights h2')).toHaveText('Những điểm nổi bật.');
 });
 

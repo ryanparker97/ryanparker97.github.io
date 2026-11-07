@@ -1,7 +1,8 @@
 ---
 title: 'Hướng dẫn thiết lập Neovim, Phần 5: gỡ lỗi, kiểm thử và quy trình làm việc hằng ngày'
-description: 'Đặt breakpoint, chạy và gỡ lỗi kiểm thử ngay trong trình soạn thảo, và học các phím tôi dùng hằng ngày, để hoàn tất chuỗi bài thiết lập Neovim 0.12.'
+description: 'Đặt breakpoint, chạy và gỡ lỗi kiểm thử ngay trong trình soạn thảo, và học các phím dùng hằng ngày, để hoàn tất chuỗi bài thiết lập Neovim 0.12.'
 pubDate: 2026-11-02T12:00:00Z
+updatedDate: 2026-11-07
 tags: ['neovim', 'dotfiles', 'debugging', 'testing', 'developer-tools']
 series: 'neovim-setup-guide'
 seriesPart: 5
@@ -10,13 +11,12 @@ heroImage: '../../../assets/blog/neovim-setup/part-5.svg'
 
 import Callout from '~/components/blog/Callout.astro';
 
-Bốn phần đầu đã cho bạn một trình soạn thảo hiểu được mã của bạn. Phần cuối này nói về vòng lặp xung quanh việc viết mã: chạy mã trong trình gỡ lỗi, chạy kiểm thử cho nó, và di chuyển trong cả một dự án mà không cần rời Neovim. Phần lớn nội dung xoay quanh tốc độ. Mỗi mảnh tiết kiệm vài giây, và vài giây ấy cộng dồn lại qua một ngày.
+Bốn phần đầu đã cho bạn một trình soạn thảo hiểu được mã của bạn. Phần cuối này nói về vòng lặp xung quanh việc viết mã: chạy mã trong trình gỡ lỗi, chạy kiểm thử cho nó, và di chuyển trong cả một dự án mà không cần rời Neovim. Bạn tạo hai tệp, `dev.lua` và `extras.lua`, và phần còn lại của bài giải thích những gì chúng mang lại. Phần lớn nội dung xoay quanh tốc độ. Mỗi mảnh tiết kiệm vài giây, và vài giây ấy cộng dồn lại qua một ngày.
 
-Phần này khép lại chuỗi bài, nên nó cũng nhìn lại những gì chúng ta đã xây dựng. Danh sách đầy đủ các phần nằm ở [trang chuỗi bài viết](/vi/blog/series/neovim-setup-guide/), và mục cuối liên kết tới tất cả.
+Phần này khép lại chuỗi bài, nên nó cũng nhìn lại những gì bạn đã xây dựng. Danh sách đầy đủ các phần nằm ở [trang chuỗi bài viết](/vi/blog/series/neovim-setup-guide/), và mục cuối liên kết tới tất cả.
 
 <Callout type="note" lang="vi">
-  **Đã thử với:** Neovim 0.12, macOS, dotfiles commit `64351ec`. **Nguồn:**
-  [github.com/ryanparker97/dotfiles](https://github.com/ryanparker97/dotfiles) (thư mục `nvim/`).
+  **Đã thử với:** Neovim 0.12, macOS.
 </Callout>
 
 ## Bạn sẽ có gì khi kết thúc
@@ -37,24 +37,126 @@ Bạn cần phần thiết lập từ các phần trước:
 
 - Một cấu hình chạy được từ [Phần 1](/vi/blog/neovim-setup-1-zero-to-editor/).
 - Các language server và công cụ Mason từ [Phần 2](/vi/blog/neovim-setup-2-languages/).
-- Với Java, các gói gỡ lỗi từ [Phần 4](/vi/blog/neovim-setup-4-java/).
+- Với Java, trình khởi chạy và các gói gỡ lỗi từ [Phần 4](/vi/blog/neovim-setup-4-java/).
 - `lazygit`, mà Phần 1 đã liệt kê như một mục cài tùy chọn.
 
-Mason phải cài ba gói cho việc gỡ lỗi và kiểm thử: `debugpy`, `java-debug-adapter` và `java-test`. Chúng nằm trong danh sách công cụ ở `lsp.lua`. Chạy `:Mason` và kiểm tra cả ba đều được đánh dấu là đã cài.
+Mọi đường dẫn trong phần này đều tính từ cùng thư mục cấu hình như trước. Nếu bạn đã chọn cách chạy song song ở Phần 1, hãy khởi động Neovim bằng `NVIM_APPNAME=nvim-guide nvim`.
 
-Với kiểm thử Java có thêm một bước. neotest-java chỉ được nạp cùng neotest, nên hãy nhấn `<leader>ts` một lần (hoặc chạy `:Lazy load neotest`) trước. Rồi chạy lệnh này:
+Mason phải cài ba gói cho việc gỡ lỗi và kiểm thử: `debugpy`, `java-debug-adapter` và `java-test`. Chúng nằm trong danh sách công cụ bạn đã thêm vào `lsp.lua` ở Phần 2. Chạy `:Mason` và kiểm tra cả ba đều được đánh dấu là đã cài. Kiểm thử Java cần thêm một bước nữa, được nói ở Bước 2.
 
-```vim
-:NeotestJava setup
-```
+## Bước 1: tạo dev.lua
 
-Lệnh này tải về tệp jar JUnit console mà neotest-java dùng để chạy kiểm thử. Bạn chỉ cần làm một lần cho mỗi máy.
+`dev.lua` chứa trình gỡ lỗi, trình chạy kiểm thử và hai công cụ cấp dự án là trouble và grug-far. Mọi thứ trong đó được nạp khi bạn nhấn một phím hoặc chạy một lệnh, nên nó gần như không làm chậm khởi động.
 
-## Bước 1: trình gỡ lỗi
+1. Tạo `lua/config/plugins/dev.lua` với nội dung sau:
 
-nvim-dap không được nạp lúc khởi động. Nó được nạp ở phím đầu tiên bắt đầu bằng `<leader>D`. Đây là phần trong spec của nó nối mọi thứ lại với nhau:
+```lua title="lua/config/plugins/dev.lua" {24-30,107-124,152-158,181-188}
+return {
+  {
+    "folke/trouble.nvim",
+    cmd = "Trouble",
+    opts = {},
+    keys = {
+      { "<leader>xx", "<cmd>Trouble diagnostics toggle<CR>", desc = "Diagnostics (workspace)" },
+      { "<leader>xX", "<cmd>Trouble diagnostics toggle filter.buf=0<CR>", desc = "Diagnostics (buffer)" },
+      { "<leader>xs", "<cmd>Trouble symbols toggle focus=false<CR>", desc = "Symbols" },
+      {
+        "<leader>xr",
+        "<cmd>Trouble lsp toggle focus=false win.position=right<CR>",
+        desc = "LSP references / definitions",
+      },
+      { "<leader>xq", "<cmd>Trouble qflist toggle<CR>", desc = "Quickfix list" },
+    },
+  },
 
-```lua title="lua/ryanparker/plugins/dev.lua" {4-15,17-18}
+  {
+    "MagicDuck/grug-far.nvim",
+    cmd = "GrugFar",
+    opts = {},
+    keys = {
+      {
+        "<leader>sr",
+        function()
+          require("grug-far").open({ prefills = { search = vim.fn.expand("<cword>") } })
+        end,
+        desc = "Search and replace (project)",
+      },
+      {
+        "<leader>sr",
+        function()
+          require("grug-far").with_visual_selection()
+        end,
+        mode = "x",
+        desc = "Search and replace (selection)",
+      },
+    },
+  },
+
+  {
+    "mfussenegger/nvim-dap",
+    dependencies = {
+      "rcarriga/nvim-dap-ui",
+      "nvim-neotest/nvim-nio",
+      "mfussenegger/nvim-dap-python",
+    },
+    keys = {
+      {
+        "<leader>Db",
+        function()
+          require("dap").toggle_breakpoint()
+        end,
+        desc = "Toggle breakpoint",
+      },
+      {
+        "<leader>Dc",
+        function()
+          require("dap").continue()
+        end,
+        desc = "Continue / start",
+      },
+      {
+        "<leader>Di",
+        function()
+          require("dap").step_into()
+        end,
+        desc = "Step into",
+      },
+      {
+        "<leader>Do",
+        function()
+          require("dap").step_over()
+        end,
+        desc = "Step over",
+      },
+      {
+        "<leader>DO",
+        function()
+          require("dap").step_out()
+        end,
+        desc = "Step out",
+      },
+      {
+        "<leader>Dr",
+        function()
+          require("dap").repl.toggle()
+        end,
+        desc = "Toggle REPL",
+      },
+      {
+        "<leader>Dt",
+        function()
+          require("dap").terminate()
+        end,
+        desc = "Terminate",
+      },
+      {
+        "<leader>Du",
+        function()
+          require("dapui").toggle()
+        end,
+        desc = "Toggle debug UI",
+      },
+    },
     config = function()
       local dap, dapui = require("dap"), require("dapui")
       dapui.setup()
@@ -74,11 +176,82 @@ nvim-dap không được nạp lúc khởi động. Nó được nạp ở phím
       local debugpy = vim.fn.stdpath("data") .. "/mason/packages/debugpy/venv/bin/python"
       require("dap-python").setup(vim.uv.fs_stat(debugpy) and debugpy or "python3")
     end,
+  },
+
+  {
+    "nvim-neotest/neotest",
+    dependencies = {
+      "nvim-neotest/nvim-nio",
+      "nvim-lua/plenary.nvim",
+      "nvim-treesitter/nvim-treesitter",
+      "nvim-neotest/neotest-python",
+      "rcasia/neotest-java",
+    },
+    keys = {
+      {
+        "<leader>tt",
+        function()
+          require("neotest").run.run()
+        end,
+        desc = "Run nearest test",
+      },
+      {
+        "<leader>tf",
+        function()
+          require("neotest").run.run(vim.fn.expand("%"))
+        end,
+        desc = "Run file tests",
+      },
+      {
+        "<leader>td",
+        function()
+          require("neotest").run.run({ strategy = "dap" })
+        end,
+        desc = "Debug nearest test",
+      },
+      {
+        "<leader>ts",
+        function()
+          require("neotest").summary.toggle()
+        end,
+        desc = "Toggle summary",
+      },
+      {
+        "<leader>to",
+        function()
+          require("neotest").output.open({ enter = true })
+        end,
+        desc = "Show output",
+      },
+      {
+        "<leader>tl",
+        function()
+          require("neotest").run.run_last()
+        end,
+        desc = "Run last test",
+      },
+    },
+    config = function()
+      require("neotest").setup({
+        adapters = {
+          require("neotest-python"),
+          require("neotest-java"),
+        },
+      })
+    end,
+  },
+}
 ```
 
-Có hai điều xảy ra ở đây. Thứ nhất, dap-ui mở các panel của nó ngay trước khi một phiên khởi chạy hoặc gắn vào, và đóng chúng khi phiên kết thúc. Các listener được đặt tên `dapui_config`, và mỗi cái là một hàm không nhận đối số. Tôi cố ý viết chúng thành các closure nhỏ: nếu truyền thẳng một tham chiếu hàm, nó sẽ nhận phiên gỡ lỗi làm đối số, và dap-ui sẽ coi đó là các tùy chọn.
+2. Khởi động lại Neovim và chờ lazy.nvim cài các plugin mới. Mở `:Lazy` và kiểm tra `nvim-dap`, `nvim-dap-ui`, `nvim-dap-python`, `neotest`, `trouble.nvim` và `grug-far.nvim` có trong danh sách.
+
+nvim-dap không được nạp lúc khởi động. Nó được nạp ở phím đầu tiên bắt đầu bằng `<leader>D`. Hàm `config` được tô sáng nối mọi thứ lại với nhau.
+
+Có hai điều xảy ra ở đó. Thứ nhất, dap-ui mở các panel của nó ngay trước khi một phiên khởi chạy hoặc gắn vào, và đóng chúng khi phiên kết thúc. Các listener được đặt tên `dapui_config`, và mỗi cái là một hàm không nhận đối số. Chúng được viết thành các closure nhỏ một cách có chủ đích: nếu truyền thẳng một tham chiếu hàm, nó sẽ nhận phiên gỡ lỗi làm đối số, và dap-ui sẽ coi đó là các tùy chọn.
 
 Thứ hai, adapter Python dùng `debugpy` do Mason cài. Nếu tệp đó không có, nó quay về `python3` trong PATH của bạn, và cách này chỉ chạy được nếu `debugpy` đã được cài trong Python đó.
+
+Plugin này đã chuyển nhà sang [Codeberg](https://codeberg.org/mfussenegger/nvim-dap). Spec vẫn dùng tên ngắn `mfussenegger/nvim-dap`, mà lazy.nvim phân giải qua GitHub, và cách viết đó vẫn chạy tốt.
 
 ### Gỡ lỗi một tệp Python
 
@@ -88,7 +261,9 @@ Mở một tệp Python và thử:
 $ nvim app.py
 ```
 
-Di chuyển đến dòng bạn muốn dừng và nhấn `<leader>Db` để đặt breakpoint. Rồi nhấn `<leader>Dc` để bắt đầu. nvim-dap-python đưa ra các cấu hình khởi chạy của nó, nên hãy chọn cái chạy tệp hiện tại. Các panel dap-ui mở ra, và chương trình dừng ở breakpoint của bạn.
+1. Di chuyển đến dòng bạn muốn dừng và nhấn `<leader>Db` để đặt breakpoint.
+2. Nhấn `<leader>Dc` để bắt đầu. nvim-dap-python đưa ra các cấu hình khởi chạy của nó, nên hãy chọn cái chạy tệp hiện tại.
+3. Các panel dap-ui mở ra, và chương trình dừng ở breakpoint của bạn.
 
 Từ đó bạn đi từng bước bằng ba phím:
 
@@ -100,7 +275,11 @@ Từ đó bạn đi từng bước bằng ba phím:
 
 ### Gỡ lỗi Java
 
-Java dùng cùng các phím, nhưng adapter đến từ Phần 4. Khi các gói gỡ lỗi có sẵn lúc khởi động, nvim-jdtls thêm một cấu hình gỡ lỗi cho mỗi lớp có phương thức `main`. Mở một lớp như vậy và nhấn `<leader>Dc`. Nếu sau này bạn thêm một lớp `main` mới, hãy chạy `:JdtUpdateDebugConfig` để danh sách được làm mới. Hot code replace được đặt là `auto`, nên jdtls cố áp dụng các chỉnh sửa nhỏ vào chương trình đang chạy.
+Java dùng cùng các phím, nhưng adapter đến từ Phần 4. Trước Phần 5, trình khởi chạy chạy jdtls như một language server thông thường. Giờ nvim-dap đã được cài, nó còn đăng ký cả các gói gỡ lỗi. Khi các gói gỡ lỗi có sẵn lúc khởi động, nvim-jdtls thêm một cấu hình gỡ lỗi cho mỗi lớp có phương thức `main`. Mở một lớp như vậy và nhấn `<leader>Dc`. Hot code replace được đặt là `auto`, nên jdtls cố áp dụng các chỉnh sửa nhỏ vào chương trình đang chạy.
+
+<Callout type="tip" lang="vi">
+  Nếu sau này bạn thêm một lớp `main` mới, hãy chạy `:JdtUpdateDebugConfig` trong một buffer Java để danh sách cấu hình gỡ lỗi được làm mới. Lệnh này có sau khi nvim-dap được cài và jdtls đã gắn vào buffer.
+</Callout>
 
 <Callout type="warning" lang="vi">
   Các gói gỡ lỗi Java được đọc khi language server khởi động. Nếu bạn cài `java-debug-adapter` hoặc `java-test` sau khi đã mở một tệp Java, hãy khởi động lại Neovim trước khi gỡ lỗi.
@@ -108,20 +287,20 @@ Java dùng cùng các phím, nhưng adapter đến từ Phần 4. Khi các gói 
 
 ## Bước 2: chạy kiểm thử với neotest
 
-neotest được nạp ở phím đầu tiên bắt đầu bằng `<leader>t`. Cấu hình của nó truyền hai adapter dưới dạng bảng. Chúng không được gọi:
+neotest đi kèm cùng tệp đó. Nó được nạp ở phím đầu tiên bắt đầu bằng `<leader>t`. Hàm `config` được tô sáng ở cuối `dev.lua` truyền hai adapter dưới dạng bảng. Chúng không được gọi.
 
-```lua title="lua/ryanparker/plugins/dev.lua"
-    config = function()
-      require("neotest").setup({
-        adapters = {
-          require("neotest-python"),
-          require("neotest-java"),
-        },
-      })
-    end,
+Kiểm thử Python đi qua neotest-python, còn kiểm thử Java đi qua neotest-java. Java cần thêm một bước, làm một lần cho mỗi máy:
+
+1. Nhấn `<leader>ts` một lần, hoặc chạy `:Lazy load neotest`. neotest-java chỉ được nạp cùng neotest.
+2. Chạy lệnh này:
+
+```vim
+:NeotestJava setup
 ```
 
-Kiểm thử Python đi qua neotest-python, còn kiểm thử Java đi qua neotest-java sau khi bạn đã chạy `:NeotestJava setup`. Mở một tệp kiểm thử và dùng các phím sau:
+3. Lệnh này tải về tệp jar JUnit console mà neotest-java dùng để chạy kiểm thử. Chờ đến khi nó xong.
+
+Mở một tệp kiểm thử và dùng các phím sau:
 
 - `<leader>tt` chạy kiểm thử gần nhất.
 - `<leader>tf` chạy mọi kiểm thử trong tệp.
@@ -129,78 +308,141 @@ Kiểm thử Python đi qua neotest-python, còn kiểm thử Java đi qua neote
 - `<leader>ts` bật tắt cây tóm tắt, liệt kê các kiểm thử của bạn cùng kết quả.
 - `<leader>to` mở đầu ra của một kiểm thử và đưa con trỏ vào đó.
 
-Phím thứ sáu là phím tôi tìm đến khi một kiểm thử lỗi mà tôi không biết vì sao:
-
-```lua title="lua/ryanparker/plugins/dev.lua"
-      {
-        "<leader>td",
-        function()
-          require("neotest").run.run({ strategy = "dap" })
-        end,
-        desc = "Debug nearest test",
-      },
-```
-
-`strategy = "dap"` chạy kiểm thử gần nhất dưới trình gỡ lỗi. Cách này chỉ hoạt động khi Bước 1 hoạt động, nên nếu `<leader>td` không làm gì hữu ích, hãy sửa trình gỡ lỗi trước. Với Java, nó còn cần các gói gỡ lỗi từ Phần 4.
+Phím thứ sáu là phím nên dùng khi một kiểm thử lỗi mà bạn không biết vì sao. Đó là mục `<leader>td` được tô sáng trong tệp. `strategy = "dap"` chạy kiểm thử gần nhất dưới trình gỡ lỗi. Cách này chỉ hoạt động khi Bước 1 hoạt động, nên nếu `<leader>td` không làm gì hữu ích, hãy sửa trình gỡ lỗi trước. Với Java, nó còn cần các gói gỡ lỗi từ Phần 4.
 
 <Callout type="tip" lang="vi">
   Đặt breakpoint bằng `<leader>Db` bên trong đoạn mã đang được kiểm thử, rồi nhấn `<leader>td` trong bài kiểm thử. Bạn sẽ vào trình gỡ lỗi đúng ngay dòng mình quan tâm.
 </Callout>
 
-## Bước 3: làm việc trên cả dự án
+## Bước 3: tạo extras.lua
 
-Một số việc không chỉ nằm trong một tệp. Những plugin này xử lý cả dự án, và mỗi cái nằm sau một phím duy nhất.
+`extras.lua` chứa các công cụ nhỏ hơn giúp công việc hằng ngày nhanh hơn. Phần lớn chúng được nạp khi bạn mở một tệp hoặc nhấn một phím. snacks là cái được nạp lúc khởi động.
 
-**trouble** hiển thị các danh sách trong một panel. `<leader>xx` hiện chẩn đoán cho workspace và `<leader>xX` cho buffer hiện tại. `<leader>xs` hiện các symbol trong tệp, `<leader>xr` hiện các tham chiếu và định nghĩa LSP ở bên phải, và `<leader>xq` hiện danh sách quickfix. `quicker.nvim` làm cho chính cửa sổ quickfix dễ dùng hơn, và nó chỉ được nạp cho loại tệp đó.
+1. Tạo `lua/config/plugins/extras.lua` với nội dung sau:
 
-**grug-far** là công cụ tìm và thay thế trên cả dự án. Chi tiết tôi thích nằm ngay trong phím:
+```lua title="lua/config/plugins/extras.lua" {45-50,72-74}
+return {
+  {
+    "stevearc/quicker.nvim",
+    ft = "qf",
+    opts = {},
+  },
 
-```lua title="lua/ryanparker/plugins/dev.lua"
+  {
+    "nvim-treesitter/nvim-treesitter-context",
+    event = { "BufReadPost", "BufNewFile" },
+    opts = { max_lines = 3 },
+    keys = {
+      { "<leader>uc", "<cmd>TSContext toggle<CR>", desc = "Toggle code context" },
+    },
+  },
+
+  {
+    "folke/todo-comments.nvim",
+    event = { "BufReadPost", "BufNewFile" },
+    dependencies = { "nvim-lua/plenary.nvim" },
+    opts = {},
+    keys = {
+      { "<leader>ft", "<cmd>TodoTelescope<CR>", desc = "Find todos" },
       {
-        "<leader>sr",
+        "]t",
         function()
-          require("grug-far").open({ prefills = { search = vim.fn.expand("<cword>") } })
+          require("todo-comments").jump_next()
         end,
-        desc = "Search and replace (project)",
+        desc = "Next todo",
       },
-```
+      {
+        "[t",
+        function()
+          require("todo-comments").jump_prev()
+        end,
+        desc = "Previous todo",
+      },
+    },
+  },
 
-Nhấn `<leader>sr` trên một từ và grug-far mở ra với từ đó đã được điền sẵn làm chuỗi tìm kiếm. Ở chế độ visual, cùng phím này dùng phần bạn đã chọn.
-
-**todo-comments** tô sáng `TODO` và các dấu hiệu tương tự. `<leader>ft` tìm tất cả chúng trong Telescope, còn `]t` và `[t` nhảy đến cái kế tiếp và cái trước đó.
-
-**refactoring.nvim** cho bạn `<leader>cr` để tái cấu trúc, ví dụ tách một hàm. Nó chỉ được bật trên Neovim mới hơn, và cấu hình nói rõ điều đó:
-
-```lua title="lua/ryanparker/plugins/extras.lua"
-    enabled = function()
-      return vim.fn.has("nvim-0.12.5") == 1
-    end,
-```
-
-Trên Neovim 0.12.4 trở xuống, plugin không được bật, nên `<leader>cr` không có. Tôi cố ý làm vậy, thay vì để phím đó báo lỗi.
-
-## Bước 4: quy trình làm việc hằng ngày
-
-Nhóm cuối cùng là các tiện ích nhỏ. Riêng từng cái thì không có gì thú vị, nhưng gộp lại chúng chiếm phần lớn cảm giác khi dùng trình soạn thảo.
-
-**Phiên làm việc.** persistence.nvim ghi lại phiên của bạn ở chế độ nền và được nạp khi một tệp được mở. Nó không tự khôi phục gì cả: tôi muốn bắt đầu sạch sẽ, nên việc khôi phục làm thủ công. `<leader>Ss` khôi phục phiên của thư mục hiện tại, `<leader>Sl` khôi phục phiên gần nhất, và `<leader>Sd` ngừng lưu cho phiên này.
-
-**Nhảy.** flash cho bạn hai phím nhảy. `<leader>j` gắn nhãn cho mọi kết quả khớp với những gì bạn gõ, và bạn nhấn nhãn để đến đó. `<leader>J` gắn nhãn cho các node Treesitter, rất tiện để chọn cả một đối số hoặc một khối.
-
-**snacks.** Đây là plugin được nạp sớm duy nhất ngoài Treesitter, và tôi giữ nó nhỏ:
-
-```lua title="lua/ryanparker/plugins/extras.lua"
+  {
+    "folke/snacks.nvim",
+    priority = 1000,
+    lazy = false,
     opts = {
       -- Telescope stays the picker; only the non-overlapping modules are on.
       notifier = { enabled = true },
       indent = { enabled = true },
       lazygit = { enabled = true },
     },
+    keys = {
+      {
+        "<leader>gg",
+        function()
+          Snacks.lazygit()
+        end,
+        desc = "Lazygit",
+      },
+      {
+        "<leader>un",
+        function()
+          Snacks.notifier.show_history()
+        end,
+        desc = "Notification history",
+      },
+    },
+  },
+
+  {
+    "ThePrimeagen/refactoring.nvim",
+    -- Upstream requires 0.12.5 plus async.nvim on 0.12; on older builds the plugin is left out instead of erroring on <leader>cr.
+    enabled = function()
+      return vim.fn.has("nvim-0.12.5") == 1
+    end,
+    dependencies = { "lewis6991/async.nvim", "nvim-lua/plenary.nvim", "nvim-treesitter/nvim-treesitter" },
+    keys = {
+      {
+        "<leader>cr",
+        function()
+          require("refactoring").select_refactor()
+        end,
+        mode = { "n", "x" },
+        desc = "Refactor",
+      },
+    },
+  },
+
+  {
+    "stevearc/overseer.nvim",
+    cmd = { "OverseerRun", "OverseerToggle", "OverseerTaskAction" },
+    opts = {},
+    keys = {
+      { "<leader>or", "<cmd>OverseerRun<CR>", desc = "Run task" },
+      { "<leader>ot", "<cmd>OverseerToggle<CR>", desc = "Task list" },
+    },
+  },
+}
 ```
 
-Chỉ có notifier, vạch thụt lề và lazygit được bật. Telescope vẫn là công cụ tìm và chọn (picker), và tôi bỏ dashboard cùng trình khám phá tệp. `<leader>gg` mở lazygit trong một cửa sổ nổi, còn `<leader>un` hiện lịch sử thông báo, hữu ích khi một thông báo biến mất trước khi bạn kịp đọc.
+2. Khởi động lại Neovim và chờ lazy.nvim cài các plugin mới.
 
-**Tác vụ.** overseer chạy các tác vụ ngay trong trình soạn thảo. `<leader>or` hỏi bạn chạy tác vụ nào và `<leader>ot` bật tắt danh sách tác vụ. Những gì nó đưa ra tùy thuộc vào dự án, nên hãy xem tài liệu overseer để biết các loại tác vụ nó nhận diện.
+Bước này cũng nói về trouble và grug-far trong `dev.lua`, vì tất cả những công cụ này làm việc trên cả dự án chứ không chỉ một tệp. Mỗi cái nằm sau một phím duy nhất. overseer, plugin cuối cùng trong `extras.lua`, nằm ở Bước 4.
+
+**trouble** nằm trong `dev.lua`. Nó hiển thị các danh sách trong một panel. `<leader>xx` hiện chẩn đoán cho workspace và `<leader>xX` cho buffer hiện tại. `<leader>xs` hiện các symbol trong tệp, `<leader>xr` hiện các tham chiếu và định nghĩa LSP ở bên phải, và `<leader>xq` hiện danh sách quickfix. `quicker.nvim`, mục đầu tiên trong `extras.lua`, làm cho chính cửa sổ quickfix dễ dùng hơn, và nó chỉ được nạp cho loại tệp đó.
+
+**grug-far**, cũng nằm trong `dev.lua`, là công cụ tìm và thay thế trên cả dự án. Chi tiết đáng biết nằm ở phím được tô sáng đầu tiên ở đó: nhấn `<leader>sr` trên một từ và grug-far mở ra với từ đó đã được điền sẵn làm chuỗi tìm kiếm. Ở chế độ visual, mục `<leader>sr` thứ hai dùng phần bạn đã chọn.
+
+**todo-comments** tô sáng `TODO` và các dấu hiệu tương tự. `<leader>ft` tìm tất cả chúng trong Telescope, còn `]t` và `[t` nhảy đến cái kế tiếp và cái trước đó.
+
+**refactoring.nvim** cho bạn `<leader>cr` để tái cấu trúc, ví dụ tách một hàm. Nó chỉ được bật trên Neovim mới hơn, và hàm `enabled` được tô sáng nói rõ điều đó. Trên Neovim 0.12.4 trở xuống, plugin không được bật, nên `<leader>cr` không có. Đó là chủ ý: như vậy tốt hơn việc để phím đó báo lỗi.
+
+## Bước 4: quy trình làm việc hằng ngày
+
+Nhóm cuối cùng là các tiện ích nhỏ. Riêng từng cái thì không có gì thú vị, nhưng gộp lại chúng chiếm phần lớn cảm giác khi dùng trình soạn thảo.
+
+**Phiên làm việc.** persistence.nvim, mà bạn đã tạo trong `ui.lua` ở Phần 1, ghi lại phiên của bạn ở chế độ nền và được nạp khi một tệp được mở. Nó không tự khôi phục gì cả, nên bạn luôn bắt đầu với một trình soạn thảo sạch. `<leader>Ss` khôi phục phiên của thư mục hiện tại, `<leader>Sl` khôi phục phiên gần nhất, và `<leader>Sd` ngừng lưu cho phiên này.
+
+**Nhảy.** flash, mà bạn đã tạo trong `navigation.lua` ở Phần 1, cho bạn hai phím nhảy. `<leader>j` gắn nhãn cho mọi kết quả khớp với những gì bạn gõ, và bạn nhấn nhãn để đến đó. `<leader>J` gắn nhãn cho các node Treesitter, rất tiện để chọn cả một đối số hoặc một khối.
+
+**snacks.** Đây là plugin được nạp sớm duy nhất ngoài Treesitter, và phần tô sáng đầu tiên trong `extras.lua` cho thấy nó nhỏ đến mức nào. Chỉ có notifier, vạch thụt lề và lazygit được bật. Telescope vẫn là công cụ tìm và chọn (picker), còn dashboard và trình khám phá tệp được bỏ đi. `<leader>gg` mở lazygit trong một cửa sổ nổi, còn `<leader>un` hiện lịch sử thông báo, hữu ích khi một thông báo biến mất trước khi bạn kịp đọc.
+
+**Tác vụ.** overseer chạy các tác vụ ngay trong trình soạn thảo. `<leader>or` hỏi bạn chạy tác vụ nào và `<leader>ot` bật tắt danh sách tác vụ. Những gì nó đưa ra tùy thuộc vào dự án, nên hãy xem [tài liệu overseer](https://github.com/stevearc/overseer.nvim) để biết các loại tác vụ nó nhận diện.
 
 **Các tiện ích nhỏ khác.** Thêm vài phím nữa:
 
@@ -210,17 +452,20 @@ Chỉ có notifier, vạch thụt lề và lazygit được bật. Telescope v�
 - `<Esc><Esc>` thoát chế độ terminal.
 - `<C-d>`, `<C-u>`, `n` và `N` giữ con trỏ ở giữa màn hình.
 
-Đây là cách những phím ấy nối với nhau trong một ngày bình thường. Tôi mở Neovim và nhấn `<leader>Sl` để lấy lại các cửa sổ của hôm qua. `<leader>ff` tìm tệp tôi cần và `gd` đưa tôi đến một định nghĩa. Tôi chạy `<leader>tt` trên kiểm thử bên cạnh, và khi nó lỗi, tôi đặt breakpoint bằng `<leader>Db` rồi nhấn `<leader>Dc`. Khi một lần đổi tên đụng đến nhiều tệp, tôi dùng `<leader>sr`, và `<leader>xx` cho thấy còn gì phải sửa. Cuối ngày, `<leader>gg` mở lazygit để commit.
+Đây là cách những phím ấy nối với nhau trong một ngày bình thường. Bạn mở Neovim và nhấn `<leader>Sl` để lấy lại các cửa sổ của hôm qua. `<leader>ff` tìm tệp bạn cần và `gd` đưa bạn đến một định nghĩa. Bạn chạy `<leader>tt` trên kiểm thử bên cạnh, và khi nó lỗi, bạn đặt breakpoint bằng `<leader>Db` rồi nhấn `<leader>Dc`. Khi một lần đổi tên đụng đến nhiều tệp, bạn dùng `<leader>sr`, và `<leader>xx` cho thấy còn gì phải sửa. Cuối ngày, `<leader>gg` mở lazygit để commit.
 
 ## Bước 5: kiểm tra mọi thứ hoạt động
 
-Nhấn `<leader>Db` một lần. Việc đó nạp nvim-dap. Rồi chạy lệnh này:
+1. Nhấn `<leader>Db` một lần. Việc đó nạp nvim-dap.
+2. Chạy lệnh này:
 
 ```vim
 :lua print(require("dap").adapters.python ~= nil)
 ```
 
-Nó phải in ra `true`, nghĩa là dap-python đã đăng ký adapter của nó. Tiếp theo, kiểm tra phần còn lại:
+3. Nó phải in ra `true`, nghĩa là dap-python đã đăng ký adapter của nó.
+
+Tiếp theo, kiểm tra phần còn lại:
 
 - Nhấn `<leader>ts`. Bản tóm tắt neotest mở ra, và với dự án có kiểm thử, nó hiển thị cây kiểm thử.
 - Chạy `:Trouble diagnostics toggle` và xem panel mở ra.
@@ -281,7 +526,7 @@ Mọi thứ còn lại:
 
 ## Giữ cấu hình khỏe mạnh
 
-`lazy-lock.json` ghim mọi plugin vào một commit. Trên máy mới, `:Lazy restore` cài đúng các phiên bản đã ghim đó, nên thiết lập của bạn khớp với thiết lập trong hướng dẫn này. Khi bạn quyết định nâng cấp, `:Lazy sync` cập nhật các plugin, và tệp khóa thay đổi theo. Hãy commit thay đổi đó để có thể quay lại.
+`lazy-lock.json` là tệp khóa mà lazy.nvim đã ghi cho cấu hình của bạn ở lần khởi động đầu tiên. Nó ghim mọi plugin vào một commit. `:Lazy restore` đưa các plugin của bạn trở lại đúng những phiên bản đó. Khi bạn quyết định nâng cấp, `:Lazy sync` cập nhật các plugin, và tệp khóa thay đổi theo. Hãy giữ thư mục cấu hình trong git, và commit thay đổi đó, để có thể quay lại.
 
 Sớm muộn bạn sẽ chạy `:checkhealth` và thấy những cảnh báo trông như sự cố. Hầu hết không phải vậy.
 
@@ -289,19 +534,21 @@ Sớm muộn bạn sẽ chạy `:checkhealth` và thấy những cảnh báo tr�
   Những thông báo `:checkhealth` sau là bình thường, và cấu hình không thể sửa chúng:
 
   - Kiểm tra sức khỏe của snacks liệt kê các module là `{disabled}`. Đó chính là mục đích của thiết lập snacks nhỏ gọn.
-  - Các công cụ ảnh của snacks như kitty hay magick được báo là thiếu. Tôi không dùng ảnh của snacks.
+  - Các công cụ ảnh của snacks như kitty hay magick được báo là thiếu. Cấu hình này không dùng ảnh của snacks.
   - Một thông báo rằng có phiên bản Neovim mới hơn.
-  - Các kiểm tra smart-splits và tmux, phụ thuộc vào cách tmux được thiết lập bên ngoài Neovim.
+  - Các kiểm tra smart-splits và multiplexer, phụ thuộc vào việc bạn có chạy tmux hay multiplexer khác bên ngoài Neovim hay không.
   - Một thư mục `site/pack/core` trống.
 </Callout>
 
-Các kiểm tra cho provider node, perl, python3 và ruby được tắt có chủ đích, vì cấu hình không dùng remote plugin nào:
+Các kiểm tra cho provider node, perl, python3 và ruby được tắt có chủ đích, vì cấu hình không dùng remote plugin nào. Bạn đã có đoạn này trong `lua/config/core/init.lua` từ Phần 1:
 
-```lua title="lua/ryanparker/core/init.lua"
+```lua title="lua/config/core/init.lua"
+-- …
 -- No remote plugins: silence the optional provider health checks
 for _, p in ipairs({ "node", "perl", "python3", "ruby" }) do
   vim.g["loaded_" .. p .. "_provider"] = 0
 end
+-- …
 ```
 
 ## Khắc phục sự cố
@@ -315,16 +562,16 @@ end
 
 ## Khép lại chuỗi bài
 
-Vậy là xong toàn bộ thiết lập. Đây là năm phần một lần nữa:
+Vậy là xong toàn bộ thiết lập. Sau một lần đồng bộ đầy đủ trên Neovim 0.12.4, `lazy-lock.json` của bạn liệt kê 48 plugin. Neovim 0.12.5 trở lên thêm hai plugin nữa, vì nó bật refactoring.nvim và phần phụ thuộc `async.nvim` của nó. Đây là năm phần một lần nữa:
 
-- [Phần 1: từ con số 0 đến trình soạn thảo chạy được](/vi/blog/neovim-setup-1-zero-to-editor/). Cài công cụ, lấy cấu hình và kiểm tra nó khởi động.
+- [Phần 1: từ con số 0 đến trình soạn thảo chạy được](/vi/blog/neovim-setup-1-zero-to-editor/). Cài công cụ, viết cấu hình và kiểm tra nó khởi động.
 - [Phần 2: LSP, gợi ý mã, định dạng và linting](/vi/blog/neovim-setup-2-languages/). Language server, gợi ý mã, định dạng khi lưu và linting.
 - [Phần 3: DBT, SQL, cơ sở dữ liệu và CloudFormation](/vi/blog/neovim-setup-3-data-engineering/). Các công cụ cho kỹ thuật dữ liệu.
 - [Phần 4: Java với nvim-jdtls](/vi/blog/neovim-setup-4-java/). Hỗ trợ Java, cùng các gói gỡ lỗi.
 - [Phần 5: gỡ lỗi, kiểm thử và quy trình làm việc hằng ngày](/vi/blog/neovim-setup-5-debugging-and-workflow/). Chính bài này.
 
-Tôi cố ý bỏ một số thứ. Không có dashboard hay trình khám phá tệp của snacks, vì Telescope và oil đã lo việc tìm và duyệt tệp. Không có virtual text cho giá trị khi gỡ lỗi, và tôi không kèm sẵn tệp `launch.json`. Không có SQL language server, và không có thiết lập Lombok cho Java. Mỗi thứ này đều là một bổ sung nhỏ nếu bạn muốn, và không thứ nào cần thiết để làm việc.
+Một số thứ được cố ý bỏ qua. Không có dashboard hay trình khám phá tệp của snacks, vì Telescope và oil đã lo việc tìm và duyệt tệp. Không có virtual text cho giá trị khi gỡ lỗi, và không có tệp `launch.json` nào được thiết lập. Không có SQL language server, và không có thiết lập Lombok cho Java. Mỗi thứ này đều là một bổ sung nhỏ nếu bạn muốn, và không thứ nào cần thiết để làm việc.
 
-Nếu chỉ mang theo một điều từ cả chuỗi bài, hãy chọn mẹo từ Phần 1: đổi tên `lua/ryanparker/` và biến cấu hình thành của bạn. Một cấu hình bạn hiểu có giá trị hơn một cấu hình hoàn hảo mà bạn chép về, và mỗi tệp ở đây đủ ngắn để đọc hết trong một lần ngồi.
+Bạn đã tự viết mọi tệp trong cấu hình này, nên hãy thoải mái thay đổi bất kỳ tệp nào: một cấu hình bạn hiểu có giá trị hơn một cấu hình hoàn hảo mà bạn chép về.
 
 Cảm ơn bạn đã theo dõi. Chúc bạn soạn thảo vui vẻ.

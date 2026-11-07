@@ -1,0 +1,43 @@
+---
+/** Home STAR chapter (spec §4.1.1): the featured story with its numeric results. */
+import Section from '~/components/tile/Section.astro';
+import SectionHeader from '~/components/tile/SectionHeader.astro';
+import StatStrip from '~/components/tile/StatStrip.astro';
+import { localePath } from '~/i18n/routes';
+import { useT, type Lang } from '~/i18n';
+import type { Localized } from '~/lib/content';
+
+interface Props {
+  lang: Lang;
+  story: Localized<'star'>;
+  tone?: 'bg' | 'surface';
+}
+const { lang, story, tone = 'bg' } = Astro.props;
+const t = useT(lang);
+const stats = story.data.metrics
+  .slice(0, 2)
+  .map((m) => ({ above: m.prefix, value: m.value, below: m.label }));
+---
+
+<Section id="story" {tone} labelledby="story-title">
+  <SectionHeader
+    id="story-title"
+    eyebrow={t('home.stories.eyebrow')}
+    title={story.data.title}
+    subline={story.data.question}
+  >
+    <Fragment slot="actions">
+      <a
+        class="btn btn-primary"
+        href={localePath(`/star/${story.slug}/`, lang)}
+        aria-label={`${t('home.stories.read')}: ${story.data.title}`}
+      >
+        {t('home.stories.read')}
+      </a>
+      <a class="btn btn-secondary" href={localePath('/star/', lang)}>
+        {t('home.stories.all')}
+      </a>
+    </Fragment>
+  </SectionHeader>
+  {stats.length > 0 && <StatStrip {stats} label={t('star.metrics')} />}
+</Section>

@@ -71,7 +71,7 @@ test.describe('STAR', () => {
 });
 
 test.describe('footer rule', () => {
-  for (const p of ['/', '/vi/', '/experiences/']) {
+  for (const p of ['/projects/']) {
     test(`${p} ends on a white band and has no rule`, async ({ page }) => {
       await page.goto(p);
       const v = await page
@@ -80,12 +80,32 @@ test.describe('footer rule', () => {
       expect(v).toBe('0px');
     });
   }
+  for (const p of ['/', '/vi/']) {
+    test(`${p} ends on the grey footnotes and has a 1px rule`, async ({ page }) => {
+      await page.goto(p);
+      await expect(page.locator('main > :last-child.footnotes, .footnotes').last()).toBeVisible();
+      const v = await page
+        .locator('.site-footer')
+        .evaluate((e) => getComputedStyle(e).borderTopWidth);
+      expect(v).toBe('1px');
+    });
+  }
   test('/star/ ends on a grey band and has a 1px rule', async ({ page }) => {
     await page.goto('/star/');
     const v = await page
       .locator('.site-footer')
       .evaluate((e) => getComputedStyle(e).borderTopWidth);
     expect(v).toBe('1px');
+  });
+});
+
+test.describe('experiences footer rule', () => {
+  test('/experiences/ ends on a white band and has no rule', async ({ page }) => {
+    await page.goto('/experiences/');
+    const v = await page
+      .locator('.site-footer')
+      .evaluate((e) => getComputedStyle(e).borderTopWidth);
+    expect(v).toBe('0px');
   });
 });
 

@@ -2,6 +2,7 @@
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import Hero from '~/components/tile/Hero.astro';
+import { Icon } from 'astro-icon/components';
 import ChevronLink from '~/components/ui/ChevronLink.astro';
 import { getLocalized, getProfile } from '~/lib/content';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
@@ -39,7 +40,6 @@ const fallback = f1 || f2 || f3;
 >
   <Hero
     tight
-    eyebrow={t('skills.title')}
     title={t('home.skills.title')}
     subline={t('home.skills.subline')}
   />
@@ -78,7 +78,10 @@ const fallback = f1 || f2 || f3;
           <ul class="spec-items" data-spec-items>
             {certs.map((c) => (
               <li>
-                <span class="spec-item">{c.data.name}</span>
+                <span class="spec-item cert-name">
+                  {c.data.logo && <Icon name={c.data.logo} class="cert-logo" size={20} aria-hidden="true" />}
+                  {c.data.name}
+                </span>
                 <span class="spec-sub">{`${c.data.issuer} · ${c.data.year}`}</span>
                 {c.data.credentialUrl && (
                   <ChevronLink
@@ -114,6 +117,14 @@ const fallback = f1 || f2 || f3;
 </BaseLayout>
 
 <style>
+  .cert-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cert-logo {
+    flex: none;
+  }
   .spec-sheet {
     width: var(--content);
     margin-inline: auto;

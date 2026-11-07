@@ -1,0 +1,31 @@
+---
+/**
+ * "Step by step." stage on the STAR story page (spec §4.4): the Action's intro pinned on the
+ * left at L, one numbered card per step on the right. Reuses the role chapter's layout classes.
+ */
+import HighlightCards from '~/components/tile/HighlightCards.astro';
+import SectionHeader from '~/components/tile/SectionHeader.astro';
+import type { Highlight } from '~/lib/cv';
+
+interface Props {
+  eyebrow: string;
+  title: string;
+  subline?: string;
+  /** Rendered HTML of the Action's prose without its list. */
+  intro?: string;
+  steps: Highlight[];
+}
+const { eyebrow, title, subline, intro, steps } = Astro.props;
+---
+
+<section id="steps" class="section chapter chapter--sticky stage" aria-labelledby="steps-title">
+  <div class="chapter-grid">
+    <div class="chapter-side">
+      <SectionHeader id="steps-title" {eyebrow} {title} {subline} />
+      {intro && <div class="stage-intro" set:html={intro} />}
+    </div>
+    <div class="chapter-cards">
+      <HighlightCards cards={steps} ordered />
+    </div>
+  </div>
+</section>

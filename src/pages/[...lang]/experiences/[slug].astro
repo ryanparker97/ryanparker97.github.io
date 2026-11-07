@@ -1,0 +1,63 @@
+---
+import type { GetStaticPaths } from 'astro';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import Chapter from '~/components/experiences/Chapter.astro';
+import Hero from '~/components/tile/Hero.astro';
+import { getLocalized } from '~/lib/content';
+import { companyLabel, formatDateRange, sortRoles } from '~/lib/cv';
+import { isFallback } from '~/lib/localize';
+import { experiencesNav } from '~/lib/localnav';
+import { getLang, langStaticPaths, switchTarget } from '~/i18n/routes';
+import { useT } from '~/i18n';
+
+export const getStaticPaths = (async () => {
+  const paths = [];
+  for (const { params } of langStaticPaths()) {
+    const { items } = await getLocalized('experience', getLang(params.lang));
+    for (const role of items) {
+      if (role.slug === 'print') throw new Error('An experience entry may not be named "print".');
+      paths.push({ params: { ...params, slug: role.slug }, props: { role } });
+    }
+  }
+  return paths;
+}) satisfies GetStaticPaths;
+
+const lang = getLang(Astro.params.lang);
+const t = useT(lang);
+const { role } = Astro.props;
+const d = role.data;
+
+const { items: allRoles } = await getLocalized('experience', lang);
+const roles = sortRoles(allRoles.map((r) => ({ ...r, start: r.data.start, end: r.data.end })));
+const { items: starStories } = await getLocalized('star', lang);
+const stories = starStories.filter((s) => s.data.role === role.slug).map((s) => s.slug);
+// Skill names are English in every language, so the EN collection serves both.
+const skillTerms = (await getLocalized('skills', 'en')).items.flatMap((g) => g.data.items);
+const company = companyLabel(d.company, d.client);
+---
+
+<BaseLayout
+  title={d.role}
+  description={t('exp.role.description', { role: d.role, company })}
+  {lang}
+  searchType="cv"
+  fallback={isFallback(role.contentLang, lang)}
+  langs={role.available}
+  switchHref={switchTarget(role.available, lang, `/experiences/${role.slug}/`, '/experiences/')}
+  localNav={experiencesNav(lang, roles, role.slug)}
+>
+  <Hero
+    tight
+    eyebrow={company}
+    title={d.role}
+    subline={`${formatDateRange(d.start, d.end, lang)} · ${d.location}`}
+  />
+  <Chapter
+    {role}
+    {lang}
+    tone="surface"
+    {stories}
+    {skillTerms}
+    heading={{ title: t('exp.role.highlights') }}
+  />
+</BaseLayout>

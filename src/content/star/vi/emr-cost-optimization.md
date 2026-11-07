@@ -8,6 +8,7 @@ metrics:
   - prefix: 'Giảm'
     label: 'chi phí EMR'
     value: '>50%'
+    note: 'Trên nền tảng dữ liệu AWS của ngân hàng (Datum / Security Bank); hiệu năng pipeline không đổi.'
   - label: 'hiệu năng pipeline'
     value: 'không đổi'
 featured: true

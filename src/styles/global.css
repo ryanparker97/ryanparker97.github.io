@@ -876,3 +876,10 @@ html:not(.js) [data-js-only] {
     white-space: pre-wrap;
   }
 }
+
+/* Cross-document view transitions (spec §5.11): Chrome/Edge 126+, Safari 18.2+; Firefox navigates normally. */
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+}

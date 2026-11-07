@@ -75,14 +75,21 @@ test.describe('Skills page', () => {
     await expect(page.locator('main h2').first()).toHaveText('Kỹ thuật dữ liệu');
   });
 
-  test('linked from the footer and the Home Certifications tile', async ({ page }) => {
+  test('linked from the footer and the Home local nav', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/');
     await expect(page.locator('footer').getByRole('link', { name: 'Skills' })).toHaveAttribute(
       'href',
       '/skills/',
     );
-    await expect(
-      page.locator('#certifications').getByRole('link', { name: 'See all skills' }),
-    ).toHaveAttribute('href', '/skills/');
+    await expect(page.locator('.local-nav .links a', { hasText: 'Skills' })).toHaveAttribute(
+      'href',
+      '/skills/',
+    );
+    await page.goto('/vi/');
+    await expect(page.locator('.local-nav .links a', { hasText: 'Kỹ năng' })).toHaveAttribute(
+      'href',
+      '/vi/skills/',
+    );
   });
 });

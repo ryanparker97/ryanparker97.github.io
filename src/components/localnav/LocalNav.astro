@@ -39,9 +39,15 @@ const attrs = (l: LocalNavLink) => ({
   <div class="bar chrome-row">
     {links.length > 1 ? (
       <>
-        <span class="title title-static">
-          <span class="t">{title}</span>
-        </span>
+        {titleHref ? (
+          <a class="title title-static plain" href={titleHref}>
+            <span class="t">{title}</span>
+          </a>
+        ) : (
+          <span class="title title-static">
+            <span class="t">{title}</span>
+          </span>
+        )}
         <details class="dd">
           <summary class="title" aria-label={t('localnav.sections', { title })}>
             <span class="t">{title}</span>

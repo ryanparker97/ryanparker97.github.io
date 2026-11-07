@@ -11,7 +11,7 @@ topic: developer-tools
 parts:
   - part: 1
     title: 'Từ con số 0 đến trình soạn thảo chạy được'
-    description: 'Cài công cụ, lấy cấu hình, khởi chạy lần đầu và kiểm tra.'
+    description: 'Cài công cụ, viết các tệp cấu hình, khởi chạy lần đầu và kiểm tra.'
   - part: 2
     title: 'Ngôn ngữ: LSP, gợi ý mã, định dạng và linting'
     description: 'Language server, gợi ý mã, định dạng khi lưu và linting cho từng loại tệp.'
@@ -23,7 +23,7 @@ parts:
     description: 'Một JDK thật, nvim-jdtls, một workspace cho mỗi dự án và các gói gỡ lỗi.'
   - part: 5
     title: 'Gỡ lỗi, kiểm thử và quy trình làm việc hằng ngày'
-    description: 'Breakpoint, chạy kiểm thử ngay trong trình soạn thảo, và các phím tôi dùng hằng ngày.'
+    description: 'Breakpoint, chạy kiểm thử ngay trong trình soạn thảo, và các phím cho mỗi ngày.'
 ---
 
-Hướng dẫn năm phần về cấu hình Neovim nhỏ gọn tôi dùng cho công việc web, kỹ thuật dữ liệu và SRE. Mỗi phần kết thúc bằng một thứ bạn có thể chạy ngay.
+Hướng dẫn năm phần để xây dựng cấu hình Neovim nhỏ gọn cho công việc web, kỹ thuật dữ liệu và SRE, từng tệp một. Mỗi phần kết thúc bằng một thứ bạn có thể chạy ngay.

@@ -48,9 +48,24 @@ describe('Chapter', () => {
     expect(html).toContain('Acme · Hanoi');
     expect(html).not.toContain('Current');
     expect(html).toContain('aria-label="Tech stack"');
-    expect(html.match(/<li class="chip chip-mint">/g)).toHaveLength(2);
+    expect(html.match(/<li class="chip chip-mint"[^>]*>/g)).toHaveLength(2);
     expect(html).not.toContain('tech-line');
     expect(html).not.toContain('STAR');
+  });
+
+  it('with a heading prop: plain H2, no dates or Current chip, cards and chips still render', async () => {
+    const html = await render({
+      role: role('- **A:** x\n- **B:** y', { end: undefined }),
+      lang: 'en',
+      tone: 'surface',
+      stories: [],
+      heading: { title: 'Highlights.' },
+    });
+    expect(html).toMatch(/<h2[^>]*>\s*Highlights\.\s*<\/h2>/);
+    expect(html).not.toContain('date-range');
+    expect(html).not.toContain('current-chip');
+    expect(html.match(/class="card hl-card"/g)).toHaveLength(2);
+    expect(html).toContain('aria-label="Tech stack"');
   });
 
   it('shows the Current chip for an ongoing role and picks the STAR pill by story count', async () => {

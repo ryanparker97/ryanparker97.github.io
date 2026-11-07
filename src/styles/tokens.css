@@ -22,6 +22,11 @@
   --nav-solid: light-dark(#fafafc, #161617);
   --curtain: light-dark(rgb(232 232 237 / 0.4), rgb(0 0 0 / 0.4));
   --mint-tint: light-dark(rgb(168 230 207 / 0.35), rgb(168 230 207 / 0.12));
+  /* Highlight-card values by position (spec §5.3, §5.10.7); cycle every four. */
+  --hl-1: light-dark(#0b5d52, #64d2b4);
+  --hl-2: light-dark(#8c3800, #ffa24d);
+  --hl-3: light-dark(#6136ad, #c9a7ff);
+  --hl-4: light-dark(#a01549, #ff8fb3);
   --nav-ink: light-dark(rgb(0 0 0 / 0.8), rgb(255 255 255 / 0.8));
   --nav-ink-hover: light-dark(#000, #fff);
   --paddle-fill: light-dark(rgb(210 210 215 / 0.64), rgb(66 66 69 / 0.72));

@@ -5,7 +5,9 @@ test.use({ reducedMotion: 'reduce' });
 
 const INNER = [
   '/experiences/',
+  '/experiences/datum-security-bank-data-engineer/',
   '/projects/',
+  '/projects/agentic-coding-workflow/',
   '/skills/',
   '/star/',
   '/star/emr-cost-optimization/',
@@ -133,7 +135,7 @@ test.describe('type scale (§5.4)', () => {
 });
 
 test.describe('local nav on every inner page', () => {
-  for (const path of INNER) {
+  for (const path of [...INNER, '/']) {
     test(`${path}: directly under the global nav, 52px at 1440, one H1`, async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto(path);
@@ -164,9 +166,11 @@ test.describe('local nav on every inner page', () => {
       const summary = local.locator('summary');
       const count = await local.locator('.links a').count();
       if (count === 0) {
-        // Single-link pages: no chevron, a chevron text link on the right.
+        // Single-link pages: no chevron, a chevron text link on the right (or the pill alone).
         await expect(summary).toHaveCount(0);
-        await expect(local.locator('.solo-link')).toBeVisible();
+        await expect(
+          local.locator(path.endsWith('/projects/') ? '.pill' : '.solo-link').first(),
+        ).toBeVisible();
         return;
       }
       await summary.click();
@@ -182,7 +186,7 @@ test.describe('local nav on every inner page', () => {
   test('Projects local nav hides the kind links when there is only one kind', async ({ page }) => {
     await page.goto('/projects/');
     await expect(page.locator('.local-nav .links a[data-kind]')).toHaveCount(0);
-    await expect(page.locator('.local-nav .solo-link[data-expand]')).toHaveCount(1);
+    await expect(page.locator('.local-nav .pill')).toHaveAttribute('href', '/cv.pdf');
   });
 
   test('blog nav has the RSS pill; a post shows a single chevron link', async ({ page }) => {
@@ -199,7 +203,7 @@ test.describe('local nav on every inner page', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/experiences/');
+    await page.goto('/skills/');
     const local = page.locator('[data-local-nav]');
     await local.locator('summary').click();
     const link = local.locator('.tray a').first();
@@ -212,9 +216,7 @@ test.describe('local nav on every inner page', () => {
     expect(top).toBeGreaterThanOrEqual(64 - 1);
   });
 
-  test('Home and 404 have no local nav', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('[data-local-nav]')).toHaveCount(0);
+  test('404 has no local nav', async ({ page }) => {
     await page.goto('/404.html');
     await expect(page.locator('[data-local-nav]')).toHaveCount(0);
   });
@@ -227,7 +229,7 @@ test.describe('local nav on every inner page', () => {
       viewport: { width: 375, height: 812 },
     });
     const page = await context.newPage();
-    await page.goto('/experiences/');
+    await page.goto('/skills/');
     await page.locator('[data-local-nav] summary').click();
     const link = page.locator('[data-local-nav] .tray a').first();
     await expect(link).toBeVisible();
@@ -299,7 +301,7 @@ test.describe('footer', () => {
       'Connect',
       'Resources',
     ]);
-    await expect(cols.nth(3).getByRole('link', { name: 'Download PDF' })).toHaveAttribute(
+    await expect(cols.nth(3).getByRole('link', { name: 'Download CV' })).toHaveAttribute(
       'href',
       '/cv.pdf',
     );
@@ -400,7 +402,7 @@ test.describe('search panel', () => {
     const quick = page.locator('#search-quick a');
     await expect(quick).toHaveCount(4);
     await expect(quick.nth(0)).toHaveText('Experiences');
-    await expect(quick.nth(2)).toHaveText('Download PDF');
+    await expect(quick.nth(2)).toHaveText('Download CV');
     // The panel drops from under the bar, full width, over a curtain.
     const box = (await panel.boundingBox())!;
     expect(Math.round(box.y)).toBe(44);
@@ -600,8 +602,8 @@ test.describe('chrome alignment, transparency and the sticky bar (§5.2, §5.7, 
 
   test('an anchor lands below the stuck local nav (--sticky-h)', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/experiences/');
-    const link = page.locator('.local-nav .links a').nth(2);
+    await page.goto('/skills/');
+    const link = page.locator('.local-nav .links a').nth(1);
     const hash = (await link.getAttribute('href'))!;
     await link.click();
     await page.waitForTimeout(300);

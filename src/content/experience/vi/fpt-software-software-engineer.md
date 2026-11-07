@@ -1,5 +1,6 @@
 ---
 company: 'FPT Software'
+logo: '../../../assets/logos/fpt-software.png'
 role: 'Software Engineer (Data & Backend Focused)'
 location: 'Thành phố Hồ Chí Minh, Việt Nam'
 start: '2020'

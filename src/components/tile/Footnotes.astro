@@ -1,0 +1,76 @@
+---
+import type { Footnote } from '../../lib/footnotes';
+
+interface Props {
+  notes: Footnote[];
+  title: string;
+  back: (n: number) => string;
+}
+
+const { notes, title, back } = Astro.props;
+---
+
+{notes.length > 0 && (
+  <section class="section section--surface footnotes" aria-labelledby="fn-title">
+    <div class="section-inner">
+      <h2 id="fn-title" class="sr-only">
+        {title}
+      </h2>
+      <ol class="fn-list">
+        {notes.map((n) => (
+          <li id={`fn-${n.n}`}>
+            {n.text}{' '}
+            <a href={`#fnref-${n.n}`} class="fn-back" aria-label={back(n.n)}>
+              ↩︎
+            </a>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+)}
+
+<style>
+  .footnotes {
+    padding-block: 40px 24px;
+  }
+  .fn-list {
+    margin: 0;
+    padding-inline-start: 1.5em;
+    list-style: decimal;
+    color: var(--text-2);
+    font-size: 0.75rem;
+    line-height: 1.3334;
+    letter-spacing: -0.01em;
+    text-align: start;
+  }
+  .fn-list li + li {
+    margin-top: 8px;
+  }
+  .fn-list li:target {
+    color: var(--text);
+  }
+  .fn-back,
+  :global(.fn-ref a) {
+    position: relative;
+    color: var(--link);
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .fn-back::before,
+  :global(.fn-ref a)::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+  }
+  :global(.fn-ref) {
+    margin-inline-start: 1px;
+    font-size: 0.6em;
+    line-height: 0;
+    vertical-align: super;
+  }
+</style>

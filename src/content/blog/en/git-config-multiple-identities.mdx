@@ -1,0 +1,335 @@
+---
+title: 'One Git config for work and personal repos'
+description: 'Pick your name, email and signing key by folder with includeIf, keep shared settings in one file, and check which identity a repo gets before you commit.'
+pubDate: 2026-11-07
+tags: ['git', 'dotfiles', 'developer-tools']
+topic: developer-tools
+heroImage: '../../../assets/blog/git-config/cover.svg'
+---
+
+import Callout from '~/components/blog/Callout.astro';
+
+You have one laptop and more than one Git identity. Your personal projects use your own email. Your work repos need a work email, and maybe signed commits. Git has one global `user.email`, so sooner or later a commit lands in a work repo with the wrong address. Fixing it with `git config user.email` in every clone works until you forget one.
+
+This guide sets it up once. You keep shared settings in a single file, add one small file per identity, and let Git pick the right one by the folder a repo lives in. You can add a third identity the same way as the second.
+
+<Callout type="note">
+  **Tested with:** Git 2.54, macOS. Every config and command below was run on a throwaway home folder, not on a real
+  setup. The SSH signing steps were run end to end; the OpenPGP variant was not.
+</Callout>
+
+## What you'll have at the end
+
+When you finish, you'll have edited one file and created two more. Then you'll have:
+
+- **A folder per identity**, `~/code/personal/` and `~/code/work/`.
+- **One shared `~/.gitconfig`** with your everyday defaults and a few aliases.
+- **One small overlay per identity** that sets only the name, email and signing.
+- **Automatic switching**: any repo under a folder gets that folder's identity.
+- **A safety net**: a repo outside every folder refuses to commit instead of guessing.
+- **Optional signed commits** with an SSH key.
+- **Two commands** that show which identity a repo gets and why.
+
+## Before you start
+
+You need:
+
+- **A recent Git.** Check with `git --version`. The examples were tested with Git 2.54. A very old Git may silently ignore newer keys such as `push.autoSetupRemote`, so update first if a setting seems to do nothing.
+- **A terminal.** The commands use a Unix shell.
+- **Optional: an SSH key or a GPG key** if you want signed commits (Step 5).
+
+The examples use these placeholders. Swap them for your own values:
+
+| Placeholder | Meaning |
+|---|---|
+| `Your Name` | Your name as it should appear on commits |
+| `you@example.com` | Your personal email |
+| `you@work.example.com` | Your work email |
+| `~/code/personal/`, `~/code/work/` | The folders that hold your clones |
+| `work.example.com` | The Git host your employer uses |
+
+## Step 1: one folder per identity
+
+Git decides the identity by where a repo lives, so the folders are the contract. Create one per identity:
+
+```sh
+$ mkdir -p ~/code/personal ~/code/work
+```
+
+From now on, clone personal projects under `~/code/personal/` and work projects under `~/code/work/`. Subfolders are fine, at any depth. A repo anywhere else gets no identity, and Step 2 turns that into an error you can see.
+
+## Step 2: shared defaults in one file
+
+Put everything that is the same for every identity in `~/.gitconfig`. Create or edit the file:
+
+```ini title="~/.gitconfig" {4,5}
+[init]
+  defaultBranch = main
+
+[user]
+  useConfigOnly = true
+
+[core]
+  excludesFile = ~/.config/git/ignore
+
+[pull]
+  rebase = true
+
+[push]
+  autoSetupRemote = true
+
+[fetch]
+  prune = true
+
+[rebase]
+  autoStash = true
+  autoSquash = true
+
+[rerere]
+  enabled = true
+
+[diff]
+  algorithm = histogram
+
+[merge]
+  conflictStyle = zdiff3
+```
+
+Here is what the settings do:
+
+- **`init.defaultBranch`**: new repos start on `main`.
+- **`pull.rebase`**: `git pull` rebases your local commits instead of creating a merge commit.
+- **`push.autoSetupRemote`**: the first `git push` of a new branch sets its upstream for you.
+- **`fetch.prune`**: deleted remote branches disappear locally on fetch.
+- **`rebase.autoStash`** and **`rebase.autoSquash`**: a rebase stashes dirty files first, and folds `fixup!` commits into place.
+- **`rerere.enabled`**: Git remembers how you resolved a conflict and reuses it.
+- **`diff.algorithm`** and **`merge.conflictStyle`**: `histogram` gives cleaner diffs, `zdiff3` shows the common ancestor inside conflicts.
+- **`core.excludesFile`**: a global ignore list. Create `~/.config/git/ignore` and put things like `.DS_Store` in it.
+
+The lines to look at are `user.useConfigOnly = true`. It tells Git never to invent an identity from your username and machine name. There is no `name` or `email` here on purpose: they come from the overlays. A repo that matches no overlay now fails at commit time instead of quietly using a guessed address.
+
+## Step 3: one small overlay per identity
+
+An overlay holds only what differs between identities. Nothing shared goes here, because anything you repeat in every overlay drifts apart over time.
+
+Create the personal overlay:
+
+```ini title="~/.config/git/personal.gitconfig"
+[user]
+  name = Your Name
+  email = you@example.com
+```
+
+Create the work overlay:
+
+```ini title="~/.config/git/work.gitconfig"
+[user]
+  name = Your Name
+  email = you@work.example.com
+```
+
+Do not name a file `~/.config/git/config`. Git reads that path by itself as a global config, so an overlay with that name would apply everywhere.
+
+## Step 4: switch by folder with includeIf
+
+Now tell Git which overlay belongs to which folder. Add these blocks at the end of `~/.gitconfig`:
+
+```ini title="~/.gitconfig" {1,4}
+[includeIf "gitdir:~/code/personal/"]
+  path = ~/.config/git/personal.gitconfig
+
+[includeIf "gitdir:~/code/work/"]
+  path = ~/.config/git/work.gitconfig
+```
+
+Each `includeIf` says: if the repo's `.git` directory is under this folder, read that file too.
+
+Three details matter:
+
+1. **Start the path with `~/`.** Git expands a leading `~/` in a `gitdir:` pattern. It does not expand `$HOME` or `${HOME}`, so those never match.
+2. **End the folder with a slash.** `gitdir:~/code/work/` matches every repo below the folder, at any depth. Without the slash, Git compares the pattern with the `.git` folder itself, so it matches no normal repo. To target a single repo, name its `.git` folder: `gitdir:~/code/work/app/.git`.
+3. **Put the includes last.** Git reads the file top to bottom and the last value wins. Overlays at the end override anything above them.
+
+If your disk ignores case, as macOS usually does, use `gitdir/i:` instead of `gitdir:`. It compares the path without regard to case, so `~/Code/Work/` and `~/code/work/` both match:
+
+```ini title="~/.gitconfig"
+[includeIf "gitdir/i:~/code/work/"]
+  path = ~/.config/git/work.gitconfig
+```
+
+There is also a way to pick an overlay by the remote instead of the folder. This one applies to any repo whose remote URL matches, wherever it lives:
+
+```ini title="~/.gitconfig"
+[includeIf "hasconfig:remote.*.url:git@work.example.com:*/**"]
+  path = ~/.config/git/work.gitconfig
+```
+
+It only sees a remote that is already set, so it works for repos that exist and have an origin. It also has a limit: the included file cannot set remote URLs itself. Git stops with `remote URLs cannot be configured in file directly or indirectly included by includeIf.hasconfig:remote.*.url`.
+
+## Step 5: sign commits (optional)
+
+Signing proves a commit came from you. Many teams require it for work repos and not for personal ones. Because it lives in the overlay, each identity can decide.
+
+The simplest route is an SSH key. Create one if you do not have it:
+
+```sh
+$ ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519_work
+```
+
+Add the signing settings to the work overlay:
+
+```ini title="~/.config/git/work.gitconfig" {4,7,10,13,16,17}
+[user]
+  name = Your Name
+  email = you@work.example.com
+  signingKey = ~/.ssh/id_ed25519_work.pub
+
+[gpg]
+  format = ssh
+
+[gpg "ssh"]
+  allowedSignersFile = ~/.config/git/allowed_signers
+
+[commit]
+  gpgSign = true
+
+[tag]
+  gpgSign = true
+  forceSignAnnotated = true
+```
+
+What each setting does:
+
+- **`gpg.format = ssh`**: sign with an SSH key instead of GPG.
+- **`user.signingKey`**: the public key file to sign with.
+- **`commit.gpgSign`** and **`tag.gpgSign`**: sign every commit and every tag without passing `-S`.
+- **`tag.forceSignAnnotated`**: sign annotated tags automatically.
+- **`gpg.ssh.allowedSignersFile`**: the list of keys Git trusts when it verifies a signature. Without it, Git can sign but cannot say whether a signature is good.
+
+Now create the signers file with one line: your email, then your public key.
+
+```sh
+$ echo "you@work.example.com $(cut -d' ' -f1,2 ~/.ssh/id_ed25519_work.pub)" > ~/.config/git/allowed_signers
+```
+
+Make a commit in a work repo and look at it:
+
+```sh
+$ git log --show-signature -1
+```
+
+You should see a line like `Good "git" signature for you@work.example.com with ED25519 key SHA256:...`.
+
+Register the public key with your Git host as a signing key too, or the host will show the commit as unverified.
+
+If you use GPG instead, the work overlay needs a different `[gpg]` section and your key id:
+
+```ini title="~/.config/git/work.gitconfig"
+[user]
+  signingKey = YOUR_KEY_ID
+
+[gpg]
+  format = openpgp
+```
+
+Without `user.signingKey`, Git asks GPG for a key that matches your committer identity, so set it explicitly if you have more than one key.
+
+The personal overlay can carry the same key lines with signing switched off. To turn it on later, set `gpgSign = true`:
+
+```ini title="~/.config/git/personal.gitconfig"
+[user]
+  signingKey = ~/.ssh/id_ed25519_personal.pub
+
+[gpg]
+  format = ssh
+
+[commit]
+  gpgSign = false
+```
+
+## Step 6: check which identity a repo gets
+
+Before your first real commit in a repo, ask Git. Run this inside it:
+
+```sh
+$ git config --show-origin --show-scope user.email
+```
+
+The output names the scope, the file the value came from, and the value:
+
+```text
+global	file:/path/to/home/.config/git/work.gitconfig	you@work.example.com
+```
+
+The file name is the part to read. If it ends in `work.gitconfig`, the folder matched. Git calls an included file `global` because it was reached from your global config.
+
+To see the full author line a commit would use, run:
+
+```sh
+$ git var GIT_AUTHOR_IDENT
+```
+
+```text
+Your Name <you@work.example.com> 1760000000 +0700
+```
+
+In a repo outside every folder, `user.email` prints nothing and `git var` fails, because `user.useConfigOnly` is on. A `git commit` there stops with `fatal: no email was given and auto-detection is disabled`. That is the behavior you want.
+
+## Aliases worth having
+
+Aliases are not about identity, but they belong in the same shared file. Add this block above the `includeIf` lines:
+
+```ini title="~/.gitconfig"
+[alias]
+  st = status --short --branch
+  co = checkout
+  lg = log --oneline --graph --decorate
+  last = show --stat --oneline HEAD
+  amend = commit --amend --no-edit
+  undo = reset --soft HEAD~1
+  branches = for-each-ref --sort=-committerdate --format='%(committerdate:short) %(refname:short)' refs/heads/
+```
+
+| Alias | What it does |
+|---|---|
+| `git st` | Short status with the branch name |
+| `git co` | Shortcut for `checkout` |
+| `git lg` | One line per commit, as a graph |
+| `git last` | The files changed in the last commit |
+| `git amend` | Add staged changes to the last commit, keep its message |
+| `git undo` | Undo the last commit and keep its changes staged |
+| `git branches` | Local branches, most recently committed first |
+
+`git amend` adds whatever is staged to the last commit. With nothing staged, it still succeeds and rewrites the last commit with a new date, so run `git add` first.
+
+## What this does not do: push access
+
+This setup chooses the **author** of a commit: the name and email stored inside it. It does not choose which account **pushes** it. That is decided by your SSH key or your credential helper.
+
+So a work repo can have the right author and still try to push with your personal SSH key, and fail. A clean fix is to give the work overlay its own key:
+
+```ini title="~/.config/git/work.gitconfig"
+[core]
+  sshCommand = ssh -i ~/.ssh/id_ed25519_work -o IdentitiesOnly=yes
+```
+
+An SSH host alias in `~/.ssh/config` does the same job. Whichever you pick, check it on a real fetch: run `GIT_TRACE=1 git fetch` in a work repo and look at the command Git runs. The overlay's `core.sshCommand` also applies to a `git clone` into `~/code/work/`; run `GIT_TRACE=1 git clone ...` and look for your `-i` key.
+
+## Troubleshooting
+
+If a repo gets the wrong identity or none, look here first.
+
+- **`${HOME}` or `$HOME` in a `gitdir:` pattern.** It never matches, and Git says nothing. Use `~/`.
+- **A missing trailing slash.** `gitdir:~/code/work` is compared with the `.git` folder, so it matches no normal repo. End the folder with `/`, or name one repo's `.git` folder.
+- **A repo outside every folder.** It gets no overlay. With `user.useConfigOnly` it fails to commit, which is the point. Move the clone, or add another `includeIf`.
+- **A path in `path =` that does not exist.** Git silently skips a missing include file. After you move or rename your overlay files, run `git config --get-regexp '^includeif'` and check each path.
+- **The wrong identity wins.** Later values beat earlier ones. If you put a shared `[commit] gpgSign = false` below the includes, it overrides the work overlay. Keep the includes at the end.
+- **A key that looks right but does nothing.** Git ignores unknown keys without a warning, and `git config --get` happily prints whatever you wrote. A misspelled `tag.forceSignAnnotatedTags` is silent. Check names against the list from `git help --config`. Note that `push.autoSetupRemote` is a real key, while `pull.autoSetupRemote` is not.
+- **Settings that drift.** If you copy the same `[pull]` or `[fetch]` block into every overlay, the copies diverge. Keep shared settings in `~/.gitconfig` and only differences in overlays.
+- **Not sure what applies.** `git config --show-origin --list` prints every setting and the file it came from.
+
+## What's next
+
+You now have a work identity and a personal identity that switch on their own, and a command to check which one a repo uses. For a deeper look at conditional includes, read the [official `includeIf` documentation](https://git-scm.com/docs/git-config#_conditional_includes).
+
+If you keep your config in a dotfiles repo, this layout fits well: one shared file, one file per identity. The [Neovim setup guide](/blog/neovim-setup-1-zero-to-editor/) shows how to keep an editor config in the same dotfiles.

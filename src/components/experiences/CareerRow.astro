@@ -1,0 +1,116 @@
+---
+/** Career row (spec §4.2.0): five columns at L, Tech Specs rows at M, stacked at S; newest first, linking to its role page. */
+import type { Localized } from '~/lib/content';
+import Section from '~/components/tile/Section.astro';
+import SectionHeader from '~/components/tile/SectionHeader.astro';
+import { localePath } from '~/i18n/routes';
+import { companyLabel, formatCvDate, startYear } from '~/lib/cv';
+import { useT, type Lang } from '~/i18n';
+
+interface Props {
+  lang: Lang;
+  roles: Localized<'experience'>[];
+  tone?: 'bg' | 'surface';
+}
+const { lang, roles, tone = 'bg' } = Astro.props;
+const t = useT(lang);
+const range = (r: Localized<'experience'>) =>
+  `${startYear(r.data.start)}–${r.data.end ? r.data.end.slice(0, 4) : t('home.rail.now')}`;
+---
+
+{roles.length > 0 && (
+  <Section id="career" {tone} labelledby="career-title">
+    <SectionHeader
+      id="career-title"
+      align="start"
+      title={t('exp.career.title')}
+      subline={t('exp.career.subline', {
+        role: roles[0].data.role,
+        company: roles[0].data.company,
+        date: formatCvDate(roles[0].data.start, lang),
+      })}
+    />
+    <ol class="career-row" data-career>
+      {roles.map((r) => (
+        <li class:list={['career-col', { 'career-col--now': !r.data.end }]}>
+          <p class="career-date">{range(r)}</p>
+          <h3 class="career-co">
+            <a href={localePath(`/experiences/${r.slug}/`, lang)}>
+              {companyLabel(r.data.company, r.data.client)}
+            </a>
+          </h3>
+          <p class="career-role">{r.data.role}</p>
+        </li>
+      ))}
+    </ol>
+  </Section>
+)}
+
+<style>
+  .career-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 176px), 1fr));
+    gap: 40px 24px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-align: start;
+  }
+  .career-col {
+    padding-top: 20px;
+    border-top: 2px solid var(--border);
+  }
+  .career-col--now {
+    border-top-color: var(--accent);
+  }
+  .career-date {
+    margin: 0;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.3334;
+  }
+  .career-col--now .career-date {
+    color: var(--link);
+  }
+  .career-co {
+    margin: 8px 0 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.1667;
+    letter-spacing: 0.009em;
+    overflow-wrap: anywhere;
+  }
+  .career-co a {
+    display: inline-block;
+    padding-block: 8px;
+    margin-block: -8px;
+    color: var(--text);
+  }
+  .career-role {
+    margin: 6px 0 0;
+    color: var(--text-2);
+    font-size: 1.0625rem;
+    line-height: 1.4706;
+  }
+  @media (min-width: 735px) and (max-width: 1068px) {
+    .career-row {
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+    .career-col {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      column-gap: 24px;
+      align-items: baseline;
+      padding-block: 24px;
+    }
+    .career-co,
+    .career-role {
+      grid-column: 2;
+    }
+    .career-co {
+      margin-top: 0;
+    }
+  }
+</style>

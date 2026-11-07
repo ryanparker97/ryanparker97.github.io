@@ -8,9 +8,11 @@ email: 'ryanparker.p.97@gmail.com'
 phone: '+84963378831'
 phoneDisplay: '(+84) 963 378 831'
 yearsOfExperience: '5+'
+yearsOfExperienceNote: 'Các vai trò kỹ sư từ năm 2019; mọi vai trò đều có trên trang Kinh nghiệm.'
 headlineMetric:
   value: '7'
   label: 'kỹ sư'
+  note: 'Với vai trò Team Lead tại FPT Software, từ 08/2026.'
 headlineMetricPrefix: 'Dẫn dắt'
 socials:
   linkedin: 'https://www.linkedin.com/in/jomatran'

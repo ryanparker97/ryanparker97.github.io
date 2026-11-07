@@ -32,7 +32,10 @@ const profile = defineCollection({
       phoneDisplay: z.string(),
       avatar: image().optional(),
       yearsOfExperience: z.string(),
-      headlineMetric: z.object({ value: z.string(), label: z.string() }).optional(),
+      yearsOfExperienceNote: optionalText,
+      headlineMetric: z
+        .object({ value: z.string(), label: z.string(), note: optionalText })
+        .optional(),
       /** Short caption above the headline metric number, e.g. "Led" (spec §5.10.5). */
       headlineMetricPrefix: optionalText,
       socials: z.object({
@@ -81,6 +84,26 @@ const projects = defineCollection({
         demo: optionalUrl,
         image: image().optional(),
         imageAlt: optionalText,
+        stats: z
+          .array(z.object({ value: z.string(), label: z.string(), note: optionalText }))
+          .max(3)
+          .default([]),
+        problem: optionalText,
+        approach: optionalText,
+        result: optionalText,
+        loop: z.object({ title: z.string(), lines: z.array(z.string()).min(2).max(8) }).optional(),
+        /** "The design." band: intro, optional diagram, up to 4 "**Label:** text" decisions. */
+        design: z
+          .object({
+            intro: z.string(),
+            diagram: z.enum(['aidlc-kit']).optional(),
+            decisions: z.array(z.string()).max(4).default([]),
+          })
+          .optional(),
+        /** "The workflow." band: optional intro, then 2 to 8 "**Label:** text" numbered steps. */
+        workflow: z
+          .object({ intro: optionalText, steps: z.array(z.string()).min(2).max(8) })
+          .optional(),
         featured: z.boolean().default(false),
         inPdf: z.boolean().optional(),
         role: optionalText,
@@ -101,7 +124,7 @@ const certifications = defineCollection({
       year: z.string().regex(/^\d{4}$/),
       credentialUrl: optionalUrl,
       badge: image().optional(),
-      /** Iconify name of the issuer's logo, e.g. `logos:aws`; shown when there is no badge. */
+      /** Iconify name of the issuer's logo, e.g. `logos:aws`; the issuer logo shown above the eyebrow on certification cards on /experiences/. */
       logo: z
         .string()
         .regex(/^[a-z0-9-]+:[a-z0-9-]+$/)
@@ -115,6 +138,8 @@ const metric = z.object({
   prefix: optionalText,
   label: z.string(),
   value: z.string(),
+  /** Optional footnote: only context already in the story (§5.10.12). */
+  note: optionalText,
   /** 2-3 entries draw graph bars next to the stat (spec §5.10.9). */
   compare: z
     .array(z.object({ label: z.string(), value: z.number().positive() }))
