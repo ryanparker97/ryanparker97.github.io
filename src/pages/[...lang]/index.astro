@@ -132,13 +132,7 @@ const jsonLd = personLd(p, new URL(localePath('/', lang), Astro.site).href, lang
   localNav={homeNav(lang)}
   {jsonLd}
 >
-  <Hero
-    id="top"
-    tight
-    title={p.headline}
-    gradient
-    subline={t('home.hero.subline')}
-  >
+  <Hero id="top" tight title={p.headline} gradient subline={t('home.hero.subline')}>
     <Fragment slot="actions">
       <a href={localePath('/experiences/', lang)} class="btn btn-primary">
         {t('common.learnMore')}

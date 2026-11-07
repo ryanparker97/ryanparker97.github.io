@@ -37,7 +37,9 @@ const { id, title, items, rule = false } = Astro.props;
         data-reveal
         style={`--i:${Math.min(i, 3)}`}
       >
-        {item.logo && <Icon name={item.logo} class="group-card__logo" size={32} aria-hidden="true" />}
+        {item.logo && (
+          <Icon name={item.logo} class="group-card__logo" size={32} aria-hidden="true" />
+        )}
         <p class="group-card__eyebrow">{item.eyebrow.replace(/ · (?=[^ ]+$)/, ' ·\u00A0')}</p>
         <h3 class="t-card">{item.href ? <a href={item.href}>{item.title}</a> : item.title}</h3>
         {item.text && <p class="group-card__text">{item.text}</p>}

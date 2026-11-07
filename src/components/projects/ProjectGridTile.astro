@@ -45,13 +45,7 @@ const second = d.repo
   data-project={project.slug}
   data-kind={d.kind}
 >
-  <Lockup
-    id={`${project.slug}-title`}
-    size="promo"
-    title={d.title}
-    subline={d.subtitle}
-    reveal
-  >
+  <Lockup id={`${project.slug}-title`} size="promo" title={d.title} subline={d.subtitle} reveal>
     <Fragment slot="actions">
       <a
         href={localePath(`/projects/${project.slug}/`, lang)}
