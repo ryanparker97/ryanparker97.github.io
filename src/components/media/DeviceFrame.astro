@@ -1,0 +1,58 @@
+---
+interface Props {
+  kind?: 'laptop' | 'screen';
+  class?: string;
+}
+
+const { kind = 'laptop', class: cls } = Astro.props;
+---
+
+<figure class:list={['device', `device--${kind}`, cls]} data-device={kind}>
+  <div class="device__screen">
+    <slot />
+  </div>
+</figure>
+
+<style>
+  .device {
+    container-type: inline-size;
+    width: 100%;
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  .device--laptop {
+    padding-inline: 5%;
+  }
+  .device__screen {
+    color-scheme: dark;
+    padding: clamp(6px, 1.6cqi, 16px);
+    border-radius: var(--radius-md);
+    background: var(--surface-2);
+  }
+  .device__screen > :global(*) {
+    display: block;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    border-radius: var(--radius-sm);
+  }
+  .device__screen > :global(img) {
+    object-fit: cover;
+  }
+  .device--laptop .device__screen {
+    border-radius: var(--radius-lg);
+  }
+  .device--laptop::after {
+    content: '';
+    display: block;
+    height: clamp(8px, 1.8cqi, 16px);
+    margin-inline: -4%;
+    border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+    background: var(--border);
+  }
+  @container (max-width: 480px) {
+    .device--laptop .device__screen {
+      border-radius: var(--radius-md);
+    }
+  }
+</style>

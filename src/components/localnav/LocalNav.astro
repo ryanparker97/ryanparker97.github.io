@@ -39,9 +39,15 @@ const attrs = (l: LocalNavLink) => ({
   <div class="bar chrome-row">
     {links.length > 1 ? (
       <>
-        <span class="title title-static">
-          <span class="t">{title}</span>
-        </span>
+        {titleHref ? (
+          <a class="title title-static plain" href={titleHref}>
+            <span class="t">{title}</span>
+          </a>
+        ) : (
+          <span class="title title-static">
+            <span class="t">{title}</span>
+          </span>
+        )}
         <details class="dd">
           <summary class="title" aria-label={t('localnav.sections', { title })}>
             <span class="t">{title}</span>
@@ -252,7 +258,7 @@ const attrs = (l: LocalNavLink) => ({
     align-items: center;
     min-height: 44px;
     color: var(--nav-ink);
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     letter-spacing: -0.01em;
     white-space: nowrap;
     transition: color 320ms var(--ease-nav);
@@ -286,7 +292,7 @@ const attrs = (l: LocalNavLink) => ({
     max-width: 66%;
     margin-inline-start: auto;
     color: var(--link);
-    font-size: 1rem;
+    font-size: 0.875rem;
   }
   .solo-link > span:first-child {
     min-width: 0;
@@ -370,7 +376,7 @@ const attrs = (l: LocalNavLink) => ({
       min-height: 44px;
       padding-inline-start: 16px;
       color: var(--nav-ink);
-      font-size: 1rem;
+      font-size: 0.875rem;
       letter-spacing: -0.02em;
     }
     .tray a[aria-current='true'] {

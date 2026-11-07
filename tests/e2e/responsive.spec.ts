@@ -3,7 +3,10 @@ import { expect, test } from '@playwright/test';
 const ROUTES = [
   '/',
   '/experiences/',
+  '/experiences/datum-security-bank-data-engineer/',
   '/projects/',
+  '/projects/agentic-coding-workflow/',
+  '/skills/',
   '/star/',
   '/blog/',
   '/blog/neovim-setup-1-zero-to-editor/',
@@ -26,19 +29,21 @@ test.describe('320px', () => {
 
 test.describe('reduced motion', () => {
   test.use({ reducedMotion: 'reduce' });
-  test('content is visible immediately with no transforms', async ({ page }) => {
-    await page.goto('/experiences/');
-    const items = page.locator('[data-reveal]');
-    const count = await items.count();
-    expect(count).toBeGreaterThan(0);
-    for (let i = 0; i < count; i++) {
-      const style = await items.nth(i).evaluate((el) => {
-        const s = getComputedStyle(el);
-        return { opacity: s.opacity, transform: s.transform };
-      });
-      expect(style).toEqual({ opacity: '1', transform: 'none' });
-    }
-  });
+  for (const route of ['/experiences/', '/experiences/datum-security-bank-data-engineer/']) {
+    test(`content is visible immediately with no transforms: ${route}`, async ({ page }) => {
+      await page.goto(route);
+      const items = page.locator('[data-reveal]');
+      const count = await items.count();
+      expect(count).toBeGreaterThan(0);
+      for (let i = 0; i < count; i++) {
+        const style = await items.nth(i).evaluate((el) => {
+          const s = getComputedStyle(el);
+          return { opacity: s.opacity, transform: s.transform };
+        });
+        expect(style).toEqual({ opacity: '1', transform: 'none' });
+      }
+    });
+  }
 });
 
 test('without JavaScript the content is still visible', async ({ browser }) => {
@@ -46,15 +51,24 @@ test('without JavaScript the content is still visible', async ({ browser }) => {
   const page = await context.newPage();
   await page.goto('/experiences/');
   await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-  await expect(page.locator('.hl-card').first()).toBeVisible();
+  await expect(page.locator('.group-card').first()).toBeVisible();
   await expect(page.locator('.local-nav')).toBeVisible();
+  await page.goto('/experiences/datum-security-bank-data-engineer/');
+  await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
   await page.goto('/projects/');
   await expect(page.locator('[data-project="agentic-coding-workflow"]')).toBeVisible();
   await context.close();
 });
 
 test.describe('blank-page guard (spec 5.11)', () => {
-  for (const route of ['/', '/experiences/', '/projects/', '/blog/', '/does-not-exist/']) {
+  for (const route of [
+    '/',
+    '/experiences/',
+    '/experiences/datum-security-bank-data-engineer/',
+    '/projects/',
+    '/blog/',
+    '/does-not-exist/',
+  ]) {
     test(`reveal items stay visible when the JS module is blocked: ${route}`, async ({ page }) => {
       await page.route('**/_astro/*.js', (r) => r.abort());
       await page.goto(route);

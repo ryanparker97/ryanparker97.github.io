@@ -1,15 +1,15 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import ExperiencesArt from '~/assets/art/experiences-path.svg';
-import Chapter from '~/components/experiences/Chapter.astro';
-import HighlightsGallery from '~/components/experiences/HighlightsGallery.astro';
+import CardGroup from '~/components/experiences/CardGroup.astro';
+import ContactBox from '~/components/experiences/ContactBox.astro';
+import Hero from '~/components/tile/Hero.astro';
 import Section from '~/components/tile/Section.astro';
-import SectionHeader from '~/components/tile/SectionHeader.astro';
 import { getLocalized, getProfile } from '~/lib/content';
-import { roleNavLabels, sortRoles } from '~/lib/cv';
+import { companyLabel, sortRoles, startYear } from '~/lib/cv';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
 import { personLd } from '~/lib/jsonld';
+import { experiencesNav } from '~/lib/localnav';
 import { useT } from '~/i18n';
 
 export const getStaticPaths = (() => langStaticPaths()) satisfies GetStaticPaths;
@@ -19,21 +19,12 @@ const t = useT(lang);
 const { data: profile, fallback: profileFallback } = await getProfile(lang);
 const { items: allRoles, fallback: rolesFallback } = await getLocalized('experience', lang);
 const roles = sortRoles(allRoles.map((r) => ({ ...r, start: r.data.start, end: r.data.end })));
+const { items: allCerts, fallback: certsFallback } = await getLocalized('certifications', lang);
+const certs = [...allCerts].sort((a, b) => b.data.year.localeCompare(a.data.year));
 
-// Same fallback rule as everywhere else: untranslated stories still count.
-const { items: starStories } = await getLocalized('star', lang);
-const stories: Record<string, string[]> = {};
-for (const s of starStories) {
-  if (s.data.role) (stories[s.data.role] ??= []).push(s.slug);
-}
-
-// Skill names are English in every language, so the EN collection serves both.
-const skillTerms = (await getLocalized('skills', 'en')).items.flatMap((g) => g.data.items);
-
-const navLabels = roleNavLabels(roles.map((r) => r.data));
-const links = roles.map((r, i) => ({ id: r.slug, label: navLabels[i] }));
-// Chapters alternate --surface-2 / --bg starting with --surface-2; the closing section continues.
-const toneAt = (i: number) => (i % 2 === 0 ? 'surface' : 'bg');
+const range = (r: (typeof roles)[number]) =>
+  `${startYear(r.data.start)}–${r.data.end ? r.data.end.slice(0, 4) : t('home.rail.now')}`;
+const p = profile;
 const jsonLd = personLd(profile, new URL(localePath('/experiences/', lang), Astro.site).href, lang);
 ---
 
@@ -41,37 +32,56 @@ const jsonLd = personLd(profile, new URL(localePath('/experiences/', lang), Astr
   title={t('cv.title')}
   description={t('cv.description')}
   {lang}
-  fallback={profileFallback || rolesFallback}
+  fallback={profileFallback || rolesFallback || certsFallback}
   searchType="cv"
-  localNav={{
-    title: t('cv.title'),
-    links: links.map((l) => ({ href: `#${l.id}`, label: l.label })),
-    pill: {
-      href: localePath('/cv.pdf', lang),
-      label: t('common.download'),
-      download: 'Ryan-Parker-CV.pdf',
-    },
-  }}
+  localNav={experiencesNav(lang, roles)}
   {jsonLd}
 >
-  <h1 class="sr-only">{t('cv.title')}</h1>
-  <HighlightsGallery {lang} {roles} {skillTerms} />
-  <div class="chapters">
-    {roles.map((role, i) => (
-      <Chapter {role} {lang} tone={toneAt(i)} stories={stories[role.slug] ?? []} {skillTerms} />
-    ))}
-  </div>
-  <Section id="more" tone={toneAt(roles.length)} labelledby="more-title">
-    <SectionHeader id="more-title" title={t('exp.more.title')} subline={t('exp.more.text')}>
-      <Fragment slot="actions">
-        <a href={localePath('/cv.pdf', lang)} download="Ryan-Parker-CV.pdf" class="btn btn-primary">
-          {t('common.download')}
-        </a>
-        <a href={localePath('/projects/', lang)} class="btn btn-secondary">
-          {t('exp.more.projects')}
-        </a>
-      </Fragment>
-    </SectionHeader>
-    <ExperiencesArt class="page-art page-art--closing" role="img" aria-label={t('exp.more.art')} />
+  <Hero eyebrow={p.headline} title={t('exp.hero.title')} copy={t('exp.hero.copy')}>
+    <Fragment slot="actions">
+      <a href={`mailto:${p.email}`} class="btn btn-primary">
+        {t('home.contact.email')}
+      </a>
+      <a href={localePath('/cv.pdf', lang)} download="Ryan-Parker-CV.pdf" class="btn btn-secondary">
+        {t('common.download')}
+      </a>
+    </Fragment>
+  </Hero>
+  <Section id="roles" tone="surface" labelledby="experience-title">
+    {roles.length > 0 && (
+      <CardGroup
+        id="experience"
+        title={t('exp.career.title')}
+        items={roles.map((r) => ({
+          id: r.slug,
+          eyebrow: range(r),
+          title: companyLabel(r.data.company, r.data.client),
+          href: localePath(`/experiences/${r.slug}/`, lang),
+          text: r.data.role,
+        }))}
+      />
+    )}
+    {certs.length > 0 && (
+      <CardGroup
+        id="certifications"
+        rule
+        title={t('exp.certs.title')}
+        items={certs.map((c) => ({
+          eyebrow: `${c.data.issuer} · ${c.data.year}`,
+          logo: c.data.logo,
+          title: c.data.name,
+          link: c.data.credentialUrl
+            ? {
+                href: c.data.credentialUrl,
+                label: t('home.certs.verify'),
+                name: `${t('home.certs.verify')}: ${c.data.name}`,
+              }
+            : undefined,
+        }))}
+      />
+    )}
+  </Section>
+  <Section id="contact" labelledby="contact-title">
+    <ContactBox {lang} profile={p} />
   </Section>
 </BaseLayout>

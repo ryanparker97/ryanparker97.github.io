@@ -6,7 +6,10 @@ import { builtPages } from './pages';
 const ROUTES = [
   '/',
   '/experiences/',
+  '/experiences/datum-security-bank-data-engineer/',
   '/projects/',
+  '/projects/agentic-coding-workflow/',
+  '/skills/',
   '/star/',
   '/star/emr-cost-optimization/',
   '/blog/',

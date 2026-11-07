@@ -9,6 +9,8 @@ const PARTS = [
   '/blog/neovim-setup-5-debugging-and-workflow/',
 ];
 const LATEST = PARTS[4];
+const GIT = '/blog/git-config-multiple-identities/';
+const GIT_TITLE = 'One Git config for work and personal repos';
 
 const expectPartCovers = async (
   page: import('@playwright/test').Page,
@@ -17,6 +19,8 @@ const expectPartCovers = async (
   const covers = page.locator('.post-rows img.post-cover');
   await expect(covers).toHaveCount(5);
   await expect(page.locator('.post-cover--gen')).toHaveCount(0);
+  await expect(page.locator('.lead-card img')).toHaveCount(0);
+  await expect(page.locator('.lead-card')).toHaveClass(/lead-card--plain/);
   await expect(page.locator('.post-cover__num')).toHaveCount(0);
   for (let i = 0; i < 5; i++) {
     await expect(covers.nth(i)).toHaveAttribute('alt', '');
@@ -51,56 +55,58 @@ test.describe('blog', () => {
       }),
     );
 
-  test('index at 1440: hero, then a flat image list, newest first', async ({ page, request }) => {
+  test('index at 1440: hero, lead card = newest post, then five rows in two columns', async ({
+    page,
+    request,
+  }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/blog/');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Notes on data and tools.');
-    for (const sel of [
-      '#feature',
-      '.news-band',
-      '.news-tile',
-      '.topic-group',
-      '.topic-jump',
-      '.blog-newest',
-      '.hl-parts',
-    ]) {
+    for (const sel of ['#feature', '.news-band', '.news-tile', '.topic-group', '.topic-jump']) {
       await expect(page.locator(sel)).toHaveCount(0);
     }
+    const lead = page.locator('.lead-card');
+    await expect(lead).toHaveCount(1);
+    await expect(lead.locator('h2 a')).toHaveAttribute('href', GIT);
+    await expect(lead).toContainText('Article');
+    await expect(lead).toContainText(GIT_TITLE);
+    await expect(lead).toContainText('7 Nov 2026');
+    await expect(lead).toContainText(/\d+ min read/);
+    await expect(lead).toHaveCSS('border-top-left-radius', '32px');
+    await expect(page.getByRole('heading', { level: 2, name: 'More posts' })).toHaveCount(1);
     const items = page.locator('.post-rows > li');
     await expect(items).toHaveCount(5);
-    for (let i = 0; i < 5; i++) await expect(items.nth(i).locator('a')).toHaveCount(1);
     expect(
       await page
         .locator('.post-rows > li a')
         .evaluateAll((els) => els.map((e) => (e as HTMLAnchorElement).pathname)),
     ).toEqual([...PARTS].reverse());
-    await expect(page.locator('.post-row').first()).toHaveAttribute('href', LATEST);
-    const first = items.first();
-    await expect(first).toContainText('Part 5 · Neovim setup guide');
-    await expect(first).toContainText('Debugging, testing and the daily workflow');
-    await expect(first).toContainText('2 Nov 2026');
-    await expect(first).toContainText(/\d+ min read/);
     await expectPartCovers(page, request);
+    const lefts = await items.evaluateAll((els) =>
+      els.map((e) => Math.round(e.getBoundingClientRect().left)),
+    );
+    expect(lefts[0]).toBe(lefts[2]);
+    expect(lefts[1]).toBe(lefts[3]);
+    expect(lefts[1]).toBeGreaterThan(lefts[0] + 300);
     const g = await geom(page);
     expect(g).toHaveLength(5);
     for (const r of g) {
       expect(Math.abs(r.cw - 112)).toBeLessThanOrEqual(1);
       expect(Math.abs(r.ch - 112)).toBeLessThanOrEqual(1);
       expect(r.coverRight).toBeLessThanOrEqual(r.titleLeft);
+      // The title is top-aligned with its cover.
       expect(r.titleTop).toBeGreaterThanOrEqual(r.coverTop - 1);
       expect(r.titleTop).toBeLessThanOrEqual(r.coverBottom);
       expect(r.rowH).toBeGreaterThanOrEqual(44);
     }
-    const heights = await page
-      .locator('.post-rows a')
-      .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().height));
-    for (const h of heights) expect(h).toBeGreaterThanOrEqual(44);
-    expect((await page.locator('.post-rows').boundingBox())!.width).toBe(980);
+    for (const li of await items.all()) await expect(li.locator('a')).toHaveCount(1);
   });
 
-  test('index at 375: covers stay beside the text, no overflow', async ({ page }) => {
+  test('index at 375: the lead card stacks, rows keep covers beside the text', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto('/blog/');
+    await expect(page.locator('.lead-card img')).toHaveCount(0);
+    await expect(page.locator('.lead-card h2')).toBeVisible();
     const g = await geom(page);
     expect(g).toHaveLength(5);
     for (const r of g) {
@@ -111,6 +117,10 @@ test.describe('blog', () => {
       expect(r.titleTop).toBeLessThanOrEqual(r.coverBottom);
       expect(r.rowH).toBeGreaterThanOrEqual(44);
     }
+    const lefts = await page
+      .locator('.post-rows > li')
+      .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)));
+    expect(new Set(lefts).size).toBe(1);
     const desc = page.locator('.post-rows .hl-desc');
     for (let i = 0; i < 5; i++) await expect(desc.nth(i)).toBeHidden();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
@@ -118,17 +128,17 @@ test.describe('blog', () => {
     );
   });
 
-  test('vi index is a flat list of five rows', async ({ page, request }) => {
+  test('vi index: lead card plus five rows', async ({ page, request }) => {
     await page.goto('/vi/blog/');
     await expectPartCovers(page, request);
     const items = page.locator('.post-rows > li');
     await expect(items).toHaveCount(5);
+    await expect(page.locator('.lead-card h2 a')).toHaveAttribute('href', '/vi' + GIT);
     const hrefs = await page
       .locator('.post-rows > li a')
       .evaluateAll((els) => els.map((e) => e.getAttribute('href')));
     expect(hrefs).toEqual([...PARTS].reverse().map((p) => '/vi' + p));
-    await expect(items.first()).toContainText('Phần 5');
-    await expect(items.first()).toContainText('Hướng dẫn thiết lập Neovim');
+    await expect(page.locator('.lead-card')).toContainText('Bài viết');
     await expect(page.locator('.post-rows .hl-meta').first()).toHaveText(/phút đọc/);
     await expect(page.locator('.topic-group')).toHaveCount(0);
   });
@@ -141,13 +151,14 @@ test.describe('blog', () => {
     const rows = page.locator('a.hl-row');
     await expect(rows).toHaveCount(1);
     await expect(rows).toContainText('Developer tools');
-    await expect(rows).toContainText('5 posts');
+    await expect(rows).toContainText('6 posts');
     await expect(rows).toHaveAttribute('href', '/blog/topics/developer-tools/');
     await page.goto('/blog/topics/developer-tools/');
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Developer tools');
     await expect(page.locator('main p.t-lockup').first()).toBeVisible();
     await expect(page.locator('.topic-group h2')).toHaveCount(0);
     await expect(page.locator('.hl-parts a')).toHaveCount(5);
+    await expect(page.locator(`main a[href="${GIT}"]`)).toHaveCount(1);
     await expect(page.locator('.lang-switch a')).toHaveAttribute(
       'href',
       '/vi/blog/topics/developer-tools/',
@@ -224,8 +235,8 @@ test.describe('blog', () => {
       'Part 2: Languages: LSP, completion, formatting and linting →',
     );
     await expect(foot.getByRole('link')).toHaveAttribute('href', PARTS[1]);
-    await expect(page.locator('.prose h2')).toHaveCount(10);
-    await expect(page.locator('.toc-side a')).toHaveCount(13);
+    await expect(page.locator('.prose h2')).toHaveCount(13);
+    await expect(page.locator('.toc-side a')).toHaveCount(18);
   });
 
   test('a middle part links both neighbours', async ({ page }) => {
@@ -246,10 +257,10 @@ test.describe('blog', () => {
 
   test('TOC highlights the section being read', async ({ page }) => {
     await page.goto(POST);
-    await page.locator('#step-3-first-launch').scrollIntoViewIfNeeded();
-    await page.evaluate(() => document.getElementById('step-3-first-launch')!.scrollIntoView());
+    await page.locator('#step-6-first-launch').scrollIntoViewIfNeeded();
+    await page.evaluate(() => document.getElementById('step-6-first-launch')!.scrollIntoView());
     await expect(page.locator('.toc-side a[aria-current="location"]')).toHaveText(
-      'Step 3: first launch',
+      'Step 6: first launch',
     );
   });
 
@@ -264,13 +275,13 @@ test.describe('blog', () => {
     expect(font.startsWith('-apple-system')).toBe(true);
     expect(font).not.toContain('Newsreader');
     await expect(page.locator('.prose kbd').first()).toBeVisible();
-    await expect(page.locator('[role=note].callout')).toHaveCount(4);
+    await expect(page.locator('[role=note].callout')).toHaveCount(3);
   });
 
   test('code blocks have titles, language labels and highlighted lines', async ({ page }) => {
     await page.goto(POST);
-    const block = page.locator('.code-block', { hasText: 'lua/ryanparker/lazy.lua' });
-    await expect(block.locator('.code-title')).toHaveText('lua/ryanparker/lazy.lua');
+    const block = page.locator('.code-block', { hasText: 'lua/config/lazy.lua' });
+    await expect(block.locator('.code-title')).toHaveText('lua/config/lazy.lua');
     await expect(block.locator('.code-lang')).toHaveText('lua');
     await expect(block.locator('.line.highlighted')).toHaveCount(10);
   });
@@ -333,7 +344,9 @@ test.describe('blog', () => {
       expect(xml).toContain('<rss');
       expect(xml).toContain(`<language>${lang}</language>`);
       for (const title of titles) expect(xml).toContain(title);
-      expect(xml.match(/<item>/g)).toHaveLength(5);
+      expect(xml.match(/<item>/g)).toHaveLength(6);
+      expect(xml).toContain('git-config-multiple-identities');
+      if (lang === 'en') expect(xml).toContain(GIT_TITLE);
       if (lang === 'en') {
         expect(xml.indexOf(titles[4])).toBeLessThan(xml.indexOf(titles[0]));
       }
@@ -352,6 +365,16 @@ test.describe('blog', () => {
         0,
       );
     }
+  });
+
+  test('the Git config post has its Vietnamese translation', async ({ page }) => {
+    await page.goto('/vi' + GIT);
+    await expect(page.locator('html')).toHaveAttribute('lang', 'vi');
+    await expect(page.getByRole('note').filter({ hasText: 'chỉ có bằng tiếng Anh' })).toHaveCount(
+      0,
+    );
+    await page.goto(GIT);
+    await expect(page.locator('link[hreflang="vi"]')).toHaveCount(1);
   });
 
   test('footer links to the feed', async ({ page }) => {
@@ -485,8 +508,8 @@ test('reading time is the same in both languages', async ({ page }) => {
   ).match(/(\d+) phút đọc/)?.[1];
   expect(en).toBeTruthy();
   expect(vi).toBe(en);
-  expect(Number(en)).toBeGreaterThanOrEqual(10);
-  expect(Number(en)).toBeLessThanOrEqual(12);
+  expect(Number(en)).toBeGreaterThanOrEqual(25);
+  expect(Number(en)).toBeLessThanOrEqual(27);
 });
 
 test('tag pages are excluded from the search index', async ({ page }) => {

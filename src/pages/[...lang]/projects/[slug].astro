@@ -1,0 +1,184 @@
+---
+/**
+ * One project as a product page (spec §4.6.1, Layout B): hero, laptop frame, big stats with
+ * footnotes, problem / approach / design / workflow / result, every bullet as a highlight card, closing links.
+ */
+import type { GetStaticPaths } from 'astro';
+import { Image } from 'astro:assets';
+import BaseLayout from '~/layouts/BaseLayout.astro';
+import AidlcKitDiagram from '~/components/blog/diagrams/AidlcKitDiagram.astro';
+import DeviceFrame from '~/components/media/DeviceFrame.astro';
+import TerminalLoop from '~/components/media/TerminalLoop.astro';
+import CloserLook from '~/components/tile/CloserLook.astro';
+import Footnotes from '~/components/tile/Footnotes.astro';
+import Hero from '~/components/tile/Hero.astro';
+import HighlightCards from '~/components/tile/HighlightCards.astro';
+import Section from '~/components/tile/Section.astro';
+import SectionHeader from '~/components/tile/SectionHeader.astro';
+import StatStrip from '~/components/tile/StatStrip.astro';
+import ChevronLink from '~/components/ui/ChevronLink.astro';
+import { bandTones } from '~/lib/bands';
+import { getLocalized } from '~/lib/content';
+import { companyLabel, parseHighlight, parseHighlights } from '~/lib/cv';
+import { numberNotes } from '~/lib/footnotes';
+import { isFallback } from '~/lib/localize';
+import { singleNav } from '~/lib/localnav';
+import { getLang, langStaticPaths, localePath, switchTarget } from '~/i18n/routes';
+import { useT } from '~/i18n';
+
+export const getStaticPaths = (async () => {
+  const paths = [];
+  for (const { params } of langStaticPaths()) {
+    const { items } = await getLocalized('projects', getLang(params.lang));
+    for (const project of items)
+      paths.push({ params: { ...params, slug: project.slug }, props: { project } });
+  }
+  return paths;
+}) satisfies GetStaticPaths;
+
+const lang = getLang(Astro.params.lang);
+const t = useT(lang);
+const { project } = Astro.props;
+const d = project.data;
+const { items: roles } = await getLocalized('experience', lang);
+const role = d.role ? roles.find((r) => r.slug === d.role) : undefined;
+if (d.role && !role)
+  throw new Error(`Project role "${d.role}" does not match any experience entry.`);
+const { items: stats, notes } = numberNotes(
+  (d.stats ?? []).map((s) => ({ value: s.value, below: s.label, note: s.note })),
+  (n) => t('fn.ref', { n }),
+);
+const DIAGRAMS = { 'aidlc-kit': AidlcKitDiagram } as const;
+const Diagram = d.design?.diagram && DIAGRAMS[d.design.diagram];
+const cards = parseHighlights(project.body ?? '');
+const decisions = (d.design?.decisions ?? []).map(parseHighlight);
+const steps = (d.workflow?.steps ?? []).map(parseHighlight);
+const look = cards.filter((c) => c.label);
+const tones = bandTones(
+  [
+    d.image && 'visual',
+    stats.length > 0 && 'stats',
+    d.problem && 'problem',
+    d.approach && 'approach',
+    d.design && 'design',
+    d.workflow && 'workflow',
+    'result',
+    'more',
+  ].filter((x): x is string => !!x),
+);
+---
+
+<BaseLayout
+  title={d.title}
+  description={d.summary}
+  {lang}
+  searchType="projects"
+  fallback={isFallback(project.contentLang, lang)}
+  langs={project.available}
+  switchHref={switchTarget(project.available, lang, `/projects/${project.slug}/`, '/projects/')}
+  localNav={singleNav(d.title, {
+    href: localePath('/projects/', lang),
+    label: t('home.projects.all'),
+  })}
+>
+  <Hero tight title={d.title} subline={d.subtitle} />
+  {d.image && (
+    <div
+      class:list={[
+        'section',
+        'section--tight',
+        'project-visual',
+        { 'section--surface': tones.visual === 'surface' },
+      ]}
+    >
+      <div class="section-inner">
+        <DeviceFrame kind="laptop">
+          <Image
+            src={d.image}
+            alt={d.imageAlt ?? ''}
+            width={1280}
+            height={720}
+            loading="eager"
+            fetchpriority="high"
+          />
+        </DeviceFrame>
+      </div>
+    </div>
+  )}
+  {stats.length > 0 && (
+    <Section tone={tones.stats} labelledby="project-stats-title">
+      <SectionHeader id="project-stats-title" title={t('exp.highlights')} />
+      <StatStrip {stats} label={t('exp.highlights')} variant="big" />
+    </Section>
+  )}
+  {d.problem && (
+    <Section tone={tones.problem} labelledby="problem-title">
+      <SectionHeader id="problem-title" title={t('project.problem')} copy={d.problem} />
+    </Section>
+  )}
+  {d.approach && (
+    <Section tone={tones.approach} labelledby="approach-title">
+      <SectionHeader id="approach-title" title={t('project.approach')} copy={d.approach} />
+      {d.loop && (
+        <TerminalLoop
+          title={d.loop.title}
+          lines={d.loop.lines}
+          pauseLabel={t('project.term.pause')}
+          caption={t('project.term.label', { title: d.loop.title })}
+        />
+      )}
+    </Section>
+  )}
+  {d.design && (
+    <Section tone={tones.design} labelledby="design-title">
+      <SectionHeader id="design-title" title={t('project.design')} copy={d.design.intro} />
+      {Diagram && <Diagram lang={project.contentLang} />}
+      {decisions.length > 0 && <HighlightCards cards={decisions} />}
+    </Section>
+  )}
+  {d.workflow && (
+    <Section wide tone={tones.workflow} labelledby="workflow-title">
+      <SectionHeader id="workflow-title" title={t('project.workflow')} copy={d.workflow.intro} />
+      <HighlightCards cards={steps} ordered />
+    </Section>
+  )}
+  <Section wide tone={tones.result} labelledby="result-title">
+    <SectionHeader id="result-title" title={t('project.result')} copy={d.result} />
+    {look.length >= 2 ? (
+      <CloserLook id="result-look" items={look} labelledby="result-title" />
+    ) : (
+      <HighlightCards {cards} />
+    )}
+  </Section>
+  <Section tone={tones.more} labelledby="project-more-title">
+    <SectionHeader id="project-more-title" title={t('project.more.title')}>
+      <Fragment slot="actions">
+        <a href={localePath('/projects/', lang)} class="btn btn-primary">
+          {t('home.projects.all')}
+        </a>
+        <a
+          href={localePath('/cv.pdf', lang)}
+          download="Ryan-Parker-CV.pdf"
+          class="btn btn-secondary"
+        >
+          {t('common.download')}
+        </a>
+      </Fragment>
+    </SectionHeader>
+    {role && (
+      <p class="at">
+        <ChevronLink href={localePath(`/experiences/${role.slug}/`, lang)}>
+          {t('common.at', { company: companyLabel(role.data.company, role.data.client) })}
+        </ChevronLink>
+      </p>
+    )}
+  </Section>
+  <Footnotes {notes} title={t('fn.title')} back={(n) => t('fn.back', { n })} />
+</BaseLayout>
+
+<style>
+  .at {
+    margin: 0;
+    text-align: center;
+  }
+</style>

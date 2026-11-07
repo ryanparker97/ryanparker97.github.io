@@ -1,6 +1,7 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import LeadCard from '~/components/blog/LeadCard.astro';
 import PostRows from '~/components/blog/PostRows.astro';
 import CoverCredit from '~/components/blog/CoverCredit.astro';
 import Hero from '~/components/tile/Hero.astro';
@@ -24,11 +25,19 @@ const credits = [...new Set(rows.map((r) => r.post.imageCredit).filter((c): c is
   {fallback}
   localNav={blogNav(lang, 'all')}
 >
-  <Hero tight eyebrow={t('blog.title')} title={t('blog.hero')} subline={t('blog.subline')} />
+  <Hero tight title={t('blog.hero')} subline={t('blog.subline')} />
   {rows.length > 0 ? (
     <section class="section section--tight">
       <div class="section-inner">
-        <PostRows {lang} {rows} />
+        <LeadCard {lang} row={rows[0]} />
+        {rows.length > 1 && (
+          <>
+            <h2 class="more-title">{t('blog.more')}</h2>
+            <div class="more-posts">
+              <PostRows {lang} rows={rows.slice(1)} />
+            </div>
+          </>
+        )}
         {credits.map((c) => (
           <p class="t-caption cover-credits">
             <CoverCredit {lang} credit={c} />
@@ -46,6 +55,19 @@ const credits = [...new Set(rows.map((r) => r.post.imageCredit).filter((c): c is
 </BaseLayout>
 
 <style>
+  .more-title {
+    margin: 48px 0 16px;
+    font-size: 1.75rem;
+    line-height: 1.1;
+    font-weight: 700;
+  }
+  @media (min-width: 735px) {
+    .more-posts :global(.post-rows) {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      column-gap: 48px;
+    }
+  }
   .cover-credits {
     margin: 24px 0 0;
     color: var(--text-2);

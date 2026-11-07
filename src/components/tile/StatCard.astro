@@ -1,0 +1,144 @@
+---
+/**
+ * Tall stat card for a scroll gallery (spec §4.2.0): an H3 headline, a big value at the bottom,
+ * a caption with an optional footnote marker, an optional chevron link. The value takes a
+ * position colour (--hl-1…4, cycling).
+ */
+import ChevronLink from '~/components/ui/ChevronLink.astro';
+import type { NoteRef } from '~/lib/footnotes';
+
+export interface Props {
+  headline: string;
+  value?: string;
+  lines?: string[];
+  caption?: string;
+  href?: string;
+  linkLabel?: string;
+  linkName?: string;
+  light?: boolean;
+  index: number;
+  ref?: NoteRef;
+}
+const { headline, value, lines, caption, href, linkLabel, linkName, light, index, ref } =
+  Astro.props;
+---
+
+<li
+  class:list={['gallery-card', 'stat-card', 'lift', { 'stat-card--light': light }]}
+  data-reveal
+  data-stat-card
+  style={`--i:${Math.min(index, 3)}`}
+>
+  <h3 class="t-card stat-card__head">{headline}</h3>
+  {value && <p class="stat-card__value">{value}</p>}
+  {lines && (
+    <p class="stat-card__value stat-card__value--words">
+      {lines.map((l) => (
+        <span>{l}</span>
+      ))}
+    </p>
+  )}
+  {(caption || ref) && (
+    <p class="stat-card__cap">
+      {caption}
+      {ref && (
+        <sup class="fn-ref">
+          <a id={`fnref-${ref.n}`} href={`#fn-${ref.n}`} aria-label={ref.label}>
+            {ref.n}
+          </a>
+        </sup>
+      )}
+    </p>
+  )}
+  {href && (
+    <p class="stat-card__link">
+      <ChevronLink {href} label={linkName}>
+        {linkLabel}
+      </ChevronLink>
+    </p>
+  )}
+</li>
+
+<style>
+  .stat-card {
+    min-height: 520px;
+    padding: 32px 24px;
+    background: var(--bg);
+    color: var(--text);
+  }
+  .stat-card--light {
+    color-scheme: light;
+  }
+  .stat-card:nth-child(4n + 1) {
+    --hl: var(--hl-1);
+  }
+  .stat-card:nth-child(4n + 2) {
+    --hl: var(--hl-2);
+  }
+  .stat-card:nth-child(4n + 3) {
+    --hl: var(--hl-3);
+  }
+  .stat-card:nth-child(4n) {
+    --hl: var(--hl-4);
+  }
+  @media (min-width: 735px) {
+    .stat-card {
+      min-height: 560px;
+      padding: 36px 28px;
+    }
+  }
+  @media (min-width: 1069px) {
+    .stat-card {
+      min-height: 640px;
+      padding: 36px 32px;
+    }
+  }
+  .stat-card__head {
+    margin: 0;
+  }
+  .stat-card__value {
+    margin: auto 0 0;
+    padding-top: 32px;
+    font-size: 4.5rem;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--hl, var(--text));
+    overflow-wrap: anywhere;
+  }
+  @media (min-width: 735px) {
+    .stat-card__value {
+      font-size: 6rem;
+    }
+  }
+  @media (min-width: 1069px) {
+    .stat-card__value {
+      font-size: 6.5rem;
+    }
+  }
+  .stat-card__value--words {
+    display: grid;
+    font-size: 2.5rem;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+  }
+  @media (min-width: 735px) {
+    .stat-card__value--words {
+      font-size: 3rem;
+    }
+  }
+  @media (min-width: 1069px) {
+    .stat-card__value--words {
+      font-size: 3.5rem;
+    }
+  }
+  .stat-card__cap {
+    margin: 12px 0 0;
+    color: var(--text-2);
+    font-size: 1.0625rem;
+    line-height: 1.4706;
+  }
+  .stat-card__link {
+    margin: 12px 0 0;
+  }
+</style>

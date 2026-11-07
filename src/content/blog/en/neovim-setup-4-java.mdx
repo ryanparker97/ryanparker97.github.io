@@ -2,6 +2,7 @@
 title: 'Neovim setup guide, Part 4: Java with nvim-jdtls'
 description: 'Run the Java language server through nvim-jdtls with a real JDK, one workspace per project, and debug bundles ready for Part 5.'
 pubDate: 2026-11-02
+updatedDate: 2026-11-07
 tags: ['neovim', 'dotfiles', 'java', 'developer-tools']
 series: 'neovim-setup-guide'
 seriesPart: 4
@@ -10,18 +11,17 @@ heroImage: '../../../assets/blog/neovim-setup/part-4.svg'
 
 import Callout from '~/components/blog/Callout.astro';
 
-Java is the one language that doesn't use the generic setup from [Part 2](/blog/neovim-setup-2-languages/). Every other server starts by itself once Mason has installed it. The Java language server, jdtls, needs more: a real JDK, a separate workspace folder for each project, and extra jars if you want to debug. A small launcher in `lua/ryanparker/java.lua` takes care of all three.
+Java is the one language that doesn't use the generic setup from [Part 2](/blog/neovim-setup-2-languages/). Every other server starts by itself once Mason has installed it. The Java language server, jdtls, needs more: a real JDK, a separate workspace folder for each project, and extra jars if you want to debug. A small launcher you create in `lua/config/java.lua` takes care of all three.
 
-In this part we go through that launcher piece by piece, so you know what it does when you open a Java file and where to look when it doesn't. If you haven't installed the config yet, start with [Part 1](/blog/neovim-setup-1-zero-to-editor/). You can see the whole series on the [series page](/blog/series/neovim-setup-guide/).
+In this part you create that launcher and go through it piece by piece, so you know what it does when you open a Java file and where to look when it doesn't. If you haven't built the config yet, start with [Part 1](/blog/neovim-setup-1-zero-to-editor/). You can see the whole series on the [series page](/blog/series/neovim-setup-guide/).
 
 <Callout type="note">
-  **Tested with:** Neovim 0.12, macOS, dotfiles commit `64351ec`. **Source:**
-  [github.com/ryanparker97/dotfiles](https://github.com/ryanparker97/dotfiles) (folder `nvim/`).
+  **Tested with:** Neovim 0.12, macOS.
 </Callout>
 
 ## What you'll have at the end
 
-When you finish this part, you'll have:
+When you finish this part, you'll have created two files, `lua/config/java.lua` and `ftplugin/java.lua`, and added one autocmd to `autocmds.lua`. Then you'll have:
 
 - **jdtls** started by nvim-jdtls whenever you open a Java file inside a project.
 - **A JDK found automatically**, even though the macOS `java` command is only a stub.
@@ -34,7 +34,9 @@ Some things are left out on purpose: there is no Lombok agent, there is only a s
 
 ## Before you start
 
-You need **JDK 21 or newer**. The `/usr/bin/java` that macOS ships is a stub, and I learned the hard way that jdtls needs a real JDK. These three commands come from the README of the dotfiles repo:
+Finish [Part 1](/blog/neovim-setup-1-zero-to-editor/) and [Part 2](/blog/neovim-setup-2-languages/) first. Part 2 added the nvim-jdtls plugin and the Mason tool lists that this part relies on. All paths in this part are relative to the same config folder. If you chose the side-by-side option in Part 1, start Neovim with `NVIM_APPNAME=nvim-guide nvim`.
+
+You also need **JDK 21 or newer**. The `/usr/bin/java` that macOS ships is a stub, and jdtls needs a real JDK. Install one with Homebrew:
 
 ```sh
 $ brew install openjdk
@@ -62,9 +64,9 @@ $ brew install maven gradle
 
 ## Why Java is different
 
-Part 2 showed that `mason-lspconfig` enables every installed server for you. I made Java the exception. Here is the end of that setup in `lua/ryanparker/plugins/lsp.lua`, next to the nvim-jdtls plugin spec:
+Part 2 showed that `mason-lspconfig` enables every installed server for you. Java is the exception. You already have the end of that setup in `lua/config/plugins/lsp.lua`, next to the nvim-jdtls plugin spec:
 
-```lua title="lua/ryanparker/plugins/lsp.lua"
+```lua title="lua/config/plugins/lsp.lua"
       require("mason-lspconfig").setup({
         ensure_installed = lsp_servers,
         automatic_enable = { exclude = { "jdtls" } },
@@ -78,20 +80,13 @@ Part 2 showed that `mason-lspconfig` enables every installed server for you. I m
 
 Two things happen here. `exclude = { "jdtls" }` keeps jdtls out of the automatic enabling, which also prevents two Java clients from starting at the same time. And nvim-jdtls loads on `ft = "java"`, so it costs nothing until you open a Java file.
 
-Starting the server is then the job of `ftplugin/java.lua`. Neovim runs that file for every Java buffer, and it has just two lines:
-
-```lua title="ftplugin/java.lua"
--- Java is special: use nvim-jdtls instead of generic lspconfig auto-enable.
-require("ryanparker.java").start()
-```
-
-Everything else in this part happens inside that `start()` function.
+Starting the server is then the job of `ftplugin/java.lua`. Neovim runs that file for every Java buffer, and you create it in Step 3. Everything else in this part happens inside a `start()` function that you write in Step 2.
 
 ## Step 1: install jdtls and the debug bundles
 
-Three Mason packages matter for Java. `jdtls` comes from mason-lspconfig's `ensure_installed`, because it is in the `lsp_servers` list. `java-debug-adapter` and `java-test` come from mason-tool-installer, which has them in its tool list (`lsp.lua`, lines 38-39 and 67).
+Three Mason packages matter for Java. `jdtls` comes from mason-lspconfig's `ensure_installed`, because it is in the `lsp_servers` list. `java-debug-adapter` and `java-test` come from mason-tool-installer, which has them in its tool list. Both lists are in Part 2's `lsp.lua`.
 
-They install on their own after the first launch from Part 1. To install them by hand, run:
+They should already be installed after the first launch in Part 2. To install them by hand, or to check, run:
 
 ```vim
 :MasonInstall jdtls java-debug-adapter java-test
@@ -99,11 +94,186 @@ They install on their own after the first launch from Part 1. To install them by
 
 Then run `:checkhealth mason` and check that none of the three is reported as missing.
 
-## Step 2: find the project root
+## Step 2: create the launcher
 
-jdtls needs to know where a project starts. The launcher asks Neovim for that root:
+1. Create `lua/config/java.lua` with this content:
 
-```lua title="lua/ryanparker/java.lua"
+   ```lua title="lua/config/java.lua" {130-134,153}
+   local M = {}
+
+   -- Cached JDK resolution: false = resolved and not found, nil = not resolved yet.
+   local jdk_home = nil
+   local warned_no_jdk = false
+
+   local function is_jdk_home(path)
+     return path and path ~= "" and vim.fn.executable(path .. "/bin/java") == 1
+   end
+
+   local function run(cmd)
+     local ok, res = pcall(vim.system, cmd, { text = true })
+     if not ok then
+       return nil
+     end
+     local out = res:wait()
+     if out.code ~= 0 then
+       return nil
+     end
+     return vim.trim(out.stdout or "")
+   end
+
+   local function resolve_jdk()
+     if jdk_home ~= nil then
+       return jdk_home or nil
+     end
+
+     local env = vim.env.JAVA_HOME
+     if is_jdk_home(env) then
+       jdk_home = env
+       return jdk_home
+     end
+
+     if vim.fn.executable("/usr/libexec/java_home") == 1 then
+       local out = run({ "/usr/libexec/java_home" })
+       if is_jdk_home(out) then
+         jdk_home = out
+         return jdk_home
+       end
+     end
+
+     for _, p in ipairs({
+       "/opt/homebrew/opt/openjdk/libexec/openjdk.jdk/Contents/Home",
+       "/usr/local/opt/openjdk/libexec/openjdk.jdk/Contents/Home",
+     }) do
+       if is_jdk_home(p) then
+         jdk_home = p
+         return jdk_home
+       end
+     end
+
+     -- PATH java, only if it actually works (macOS ships a non-functional stub).
+     local java = vim.fn.exepath("java")
+     if java ~= "" and run({ java, "-version" }) ~= nil then
+       local real = vim.uv.fs_realpath(java) or java
+       local home = vim.fn.fnamemodify(real, ":h:h")
+       jdk_home = is_jdk_home(home) and home or ""
+       if jdk_home ~= "" then
+         return jdk_home
+       end
+     end
+
+     jdk_home = false
+     return nil
+   end
+
+   local function debug_bundles()
+     local pkgs = vim.fn.stdpath("data") .. "/mason/packages/"
+     local bundles =
+       vim.fn.glob(pkgs .. "java-debug-adapter/extension/server/com.microsoft.java.debug.plugin-*.jar", true, true)
+     local skip = { ["com.microsoft.java.test.runner-jar-with-dependencies.jar"] = true, ["jacocoagent.jar"] = true }
+     for _, jar in ipairs(vim.fn.glob(pkgs .. "java-test/extension/server/*.jar", true, true)) do
+       if not skip[vim.fs.basename(jar)] then
+         table.insert(bundles, jar)
+       end
+     end
+     return bundles
+   end
+
+   function M.start()
+     local ok, jdtls = pcall(require, "jdtls")
+     if not ok then
+       vim.notify("nvim-jdtls is not installed yet. Run :Lazy sync", vim.log.levels.WARN)
+       return
+     end
+
+     local bufnr = vim.api.nvim_get_current_buf()
+     local root_dir = vim.fs.root(bufnr, {
+       { "mvnw", "gradlew", "settings.gradle", "settings.gradle.kts", "pom.xml", "build.gradle", "build.gradle.kts" },
+       ".git",
+     })
+     if not root_dir then
+       return
+     end
+
+     local jdtls_bin = vim.fn.exepath("jdtls")
+     if jdtls_bin == "" then
+       jdtls_bin = vim.fn.stdpath("data") .. "/mason/bin/jdtls"
+     end
+     if vim.fn.executable(jdtls_bin) ~= 1 then
+       vim.notify("jdtls is not installed yet. Run :MasonInstall jdtls", vim.log.levels.WARN)
+       return
+     end
+
+     local bundles = debug_bundles()
+     local jdk = resolve_jdk()
+     if not jdk then
+       if not warned_no_jdk then
+         warned_no_jdk = true
+         vim.notify(
+           "No usable JDK found (set JAVA_HOME or `brew install openjdk`); jdtls not started",
+           vim.log.levels.WARN
+         )
+       end
+       return
+     end
+
+     local workspace_dir = vim.fn.stdpath("data")
+       .. "/jdtls-workspaces/"
+       .. vim.fn.sha256(root_dir):sub(1, 12)
+       .. "-"
+       .. vim.fn.fnamemodify(root_dir, ":t")
+
+     local capabilities = vim.lsp.protocol.make_client_capabilities()
+     local cok, blink = pcall(require, "blink.cmp")
+     if cok and blink.get_lsp_capabilities then
+       capabilities = blink.get_lsp_capabilities(capabilities)
+     end
+
+     -- nvim-dap arrives in Part 5. Until then jdtls runs as a plain language server.
+     local has_dap = pcall(require, "dap")
+     if has_dap and #bundles > 0 then
+       require("jdtls.dap").setup_dap({ hotcodereplace = "auto" })
+     end
+
+     jdtls.start_or_attach({
+       cmd = { jdtls_bin, "--java-executable", jdk .. "/bin/java", "-data", workspace_dir },
+       cmd_env = { JAVA_HOME = jdk, PATH = jdk .. "/bin:" .. (vim.env.PATH or "") },
+       root_dir = root_dir,
+       capabilities = capabilities,
+       settings = {
+         java = {
+           configuration = {
+             updateBuildConfiguration = "interactive",
+             runtimes = { { name = "JavaSE-Default", path = jdk, default = true } },
+           },
+           format = { enabled = true },
+           signatureHelp = { enabled = true },
+           contentProvider = { preferred = "fernflower" },
+         },
+       },
+       init_options = { bundles = bundles },
+     }, has_dap and { dap = { hotcodereplace = "auto" } } or nil)
+   end
+
+   M.debug_bundles = debug_bundles
+
+   return M
+   ```
+
+2. Save the file. Nothing happens yet, because nothing calls `start()` until Step 3.
+
+The file has one public function, `start()`, and a helper that Part 5 and the check step use, `debug_bundles()`. The rest of this step explains it in the order `start()` runs.
+
+<Callout type="tip">
+  The highlighted lines are the guard around nvim-dap. nvim-dap only arrives in Part 5, so until
+  then the launcher skips the debug setup and jdtls runs as a normal language server. Once
+  nvim-dap is installed, the same code turns the debugging on.
+</Callout>
+
+### Find the project root
+
+jdtls needs to know where a project starts. The launcher asks Neovim for that root. You already have this in `lua/config/java.lua`:
+
+```lua title="lua/config/java.lua"
   local bufnr = vim.api.nvim_get_current_buf()
   local root_dir = vim.fs.root(bufnr, {
     { "mvnw", "gradlew", "settings.gradle", "settings.gradle.kts", "pom.xml", "build.gradle", "build.gradle.kts" },
@@ -118,11 +288,11 @@ The inner list of build files is checked before `.git`. That means a Maven or Gr
 
 If no root is found, the function returns and nothing starts. It prints nothing either, so a Java file outside any project simply opens without a language server.
 
-Two warnings surround this check. One comes before it: if nvim-jdtls itself is missing, the launcher says `nvim-jdtls is not installed yet. Run :Lazy sync` (lines 81-85). The other comes right after it: the launcher makes sure the jdtls program exists and warns `jdtls is not installed yet. Run :MasonInstall jdtls` if it doesn't (lines 96-103). With no root, that second warning never appears. Both are quoted exactly in the troubleshooting section.
+Two warnings surround this check. One comes before it: if nvim-jdtls itself is missing, the launcher says `nvim-jdtls is not installed yet. Run :Lazy sync`. The other comes right after it: the launcher makes sure the jdtls program exists and warns `jdtls is not installed yet. Run :MasonInstall jdtls` if it doesn't. With no root, that second warning never appears. Both are quoted exactly in the troubleshooting section.
 
-## Step 3: find a JDK
+### Find a JDK
 
-The launcher doesn't trust one single place for the JDK. It tries these, in order, and stops at the first that works (`java.lua`, lines 23-65):
+The launcher doesn't trust one single place for the JDK. The `resolve_jdk()` function tries these, in order, and stops at the first that works:
 
 1. The `$JAVA_HOME` environment variable.
 2. The answer of `/usr/libexec/java_home`.
@@ -130,9 +300,9 @@ The launcher doesn't trust one single place for the JDK. It tries these, in orde
 4. Homebrew's openjdk folder on Intel (`/usr/local/...`).
 5. The `java` on your `PATH`, but only if `java -version` actually works.
 
-The last rule exists because of the stub. A `java` that exists but can't run must not count:
+The last rule exists because of the stub. A `java` that exists but can't run must not count. You already have this in `lua/config/java.lua`:
 
-```lua title="lua/ryanparker/java.lua"
+```lua title="lua/config/java.lua"
   -- PATH java, only if it actually works (macOS ships a non-functional stub).
   local java = vim.fn.exepath("java")
   if java ~= "" and run({ java, "-version" }) ~= nil then
@@ -145,13 +315,13 @@ The last rule exists because of the stub. A `java` that exists but can't run mus
   end
 ```
 
-The result is cached for the rest of the session. If no JDK is found at all, the launcher shows a "No usable JDK found" warning once (lines 106-116) and does not start jdtls. After you fix `JAVA_HOME`, restart Neovim so the lookup runs again.
+The result is cached for the rest of the session. If no JDK is found at all, the launcher shows a "No usable JDK found" warning once and does not start jdtls. After you fix `JAVA_HOME`, restart Neovim so the lookup runs again.
 
-## Step 4: one workspace per project
+### One workspace per project
 
-jdtls keeps its index and project data in a workspace folder. The launcher builds one folder per project:
+jdtls keeps its index and project data in a workspace folder. The launcher builds one folder per project. You already have this in `lua/config/java.lua`:
 
-```lua title="lua/ryanparker/java.lua"
+```lua title="lua/config/java.lua"
   local workspace_dir = vim.fn.stdpath("data")
     .. "/jdtls-workspaces/"
     .. vim.fn.sha256(root_dir):sub(1, 12)
@@ -163,11 +333,11 @@ The name is the first 12 characters of the SHA-256 of the root path, then a dash
 
 In practice, deleting one project's folder under `jdtls-workspaces` makes jdtls rebuild it on the next start. That is a reset worth trying when jdtls gets confused.
 
-## Step 5: start or attach
+### Start or attach
 
-Now the launcher has a root, a JDK and a workspace. This is the call that starts jdtls, or attaches the buffer to a server that is already running for that root:
+Now the launcher has a root, a JDK and a workspace. This is the call that starts jdtls, or attaches the buffer to a server that is already running for that root. You already have this at the end of `start()`:
 
-```lua title="lua/ryanparker/java.lua" {2-3,9-10,14,17}
+```lua title="lua/config/java.lua" {2-3,9-10,14,17}
   jdtls.start_or_attach({
     cmd = { jdtls_bin, "--java-executable", jdk .. "/bin/java", "-data", workspace_dir },
     cmd_env = { JAVA_HOME = jdk, PATH = jdk .. "/bin:" .. (vim.env.PATH or "") },
@@ -185,7 +355,7 @@ Now the launcher has a root, a JDK and a workspace. This is the call that starts
       },
     },
     init_options = { bundles = bundles },
-  }, { dap = { hotcodereplace = "auto" } })
+  }, has_dap and { dap = { hotcodereplace = "auto" } } or nil)
 ```
 
 The highlighted lines are the ones that matter most:
@@ -194,18 +364,18 @@ The highlighted lines are the ones that matter most:
 - `cmd_env` puts that JDK first on `PATH` for the jdtls process.
 - `updateBuildConfiguration = "interactive"` makes jdtls ask before it re-imports a build file that changed.
 - `runtimes` defines a single runtime, `JavaSE-Default`, which points at the JDK we found.
-- `contentProvider.preferred = "fernflower"` is the decompiler. When you use `gd` to jump into a library class, you get its source. I expect jdtls to use the JDK's own `src.zip` when it's there. Fernflower's decompiled code shows up only when no source is attached.
-- `init_options` hands over the debug bundles from step 6.
+- `contentProvider.preferred = "fernflower"` is the decompiler. When you use `gd` to jump into a library class, you get its source. When the JDK's own `src.zip` is there, jdtls should use it. Fernflower's decompiled code shows up only when no source is attached.
+- `init_options` hands over the debug bundles from the next section.
 
-The `capabilities` value comes from blink.cmp (lines 124-128), so jdtls gets the same completion capabilities as the other servers.
+The `capabilities` value comes from the lines before the call, where the launcher asks blink.cmp for its capabilities. That way jdtls gets the same completion capabilities as the other servers.
 
-Java uses 4 spaces for indentation. A small autocmd in `lua/ryanparker/core/autocmds.lua` sets `shiftwidth` and `tabstop` to 4 for Java buffers only. Formatting goes through jdtls: conform has no Java entry, so it falls back to the language server, as Part 2 described.
+Java uses 4 spaces for indentation. You set that in Step 4. Formatting goes through jdtls: conform has no Java entry, so it falls back to the language server, as Part 2 described.
 
-## Step 6: debug bundles for Part 5
+### Debug bundles for Part 5
 
-To debug, jdtls needs extra jars. Part 5 uses them, but the launcher looks for them now:
+To debug, jdtls needs extra jars. Part 5 uses them, but the launcher looks for them now. You already have this in `lua/config/java.lua`:
 
-```lua title="lua/ryanparker/java.lua"
+```lua title="lua/config/java.lua"
 local function debug_bundles()
   local pkgs = vim.fn.stdpath("data") .. "/mason/packages/"
   local bundles =
@@ -222,24 +392,60 @@ end
 
 It collects the java-debug plugin jar and every jar of java-test, except two that must not be loaded as bundles. The list is built every time a server starts and is not cached. A fresh Mason install is therefore picked up the next time jdtls starts.
 
-`setup_dap({ hotcodereplace = "auto" })` only runs when the list is not empty (lines 130-132). With an empty list, jdtls still starts and works as a normal language server, but it can't debug.
+The debugger itself, nvim-dap, arrives in Part 5. The `has_dap` check in `start()` runs the debug setup, `setup_dap({ hotcodereplace = "auto" })`, only when nvim-dap is installed and the list is not empty. Until then, and with an empty list, jdtls still starts and works as a normal language server, but it can't debug.
 
-To see what the launcher found, run this inside Neovim:
+## Step 3: start it for Java files
 
-```vim
-:lua =require("ryanparker.java").debug_bundles()
-```
+Neovim runs `ftplugin/java.lua` every time it opens a Java buffer. That is where nvim-jdtls expects its setup, so the file only has to call the launcher.
 
-An empty table means the bundles aren't installed yet. Run the `:MasonInstall` command from step 1, then restart Neovim, because a running jdtls keeps the bundle list it started with.
+1. Create the folder: in a terminal, run `mkdir -p ~/.config/nvim/ftplugin`. If you chose the side-by-side option in Part 1, use `~/.config/nvim-guide/ftplugin` instead.
+2. Create `ftplugin/java.lua` with this content:
 
-## Step 7: check that everything works
+   ```lua title="ftplugin/java.lua"
+   -- Java is special: use nvim-jdtls instead of generic lspconfig auto-enable.
+   require("config.java").start()
+   ```
 
-Open a Java file in a Maven or Gradle project you already have. If you don't have one, make a folder, run `git init` in it and add one `.java` file. This works because `.git` is also a root marker, but jdtls does its best work with a real build file.
+3. Save the file.
+
+## Step 4: Java indentation
+
+Java code uses 4 spaces. A small autocmd sets `shiftwidth` and `tabstop` to 4 for Java buffers only, and leaves every other language alone.
+
+1. Open `lua/config/core/autocmds.lua`.
+2. Go to the end of the file, after the last autocmd (the one that closes `help` and `qf` windows with `q`). Add this block after it:
+
+   ```lua title="lua/config/core/autocmds.lua"
+   vim.api.nvim_create_autocmd("FileType", {
+     group = augroup,
+     pattern = { "java" },
+     callback = function()
+       vim.opt_local.shiftwidth = 4
+       vim.opt_local.tabstop = 4
+     end,
+   })
+   ```
+
+3. Save the file. It uses the `augroup` variable that Part 1 defined at the top of the same file.
+
+## Step 5: check that everything works
+
+Restart Neovim so it reads the new files. Open a Java file in a Maven or Gradle project you already have. If you don't have one, make a folder, run `git init` in it and add one `.java` file. This works because `.git` is also a root marker, but jdtls does its best work with a real build file.
 
 ```sh
 $ mkdir hello-java && cd hello-java
 $ git init
 $ nvim Hello.java
+```
+
+Type this into `Hello.java` and save it:
+
+```java title="Hello.java"
+public class Hello {
+  public static void main(String[] args) {
+    System.out.println("hello");
+  }
+}
 ```
 
 Then check these things:
@@ -249,11 +455,17 @@ Then check these things:
 - <kbd>K</kbd> on a class or method shows its documentation.
 - `gd` on a JDK class, for example `String`, opens the class's source (decompiled by fernflower when no source is attached).
 - `:checkhealth vim.lsp` shows the client, and `:messages` shows any warning from the launcher.
+- This command lists the debug bundles the launcher found:
+
+  ```vim
+  :lua =require("config.java").debug_bundles()
+  ```
+
+  A list of jar paths means the bundles are installed. An empty table `{}` means they aren't yet. Run the `:MasonInstall` command from Step 1, then restart Neovim, because a running jdtls keeps the bundle list it started with.
 
 <Callout type="tip">
-  Once jdtls has attached and the debug bundles are installed, the command
-  `:JdtUpdateDebugConfig` exists in the Java buffer. On a slow first start, wait for the attach
-  before you decide the bundles are missing.
+  On a slow first start, wait for the attach before you decide something is broken. Debug commands
+  such as breakpoints are not available yet: they arrive in Part 5, together with nvim-dap.
 </Callout>
 
 ## Keymaps in Java buffers
@@ -278,11 +490,11 @@ Debug and test keys come in Part 5.
 
 - **A warning says `nvim-jdtls is not installed yet. Run :Lazy sync`.** The plugin is missing. Run `:Lazy sync`, then reopen the file.
 - **A warning says `jdtls is not installed yet. Run :MasonInstall jdtls`.** Run that command, wait for Mason to finish, then reopen the file.
-- **A warning says `` No usable JDK found (set JAVA_HOME or `brew install openjdk`); jdtls not started ``.** None of the places from step 3 has a working JDK. Install one, set `JAVA_HOME`, and restart Neovim. The warning shows only once per session.
+- **A warning says `` No usable JDK found (set JAVA_HOME or `brew install openjdk`); jdtls not started ``.** None of the places from "Find a JDK" has a working JDK. Install one, set `JAVA_HOME`, and restart Neovim. The warning shows only once per session.
 - **Nothing happens.** The file has no root marker above it: no Maven or Gradle file and no `.git`. Add one, then reopen the file.
-- **No debug configurations.** Install the bundles with `:MasonInstall jdtls java-debug-adapter java-test` and restart Neovim, because a running jdtls keeps the bundle list it started with.
-- **Strange project errors.** Delete that project's folder under `jdtls-workspaces` in Neovim's data folder (see step 4) and open the file again.
+- **The debug bundle list is empty.** Install the bundles with `:MasonInstall jdtls java-debug-adapter java-test` and restart Neovim, because a running jdtls keeps the bundle list it started with.
+- **Strange project errors.** Delete that project's folder under `jdtls-workspaces` in Neovim's data folder (see "One workspace per project") and open the file again.
 
 ## What's next
 
-Part 5 uses those bundles to debug Java and Python, runs tests from the editor, and finishes with the keys I use every day.
+[Part 5](/blog/neovim-setup-5-debugging-and-workflow/) installs nvim-dap, uses those bundles to debug Java and Python, runs tests from the editor, and finishes with the keys for every day.

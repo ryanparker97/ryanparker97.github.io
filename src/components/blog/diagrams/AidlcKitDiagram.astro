@@ -1,0 +1,483 @@
+---
+import type { Lang } from '~/i18n';
+
+interface Props {
+  lang?: Lang;
+}
+const { lang = 'en' } = Astro.props;
+
+// Tool, gate, phase and track names stay as they are; descriptive labels and captions are translated.
+const text = {
+  en: {
+    title: 'How a run moves through the AI-DLC kit',
+    desc: 'A human gives the Claude lead an intent and the kit opens a run with a track. Inception does the research, the requirements and units, and the architecture, and ends at the spec_ready gate. The human signs off on inception. Construction builds unit by unit, skeleton first, with Codex working test-first; the unit_done gate checks each unit, failures go to debug, and review_now sends risky units to review early. Review uses a fresh Claude reviewer, reruns the tests, and the review_risk gate runs the full verification and writes a receipt, sending high-risk work to a human. The human signs off and the lead merges. Throughout, the lead routes and logs every task, and Jev can advise on routing and gates.',
+    caption: 'Three phases, four gates, two human sign-offs. Agents do the work inside each phase.',
+    steps: [
+      'The human gives the Claude lead an intent, and the kit opens a run with a track.',
+      'Inception: Antigravity researches, the lead writes requirements and units, Antigravity designs the architecture, and the spec_ready gate checks that every unit can be built.',
+      'The human signs off on inception before any code is written.',
+      'Construction: one unit at a time, skeleton first. Codex builds test-first, the unit_done gate runs the verification command, a failure goes to debug, and review_now sends risky units to review at once.',
+      'Review: a fresh Claude reviewer checks each unit and reruns the tests. The review_risk gate runs the full verification, writes a receipt and sends high-risk work to a human.',
+      'The human signs off and the lead merges. Throughout, the lead routes and logs every task, and Jev can advise on routing and gates, handing the choice back when unsure.',
+    ],
+    lanes: ['Human', 'Lifecycle', 'Agents'],
+    intent: 'intent',
+    signoff: 'sign-off',
+    final: ['sign-off', 'lead merges'],
+    phases: [
+      ['Inception', ['research', 'requirements · units', 'architecture']],
+      ['Construction', ['unit by unit', 'skeleton first', 'test-first · debug']],
+      ['Review', ['fresh context', 'rerun the tests']],
+    ],
+    gates: ['spec_ready', 'unit_done', 'review_now', 'review_risk'],
+    agents: [
+      ['Antigravity', 'research · architecture'],
+      ['Codex', 'build · debug'],
+      ['Claude', 'fresh reviewer'],
+    ],
+    lead: ['Lead · Claude', 'plans · routes · runs gates · merges'],
+    jev: ['Jev (optional)', 'advises'],
+  },
+  vi: {
+    title: 'Cách một lần chạy đi qua kit AI-DLC',
+    desc: 'Con người đưa cho lead Claude một ý định và kit mở một run với một track. Inception làm nghiên cứu, yêu cầu và các unit, rồi kiến trúc, và kết thúc ở gate spec_ready. Con người duyệt inception. Construction xây từng unit, khung chạy được trước, Codex làm theo kiểu test-first; gate unit_done kiểm tra từng unit, lỗi chuyển sang debug, và review_now đưa các unit rủi ro đi review sớm. Review dùng một reviewer Claude với context mới, chạy lại test, và gate review_risk chạy toàn bộ kiểm chứng và ghi một biên nhận, việc rủi ro cao được chuyển cho con người. Con người duyệt và lead merge. Suốt quá trình, lead giao việc và ghi lại mọi task, còn Jev có thể tư vấn về định tuyến và gate.',
+    caption:
+      'Ba giai đoạn, bốn gate, hai lần con người duyệt. Các agent làm việc trong từng giai đoạn.',
+    steps: [
+      'Con người đưa cho lead Claude một ý định, và kit mở một run với một track.',
+      'Inception: Antigravity nghiên cứu, lead viết yêu cầu và các unit, Antigravity thiết kế kiến trúc, và gate spec_ready kiểm tra mọi unit đều xây được.',
+      'Con người duyệt inception trước khi viết bất kỳ dòng code nào.',
+      'Construction: từng unit một, khung chạy được trước. Codex xây theo test-first, gate unit_done chạy lệnh kiểm chứng, lỗi chuyển sang debug, và review_now đưa ngay các unit rủi ro đi review.',
+      'Review: một reviewer Claude với context mới kiểm tra từng unit và chạy lại test. Gate review_risk chạy toàn bộ kiểm chứng, ghi một biên nhận và chuyển việc rủi ro cao cho con người.',
+      'Con người duyệt và lead merge. Suốt quá trình, lead giao việc và ghi lại mọi task, còn Jev có thể tư vấn về định tuyến và gate, rồi trả quyết định lại khi không chắc.',
+    ],
+    lanes: ['Con người', 'Vòng đời', 'Agent'],
+    intent: 'ý định',
+    signoff: 'duyệt',
+    final: ['duyệt', 'lead merge'],
+    phases: [
+      ['Inception', ['nghiên cứu', 'yêu cầu · unit', 'kiến trúc']],
+      ['Construction', ['từng unit một', 'khung chạy trước', 'test-first · debug']],
+      ['Review', ['context mới', 'chạy lại test']],
+    ],
+    gates: ['spec_ready', 'unit_done', 'review_now', 'review_risk'],
+    agents: [
+      ['Antigravity', 'nghiên cứu · kiến trúc'],
+      ['Codex', 'xây dựng · debug'],
+      ['Claude', 'reviewer mới'],
+    ],
+    lead: ['Lead · Claude', 'kế hoạch · giao việc · gate · merge'],
+    jev: ['Jev (tùy chọn)', 'tư vấn'],
+  },
+}[lang];
+
+// Gate names sit with the phase they close: one after Inception, two after Construction, one after Review.
+const phases = text.phases.map(([name, lines], i) => ({
+  name: name as string,
+  lines: lines as string[],
+  gates: i === 1 ? [text.gates[1], text.gates[2]] : [i === 0 ? text.gates[0] : text.gates[3]],
+  agent: text.agents[i],
+}));
+
+const tick = (x: number, cy: number) => `M${x} ${cy} l5 5 l10 -11`;
+const diamond = (cx: number, cy: number) =>
+  `M${cx} ${cy - 6} L${cx + 6} ${cy} L${cx} ${cy + 6} L${cx - 6} ${cy} Z`;
+
+// Wide layout: three lanes (Human, Lifecycle, Agents), phase cards in three 200-wide columns.
+const colX = [0, 240, 480];
+const cardTop = 124;
+const cardH = 220;
+const barH = 36;
+const wide = phases.map((p, i) => ({
+  ...p,
+  x: colX[i],
+  cx: colX[i] + 100,
+  gates: p.gates.map((g, j) => ({
+    name: g,
+    y: cardTop + cardH - 10 - (p.gates.length - j) * barH - (p.gates.length - j - 1) * 8,
+  })),
+}));
+
+// Vertical layout: one stack, agents as an inset strip inside each phase card.
+const vGap = 20;
+const vChip = 40;
+const vBar = 32;
+const vStrip = 50;
+const place = (p: (typeof phases)[number], top: number) => {
+  const gateTop = top + 46 + 20 * (p.lines.length - 1) + 12;
+  const gates = p.gates.map((g, j) => ({ name: g, y: gateTop + j * (vBar + 6) }));
+  const gateEnd = gateTop + p.gates.length * vBar + (p.gates.length - 1) * 6;
+  const stripY = gateEnd + 8;
+  return { ...p, top, h: stripY + vStrip + 10 - top, gates, stripY };
+};
+const vIntentY = 0;
+const c0 = place(phases[0], vIntentY + vChip + vGap);
+const vSignY = c0.top + c0.h + vGap;
+const c1 = place(phases[1], vSignY + vChip + vGap);
+const c2 = place(phases[2], c1.top + c1.h + vGap);
+const vCards = [c0, c1, c2];
+const vFinalY = c2.top + c2.h + vGap;
+const vLeadY = vFinalY + vChip + 20;
+const vJevY = vLeadY + 52 + 12;
+const vH = vJevY + vChip + 1;
+---
+
+<figure class="diagram">
+  <!-- Horizontal layout, shown from 768px. -->
+  <svg
+    class="diagram-h"
+    viewBox="-10 0 700 534"
+    role="img"
+    aria-labelledby="aidlc-h-title aidlc-h-desc"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <title id="aidlc-h-title">{text.title}</title>
+    <desc id="aidlc-h-desc">{text.desc}</desc>
+    <defs>
+      <marker
+        id="aidlc-h-arrow"
+        viewBox="0 0 10 10"
+        refX="9"
+        refY="5"
+        markerWidth="7"
+        markerHeight="7"
+        orient="auto"
+      >
+        <path d="M0 0 L10 5 L0 10 z" class="arrow-head"></path>
+      </marker>
+    </defs>
+
+    <rect class="lane-bg" x="-10" y="360" width="700" height="174" rx="16"></rect>
+    <text class="lane-label" x="0" y="20">
+      {text.lanes[0]}
+    </text>
+    <text class="lane-label" x="0" y="110">
+      {text.lanes[1]}
+    </text>
+    <text class="lane-label" x="0" y="384">
+      {text.lanes[2]}
+    </text>
+
+    <g class="ties">
+      {wide.map((p) => (
+        <path d={`M${p.cx} 398 V344`}></path>
+      ))}
+      <path d="M100 466 V450"></path>
+      <path d="M340 466 V450"></path>
+      <path d="M480 492 H440"></path>
+    </g>
+
+    <g class="links" marker-end="url(#aidlc-h-arrow)">
+      <path d="M100 80 V124"></path>
+      <path d="M180 124 V80"></path>
+      <path d="M260 80 V124"></path>
+      <path d="M440 234 H480"></path>
+      <path d="M590 124 V80"></path>
+    </g>
+
+    <g class="node human">
+      <rect x="0" y="28" width="130" height="52" rx="14"></rect>
+      <text x="65" y="60" class="t-strong">
+        {text.intent}
+      </text>
+    </g>
+    <g class="node human signoff">
+      <rect x="150" y="28" width="140" height="52" rx="14"></rect>
+      <path class="tick" d={tick(164, 54)}></path>
+      <text x="232" y="60" class="t-strong">
+        {text.signoff}
+      </text>
+    </g>
+    <g class="node human signoff">
+      <rect x="500" y="28" width="180" height="52" rx="14"></rect>
+      <path class="tick" d={tick(514, 54)}></path>
+      <text x="600" y="50" class="t-strong">
+        {text.final[0]}
+      </text>
+      <text x="600" y="70">
+        {text.final[1]}
+      </text>
+    </g>
+
+    {wide.map((p) => (
+      <g class="node phase">
+        <rect x={p.x} y={cardTop} width="200" height={cardH} rx="16" />
+        <text x={p.cx} y={cardTop + 30} class="t-strong">
+          {p.name}
+        </text>
+        {p.lines.map((l, k) => (
+          <text x={p.cx} y={cardTop + 56 + k * 22}>
+            {l}
+          </text>
+        ))}
+        {p.gates.map((g) => (
+          <g class="gate">
+            <rect x={p.x + 10} y={g.y} width="180" height={barH} rx="8" />
+            <path class="diamond" d={diamond(p.x + 30, g.y + 18)} />
+            <text x={p.x + 112} y={g.y + 23}>
+              {g.name}
+            </text>
+          </g>
+        ))}
+      </g>
+    ))}
+
+    {wide.map((p) => (
+      <g class="node agent">
+        <rect x={p.x} y="398" width="200" height="52" rx="12" />
+        <text x={p.cx} y="420" class="t-strong">
+          {p.agent[0]}
+        </text>
+        <text x={p.cx} y="440">
+          {p.agent[1]}
+        </text>
+      </g>
+    ))}
+    <g class="node agent lead">
+      <rect x="0" y="466" width="440" height="52" rx="12"></rect>
+      <text x="220" y="488" class="t-strong">
+        {text.lead[0]}
+      </text>
+      <text x="220" y="508">
+        {text.lead[1]}
+      </text>
+    </g>
+    <g class="node agent optional">
+      <rect x="480" y="466" width="200" height="52" rx="12"></rect>
+      <text x="580" y="488" class="t-strong">
+        {text.jev[0]}
+      </text>
+      <text x="580" y="508">
+        {text.jev[1]}
+      </text>
+    </g>
+  </svg>
+
+  <!-- Vertical layout, shown below 768px. -->
+  <svg
+    class="diagram-v"
+    viewBox={`0 0 300 ${vH}`}
+    role="img"
+    aria-labelledby="aidlc-v-title aidlc-v-desc"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <title id="aidlc-v-title">{text.title}</title>
+    <desc id="aidlc-v-desc">{text.desc}</desc>
+    <defs>
+      <marker
+        id="aidlc-v-arrow"
+        viewBox="0 0 10 10"
+        refX="9"
+        refY="5"
+        markerWidth="7"
+        markerHeight="7"
+        orient="auto"
+      >
+        <path d="M0 0 L10 5 L0 10 z" class="arrow-head"></path>
+      </marker>
+    </defs>
+
+    <g class="ties">
+      <path d={`M150 ${vLeadY + 52} V${vJevY}`}></path>
+    </g>
+
+    <g class="links" marker-end="url(#aidlc-v-arrow)">
+      <path d={`M150 ${vIntentY + vChip} V${vCards[0].top}`}></path>
+      <path d={`M150 ${vCards[0].top + vCards[0].h} V${vSignY}`}></path>
+      <path d={`M150 ${vSignY + vChip} V${vCards[1].top}`}></path>
+      <path d={`M150 ${vCards[1].top + vCards[1].h} V${vCards[2].top}`}></path>
+      <path d={`M150 ${vCards[2].top + vCards[2].h} V${vFinalY}`}></path>
+    </g>
+
+    <g class="node human">
+      <rect x="20" y={vIntentY} width="260" height={vChip} rx="14"></rect>
+      <text x="150" y={vIntentY + 26} class="t-strong">
+        {text.intent}
+      </text>
+    </g>
+
+    {vCards.map((c, i) => (
+      <>
+        {i === 1 && (
+          <g class="node human signoff">
+            <rect x="20" y={vSignY} width="260" height={vChip} rx="14" />
+            <path class="tick" d={tick(34, vSignY + 20)} />
+            <text x="162" y={vSignY + 26} class="t-strong">
+              {text.signoff}
+            </text>
+          </g>
+        )}
+        <g class="node phase">
+          <rect x="2" y={c.top} width="296" height={c.h} rx="16" />
+          <text x="150" y={c.top + 26} class="t-strong">
+            {c.name}
+          </text>
+          {c.lines.map((l, k) => (
+            <text x="150" y={c.top + 48 + k * 20}>
+              {l}
+            </text>
+          ))}
+          {c.gates.map((g) => (
+            <g class="gate">
+              <rect x="12" y={g.y} width="276" height={vBar} rx="8" />
+              <path class="diamond" d={diamond(32, g.y + vBar / 2)} />
+              <text x="165" y={g.y + 21}>
+                {g.name}
+              </text>
+            </g>
+          ))}
+          <g class="agent">
+            <rect x="12" y={c.stripY} width="276" height={vStrip} rx="10" />
+            <text x="150" y={c.stripY + 20} class="t-strong">
+              {c.agent[0]}
+            </text>
+            <text x="150" y={c.stripY + 41}>
+              {c.agent[1]}
+            </text>
+          </g>
+        </g>
+      </>
+    ))}
+
+    <g class="node human signoff">
+      <rect x="20" y={vFinalY} width="260" height={vChip} rx="14"></rect>
+      <path class="tick" d={tick(34, vFinalY + 20)}></path>
+      <text x="162" y={vFinalY + 26} class="t-strong">
+        {text.final.join(' · ')}
+      </text>
+    </g>
+    <g class="node agent lead">
+      <rect x="2" y={vLeadY} width="296" height="52" rx="12"></rect>
+      <text x="150" y={vLeadY + 22} class="t-strong">
+        {text.lead[0]}
+      </text>
+      <text x="150" y={vLeadY + 42}>
+        {text.lead[1]}
+      </text>
+    </g>
+    <g class="node agent optional">
+      <rect x="2" y={vJevY} width="296" height={vChip} rx="12"></rect>
+      <text x="150" y={vJevY + 26}>
+        <tspan class="t-strong">{text.jev[0]}</tspan>
+        {' · '}
+        {text.jev[1]}
+      </text>
+    </g>
+  </svg>
+
+  <ol class="sr-only">
+    {text.steps.map((s) => (
+      <li>{s}</li>
+    ))}
+  </ol>
+  <figcaption>{text.caption}</figcaption>
+</figure>
+
+<style>
+  .diagram {
+    margin-block: 2em;
+    font-family: var(--font-sans);
+  }
+  svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    font-size: 15.5px;
+  }
+  .diagram-h {
+    display: none;
+  }
+  .diagram-v {
+    max-width: 420px;
+    margin-inline: auto;
+  }
+  @media (min-width: 768px) {
+    .diagram-h {
+      display: block;
+    }
+    .diagram-v {
+      display: none;
+    }
+  }
+  text {
+    fill: var(--text);
+    text-anchor: middle;
+  }
+  .t-strong {
+    font-weight: 600;
+  }
+  .lane-label {
+    fill: var(--text-2);
+    font-weight: 600;
+    text-anchor: start;
+  }
+
+  /* Main story: strong strokes in the link colour. */
+  .node rect {
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+  .human rect {
+    fill: var(--mint-tint);
+    stroke: var(--link);
+    stroke-width: 1.5;
+  }
+  .phase > rect {
+    fill: var(--fill);
+    stroke: var(--link);
+    stroke-width: 2;
+  }
+  .gate rect {
+    fill: var(--surface);
+    stroke: var(--link);
+    stroke-width: 1.5;
+  }
+  .diamond {
+    fill: var(--link);
+  }
+  .tick {
+    fill: none;
+    stroke: var(--link);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .links path {
+    fill: none;
+    stroke: var(--link);
+    stroke-width: 2;
+  }
+  .arrow-head {
+    fill: var(--link);
+  }
+
+  /* Side lane: quieter fills and hairlines, no strong colour. */
+  .lane-bg {
+    fill: var(--surface-2);
+  }
+  .agent rect {
+    fill: var(--surface);
+    stroke: var(--border);
+    stroke-width: 1;
+  }
+  .agent text {
+    fill: var(--text-2);
+  }
+  .optional rect {
+    stroke: var(--text-2);
+    stroke-dasharray: 6 4;
+  }
+  .ties path {
+    fill: none;
+    stroke: var(--text-2);
+    stroke-width: 1.5;
+    stroke-dasharray: 2 5;
+    stroke-linecap: round;
+  }
+  figcaption {
+    margin-top: 12px;
+    color: var(--text-2);
+    font-size: 0.9375rem;
+    text-align: center;
+  }
+</style>

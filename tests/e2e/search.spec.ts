@@ -51,16 +51,16 @@ test.describe('search', () => {
     await page.keyboard.press('ControlOrMeta+k');
     const input = page.locator('#search-input');
     await input.fill('Datadog observability');
-    await expect(page.locator('.hit .type', { hasText: 'Experiences' })).toBeVisible();
+    await expect(page.locator('.hit .type', { hasText: 'Experiences' }).first()).toBeVisible();
     await input.fill('Multi-Agent Coding System');
-    await expect(page.locator('.hit .type', { hasText: 'Projects' })).toBeVisible();
+    await expect(page.locator('.hit .type', { hasText: 'Projects' }).first()).toBeVisible();
     await expect(
       page.locator('.hit a[href*="/projects/#agentic-coding-workflow"]').first(),
     ).toBeVisible();
     await input.fill('Airflow reuse idle EMR clusters');
     await expect(page.locator('.hit .type', { hasText: 'STAR' }).first()).toBeVisible();
-    await input.fill('zzqxjwvk');
-    await expect(page.locator('#search-status')).toContainText('No results for “zzqxjwvk”.');
+    await input.fill('zqzqzq');
+    await expect(page.locator('#search-status')).toContainText('No results for “zqzqzq”.');
   });
 
   test('does not index the print layout, tag pages or the 404 page', async ({ page }) => {

@@ -17,6 +17,8 @@ interface Props {
   item?: boolean;
   /** Pads a stat with no top caption so its value shares a baseline with its siblings. */
   nocap?: boolean;
+  /** Footnote reference, shown as a superscript link after the caption (§5.10.12). */
+  ref?: { n: number; label: string };
 }
 const {
   value,
@@ -26,6 +28,7 @@ const {
   card = false,
   item = false,
   nocap = false,
+  ref,
 } = Astro.props;
 const Tag = item ? 'li' : 'figure';
 ---
@@ -33,5 +36,23 @@ const Tag = item ? 'li' : 'figure';
 <Tag class:list={['stat', { 'stat--super': isSuper, 'stat--card': card, 'stat--nocap': nocap }]}>
   {above && <span class="stat-cap">{above}</span>}
   <span class="stat-value">{value}</span>
-  {below && <span class="stat-cap">{below}</span>}
+  {ref && !below && (
+    <sup class="fn-ref">
+      <a id={`fnref-${ref.n}`} href={`#fn-${ref.n}`} aria-label={ref.label}>
+        {ref.n}
+      </a>
+    </sup>
+  )}
+  {below && (
+    <span class="stat-cap">
+      {below}
+      {ref && (
+        <sup class="fn-ref">
+          <a id={`fnref-${ref.n}`} href={`#fn-${ref.n}`} aria-label={ref.label}>
+            {ref.n}
+          </a>
+        </sup>
+      )}
+    </span>
+  )}
 </Tag>

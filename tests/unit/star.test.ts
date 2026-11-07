@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { remark } from 'remark';
 import { checkStarHeadings, remarkStarSections } from '../../src/lib/remark-star-sections';
-import { groupStories, headlineMetric, splitStarHtml } from '../../src/lib/star';
+import { readFileSync } from 'node:fs';
+import {
+  actionSteps,
+  groupStories,
+  headlineMetric,
+  splitStarHtml,
+  stripFirstList,
+} from '../../src/lib/star';
 
 describe('checkStarHeadings', () => {
   it('accepts the four sections in order', () => {
@@ -98,5 +105,34 @@ describe('splitStarHtml lead', () => {
       '<p>Note</p><h2>S</h2><p>a</p><h2>T</h2><p>b</p><h2>A</h2><p>c</p><h2>R</h2><p>d</p>';
     expect(splitStarHtml(html).lead).toBe('<p>Note</p>');
     expect(splitStarHtml('<h2>S</h2><h2>T</h2><h2>A</h2><h2>R</h2>').lead).toBe('');
+  });
+});
+
+describe('actionSteps', () => {
+  const body = (lang: string) =>
+    readFileSync(`src/content/star/${lang}/emr-cost-optimization.md`, 'utf8');
+  it('returns the labelled Action bullets of the EMR story', () => {
+    expect(actionSteps(body('en')).map((h) => h.label)).toEqual([
+      'Reuse before create',
+      'Idle shutdown',
+      'Configurable sizing',
+    ]);
+  });
+  it('returns three steps for the VI twin', () => {
+    const steps = actionSteps(body('vi'));
+    expect(steps).toHaveLength(3);
+    expect(steps[0].label).toMatch(/^Tái sử dụng trước khi tạo mới/);
+  });
+  it('is empty when the Action is prose only or has one labelled bullet', () => {
+    const md = (a: string) =>
+      `## Situation\n\ns\n\n## Task\n\nt\n\n## Action\n\n${a}\n\n## Result\n\nr`;
+    expect(actionSteps(md('Just prose.'))).toEqual([]);
+    expect(actionSteps(md('- **One:** only'))).toEqual([]);
+  });
+});
+
+describe('stripFirstList', () => {
+  it('removes the first list and trims', () => {
+    expect(stripFirstList('<p>a</p><ul><li>x</li></ul><p>b</p>')).toBe('<p>a</p><p>b</p>');
   });
 });

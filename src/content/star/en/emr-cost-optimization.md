@@ -8,6 +8,7 @@ metrics:
   - prefix: 'Cut'
     label: 'EMR costs'
     value: '>50%'
+    note: "On the bank's AWS data platform (Datum / Security Bank); pipeline performance stayed the same."
   - label: 'pipeline performance'
     value: 'unchanged'
 featured: true

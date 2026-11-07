@@ -32,7 +32,7 @@ test.describe('STAR', () => {
     await expect(chapter).toBeVisible();
     await expect(chapter.getByRole('link', { name: 'View in experiences' })).toHaveAttribute(
       'href',
-      '/experiences/#datum-security-bank-data-engineer',
+      '/experiences/datum-security-bank-data-engineer/',
     );
     await expect(chapter.locator('.section-header--start')).toHaveCount(1);
   });
@@ -113,21 +113,22 @@ test.describe('STAR', () => {
     await expect(page.locator('figure.quote figcaption')).toHaveText('Interview question');
     await expect(page.locator('.stat--super .stat-value')).toHaveText('>50%');
     const panels = page.locator('[data-star-panel]');
-    await expect(panels.locator('h3')).toHaveText(['Situation', 'Task', 'Action', 'Result']);
+    await expect(panels.locator('h3')).toHaveText(['Situation', 'Task', 'Result']);
+    await expect(page.locator('#steps h2')).toHaveText('Step by step.');
     for (const p of await panels.all()) await expect(p).toBeVisible();
     await expect(page.getByRole('link', { name: 'All stories' }).last()).toBeVisible();
     await expect(page.getByRole('link', { name: 'Read the role' })).toHaveAttribute(
       'href',
-      '/experiences/#datum-security-bank-data-engineer',
+      '/experiences/datum-security-bank-data-engineer/',
     );
   });
 
-  test('four-panel grid: S and T side by side, A and R full width; one column at 375px', async ({
+  test('story panels: S and T side by side, R full width; one column at 375px', async ({
     page,
   }) => {
     const boxes = async () => {
       const out: Record<string, { x: number; y: number; w: number }> = {};
-      for (const k of ['s', 't', 'a', 'r']) {
+      for (const k of ['s', 't', 'r']) {
         const b = (await page.locator(`[data-star-panel="${k}"]`).boundingBox())!;
         out[k] = { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width) };
       }
@@ -138,9 +139,8 @@ test.describe('STAR', () => {
     let b = await boxes();
     expect(b.s.y).toBe(b.t.y);
     expect(b.t.x).toBeGreaterThan(b.s.x);
-    expect(b.a.w).toBeGreaterThan(b.s.w * 1.8);
-    expect(b.r.w).toBe(b.a.w);
-    expect(b.r.y).toBeGreaterThan(b.a.y);
+    expect(b.r.w).toBeGreaterThan(b.s.w * 1.8);
+    expect(b.r.y).toBeGreaterThan(b.t.y);
     await expect(page.locator('[data-star-panel="r"] .stat-value').first()).toHaveText('>50%');
     await page.setViewportSize({ width: 375, height: 812 });
     b = await boxes();
@@ -162,11 +162,11 @@ test.describe('STAR', () => {
     }
   });
 
-  test('Experiences chapter links to the role group', async ({ page }) => {
-    await page.goto('/experiences/');
-    const link = page
-      .locator('#datum-security-bank-data-engineer')
-      .getByRole('link', { name: 'Read the STAR story' });
+  test('the role page links to its STAR story and the card anchor still lands', async ({
+    page,
+  }) => {
+    await page.goto('/experiences/datum-security-bank-data-engineer/');
+    const link = page.getByRole('link', { name: 'Read the STAR story' });
     await expect(link).toHaveAttribute('href', '/star/emr-cost-optimization/');
     await page.goto('/experiences/#datum-security-bank-data-engineer');
     await expect(page.locator('#datum-security-bank-data-engineer')).toBeInViewport();

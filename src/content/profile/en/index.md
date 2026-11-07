@@ -8,9 +8,11 @@ email: 'ryanparker.p.97@gmail.com'
 phone: '+84963378831'
 phoneDisplay: '(+84) 963 378 831'
 yearsOfExperience: '5+'
+yearsOfExperienceNote: 'Engineering roles since 2019; every role is listed on the Experiences page.'
 headlineMetric:
   value: '7'
   label: 'engineers'
+  note: 'As Team Lead at FPT Software, since Aug 2026.'
 headlineMetricPrefix: 'Led'
 socials:
   linkedin: 'https://www.linkedin.com/in/jomatran'

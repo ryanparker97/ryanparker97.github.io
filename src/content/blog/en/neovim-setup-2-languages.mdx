@@ -1,7 +1,8 @@
 ---
 title: 'Neovim setup guide, Part 2: LSP, completion, formatting and linting'
-description: 'Set up language servers, completion, format on save and linting for every file type in my Neovim 0.12 config, and check that each one works.'
+description: 'Set up language servers, completion, format on save and linting for every file type in your Neovim 0.12 config, and check that each one works.'
 pubDate: 2026-10-31
+updatedDate: 2026-11-07
 tags: ['neovim', 'dotfiles', 'lsp', 'developer-tools']
 series: 'neovim-setup-guide'
 seriesPart: 2
@@ -10,18 +11,17 @@ heroImage: '../../../assets/blog/neovim-setup/part-2.svg'
 
 import Callout from '~/components/blog/Callout.astro';
 
-[Part 1](/blog/neovim-setup-1-zero-to-editor/) got everything installed and running. This part makes each file type properly understood: Python, Lua, web files, Bash, Terraform, YAML, Docker, Markdown and TOML all get a language server and completion, plus the formatter and linter that fit them.
+[Part 1](/blog/neovim-setup-1-zero-to-editor/) gave you a working editor. This part makes each file type properly understood: Python, Lua, web files, Bash, Terraform, YAML, Docker, Markdown and TOML all get a language server and completion, plus the formatter and linter that fit them.
 
 These are four separate tools, and that is on purpose. A language server understands the code. Completion offers that knowledge to you while you type. A formatter rewrites the file when you save. A linter runs extra command-line checks. When one of them breaks, you know where to look, instead of digging through one big plugin. You can see the whole series on the [series page](/blog/series/neovim-setup-guide/).
 
 <Callout type="note">
-  **Tested with:** Neovim 0.12, macOS, dotfiles commit `64351ec`. **Source:**
-  [github.com/ryanparker97/dotfiles](https://github.com/ryanparker97/dotfiles) (folder `nvim/`).
+  **Tested with:** Neovim 0.12, macOS.
 </Callout>
 
 ## What you'll have at the end
 
-When you finish this part, you'll have:
+When you finish this part, you'll have created four plugin files and one small addition to `autocmds.lua`, and the config will give you:
 
 - **16 language servers** installed by Mason, configured with Neovim's own `vim.lsp.config` and started by `vim.lsp.enable` (Java is started separately, in Part 4).
 - **blink.cmp** completion, with documentation and signature help.
@@ -32,7 +32,9 @@ When you finish this part, you'll have:
 
 ## Before you start
 
-Finish [Part 1](/blog/neovim-setup-1-zero-to-editor/) first, and check that `:checkhealth` is clean. Mason installs most of the tools in this part by itself. The Homebrew copies of `terraform`, `shellcheck`, `shfmt`, `tflint` and `cfn-lint` from Part 1 are optional, because Mason installs those too. Node still has to come from Homebrew, since many servers and `prettier` run on it.
+Finish [Part 1](/blog/neovim-setup-1-zero-to-editor/) first, so you have the config folder and every file from that part, and `:checkhealth lazy` shows no errors. All paths in this part are relative to the same config folder. If you chose the side-by-side option in Part 1, start Neovim with `NVIM_APPNAME=nvim-guide nvim`.
+
+Mason installs most of the tools in this part by itself. The Homebrew copies of `terraform`, `shellcheck`, `shfmt`, `tflint` and `cfn-lint` from Part 1 are optional, because Mason installs those too. Node still has to come from Homebrew, since many servers and `prettier` run on it.
 
 ## How the pieces fit
 
@@ -45,113 +47,279 @@ Finish [Part 1](/blog/neovim-setup-1-zero-to-editor/) first, and check that `:ch
 | conform.nvim | `BufWritePre`, `:ConformInfo`, `<leader>cf` | formatting |
 | nvim-lint | `BufReadPost` / `BufNewFile` | linting |
 
-## Step 1: install the servers and tools with Mason
+## Step 1: create lsp.lua
 
-Mason downloads servers, formatters and linters into its own folder. The tool list is built by a small function:
+This file holds Mason, the language servers and the diagnostic settings. It is the longest file of the part, so you create it in one go and read about it afterwards.
 
-```lua title="lua/ryanparker/plugins/lsp.lua"
-local function mason_tools()
-  local tools = {
-    "stylua",
-    "prettier",
-    -- …
-  }
-  if has_python_310() then
-    vim.list_extend(tools, { "sqlfluff" })
-  end
-  return tools
-end
-```
+1. Create `lua/config/plugins/lsp.lua` with this content:
+
+   ```lua title="lua/config/plugins/lsp.lua" {88,124,152,209}
+   local python_310 -- cached result of has_python_310()
+
+   -- Spawns python3 once, on first call; only invoked when mason-tool-installer loads.
+   local function has_python_310()
+     if python_310 ~= nil then
+       return python_310
+     end
+     python_310 = false
+     if vim.fn.executable("python3") == 0 then
+       return python_310
+     end
+     local version = vim.fn.system({
+       "python3",
+       "-c",
+       "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')",
+     })
+     if vim.v.shell_error ~= 0 then
+       return python_310
+     end
+     local major, minor = version:match("^(%d+)%.(%d+)")
+     major, minor = tonumber(major), tonumber(minor)
+     python_310 = (major and minor and (major > 3 or (major == 3 and minor >= 10))) and true or false
+     return python_310
+   end
+
+   local function mason_tools()
+     local tools = {
+       "stylua",
+       "prettier",
+       "shfmt",
+       "shellcheck",
+       "eslint_d",
+       "hadolint",
+       "tflint",
+       "cfn-lint",
+       "ruff",
+       "debugpy",
+       "java-debug-adapter",
+       "java-test",
+       "terraform",
+       "markdownlint-cli2",
+       "yamllint",
+       "actionlint",
+     }
+     if has_python_310() then
+       vim.list_extend(tools, { "sqlfluff" })
+     end
+     return tools
+   end
+
+   local lsp_servers = {
+     "lua_ls",
+     "basedpyright",
+     "ruff",
+     "vtsls",
+     "html",
+     "cssls",
+     "tailwindcss",
+     "emmet_ls",
+     "jsonls",
+     "yamlls",
+     "taplo",
+     "marksman",
+     "bashls",
+     "dockerls",
+     "terraformls",
+     "jdtls",
+   }
+
+   return {
+     {
+       "mason-org/mason.nvim",
+       cmd = { "Mason", "MasonInstall", "MasonUpdate" },
+       opts = { ui = { border = "rounded" } },
+     },
+     {
+       "WhoIsSethDaniel/mason-tool-installer.nvim",
+       event = "VeryLazy",
+       dependencies = { "mason-org/mason.nvim" },
+       opts = function()
+         return { ensure_installed = mason_tools(), run_on_start = true }
+       end,
+       config = function(_, opts)
+         local installer = require("mason-tool-installer")
+         installer.setup(opts)
+         -- The plugin's own start hook listens for VimEnter, which has already fired
+         -- by the time a VeryLazy load happens.
+         installer.run_on_start()
+       end,
+     },
+
+     {
+       "neovim/nvim-lspconfig",
+       event = { "BufReadPre", "BufNewFile" },
+       dependencies = {
+         "mason-org/mason.nvim",
+         "mason-org/mason-lspconfig.nvim",
+         "saghen/blink.cmp",
+         "b0o/schemastore.nvim",
+       },
+       init = function()
+         -- Applied at startup so it is in place before any LSP client attaches.
+         vim.diagnostic.config({
+           underline = true,
+           virtual_text = { current_line = true },
+           severity_sort = true,
+           jump = {
+             on_jump = function(_, bufnr)
+               vim.diagnostic.open_float({ bufnr = bufnr, scope = "cursor", focus = false })
+             end,
+           },
+           float = { border = "rounded", source = true },
+         })
+       end,
+       config = function()
+         local capabilities = require("blink.cmp").get_lsp_capabilities()
+         vim.lsp.config("*", { capabilities = capabilities })
+
+         vim.api.nvim_create_autocmd("LspAttach", {
+           group = vim.api.nvim_create_augroup("user_lsp_attach", { clear = true }),
+           callback = function(event)
+             local client = vim.lsp.get_client_by_id(event.data.client_id)
+             if client and client.name == "ruff" then
+               client.server_capabilities.hoverProvider = false
+             end
+             local function map(mode, lhs, rhs, desc)
+               vim.keymap.set(mode, lhs, rhs, { buffer = event.buf, desc = "LSP: " .. desc })
+             end
+             -- Built-ins (0.11+): K hover, grr references, gri implementation,
+             -- grn rename, gra code action, gO document symbols.
+             map("n", "gd", vim.lsp.buf.definition, "Definition")
+             map("n", "gD", vim.lsp.buf.declaration, "Declaration")
+             map({ "n", "x" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
+           end,
+         })
+
+         vim.lsp.config("lua_ls", {
+           settings = {
+             Lua = {
+               runtime = { version = "LuaJIT" },
+               workspace = {
+                 checkThirdParty = false,
+                 library = { vim.env.VIMRUNTIME, "${3rd}/luv/library" },
+               },
+               telemetry = { enable = false },
+             },
+           },
+         })
+         vim.lsp.config("basedpyright", {
+           settings = {
+             basedpyright = {
+               disableOrganizeImports = true,
+               analysis = { typeCheckingMode = "standard" },
+             },
+           },
+         })
+         vim.lsp.config("emmet_ls", {
+           filetypes = { "html", "css", "javascriptreact", "typescriptreact" },
+         })
+         vim.lsp.config("terraformls", {
+           filetypes = { "terraform", "terraform-vars", "hcl" },
+         })
+
+         local ok_schema, schemastore = pcall(require, "schemastore")
+         vim.lsp.config("jsonls", {
+           settings = {
+             json = {
+               schemas = ok_schema and schemastore.json.schemas() or nil,
+               validate = { enable = true },
+             },
+           },
+         })
+         vim.lsp.config("yamlls", {
+           filetypes = { "yaml", "yaml.docker-compose", "yaml.gitlab", "yaml.helm-values", "yaml.cloudformation" },
+           settings = {
+             yaml = {
+               schemaStore = { enable = false, url = "" },
+               schemas = ok_schema and schemastore.yaml.schemas() or {},
+               validate = true,
+               completion = true,
+               hover = true,
+               customTags = {
+                 "!And sequence",
+                 "!If sequence",
+                 "!Not sequence",
+                 "!Equals sequence",
+                 "!Or sequence",
+                 "!FindInMap sequence",
+                 "!Base64 scalar",
+                 "!Cidr sequence",
+                 "!Ref scalar",
+                 "!Sub scalar",
+                 "!Sub sequence",
+                 "!GetAtt scalar",
+                 "!GetAtt sequence",
+                 "!GetAZs scalar",
+                 "!ImportValue scalar",
+                 "!ImportValue sequence",
+                 "!Select sequence",
+                 "!Split sequence",
+                 "!Join sequence",
+               },
+             },
+           },
+         })
+
+         require("mason-lspconfig").setup({
+           ensure_installed = lsp_servers,
+           automatic_enable = { exclude = { "jdtls" } },
+         })
+       end,
+     },
+
+     { "b0o/schemastore.nvim", lazy = true },
+
+     {
+       "mfussenegger/nvim-jdtls",
+       ft = "java",
+     },
+
+     {
+       "folke/lazydev.nvim",
+       ft = "lua",
+       opts = {
+         library = {
+           { path = "${3rd}/luv/library", words = { "vim%.uv" } },
+         },
+       },
+     },
+   }
+   ```
+
+2. Save the file. Nothing happens yet, because Neovim only reads it at the next start (Step 6).
+
+<Callout type="note">
+  Some entries in this file are for later parts: `jdtls`, `java-debug-adapter`, `java-test` and
+  the nvim-jdtls plugin are for Java (Part 4), `debugpy` is for debugging (Part 5), and the
+  yamlls CloudFormation tags, `cfn-lint` and `sqlfluff` are for Part 3. They are harmless now,
+  and you can delete any you don't need.
+</Callout>
+
+### Mason installs the tools
+
+Mason downloads servers, formatters and linters into its own folder. The `mason_tools()` function at the top of the file builds the tool list, and the `lsp_servers` table below it lists the 16 servers.
 
 `sqlfluff` is only added on Python 3.10 or newer. A helper called `has_python_310()` runs `python3` once, on first use, and remembers the answer. That keeps an install that would fail from ever being attempted.
 
-The server list was shown in [Part 1](/blog/neovim-setup-1-zero-to-editor/), so I won't repeat it. Now the installer itself:
-
-```lua title="lua/ryanparker/plugins/lsp.lua"
-  {
-    "WhoIsSethDaniel/mason-tool-installer.nvim",
-    event = "VeryLazy",
-    -- …
-    config = function(_, opts)
-      -- …
-      -- The plugin's own start hook listens for VimEnter, which has already fired
-      -- by the time a VeryLazy load happens.
-      installer.run_on_start()
-    end,
-```
-
-The comment explains the odd line. The plugin starts its installs on `VimEnter`, but this config loads it later, on `VeryLazy`, so `config` calls `run_on_start()` by hand.
+The `mason-tool-installer` spec installs that tool list. The highlighted `installer.run_on_start()` line explains itself in the comment above it: the plugin starts its installs on `VimEnter`, but this config loads it later, on `VeryLazy`, so `config` calls `run_on_start()` by hand.
 
 Three commands are worth knowing: `:Mason` opens the installer window, `:MasonToolsInstall` installs whatever on the list is still missing, and `:checkhealth mason` checks that Mason itself works.
 
-## Step 2: language servers with the native API
+### Servers with the native API
 
-Since Neovim 0.11 you don't need a plugin to configure servers. You describe a server with `vim.lsp.config` and start it with `vim.lsp.enable`. nvim-lspconfig still ships the default settings for each server, and mason-lspconfig calls `vim.lsp.enable` for every server it installed, except `jdtls`, which Part 4 handles on its own.
+Since Neovim 0.11 you don't need a plugin to configure servers. You describe a server with `vim.lsp.config` and start it with `vim.lsp.enable`. nvim-lspconfig still ships the default settings for each server, and mason-lspconfig calls `vim.lsp.enable` for every server it installed, except `jdtls`, which Part 4 handles on its own. That is the highlighted `automatic_enable` line near the end of the file. It enables every installed package that also works as a language server, so `tflint` and `stylua` show up as clients too.
 
-First a setting shared by every server, then the list handed to mason-lspconfig:
+Inside `config`, the first line sets something shared by every server: `vim.lsp.config("*", …)` tells all of them that completion comes from blink.cmp. Most servers need nothing more; a few get a short override.
 
-```lua title="lua/ryanparker/plugins/lsp.lua"
-    config = function()
-      local capabilities = require("blink.cmp").get_lsp_capabilities()
-      vim.lsp.config("*", { capabilities = capabilities })
-      -- …
-      require("mason-lspconfig").setup({
-        ensure_installed = lsp_servers,
-        automatic_enable = { exclude = { "jdtls" } },
-      })
-    end,
-```
+Python has two servers, and they split the work: basedpyright owns types and hover, ruff owns imports and formatting. So two things are switched off, and both are highlighted: the ruff hover, in an `LspAttach` handler, and basedpyright's organize-imports. Without both, you would get duplicate hovers and two tools fighting over import order.
 
-The `"*"` entry tells every server that completion comes from blink.cmp. Most need nothing more; a few get a short override.
+The other overrides are small. lua_ls runs as LuaJIT with Neovim's runtime files as its library, and lazydev adds the `vim.uv` types. emmet_ls is limited to markup files, and terraformls attaches to `terraform`, `terraform-vars` and `hcl`. jsonls and yamlls read schemas from SchemaStore; the YAML details come back in Part 3.
 
-Python has two servers, and they split the work: basedpyright owns types and hover, ruff owns imports and formatting. So two things are switched off:
-
-```lua title="lua/ryanparker/plugins/lsp.lua"
-          if client and client.name == "ruff" then
-            client.server_capabilities.hoverProvider = false
-          end
-      -- …
-      vim.lsp.config("basedpyright", {
-        settings = {
-          basedpyright = {
-            disableOrganizeImports = true,
-            analysis = { typeCheckingMode = "standard" },
-          },
-        },
-      })
-```
-
-The ruff hover is switched off in an `LspAttach` handler, and basedpyright's organize-imports is off. Without both, you would get duplicate hovers and two tools fighting over import order. The other overrides are small, so I only describe them. lua_ls runs as LuaJIT with Neovim's runtime files as its library, and lazydev adds the `vim.uv` types. emmet_ls is limited to markup files, and terraformls attaches to `terraform`, `terraform-vars` and `hcl`. jsonls and yamlls read schemas from SchemaStore; the YAML details come back in Part 3.
-
-Three keymaps come from this config, added on `LspAttach`. A small local `map()` helper (not shown) wraps `vim.keymap.set`, makes each key buffer-local and prefixes the description with "LSP: ":
-
-```lua title="lua/ryanparker/plugins/lsp.lua"
-          -- Built-ins (0.11+): K hover, grr references, gri implementation,
-          -- grn rename, gra code action, gO document symbols.
-          map("n", "gd", vim.lsp.buf.definition, "Definition")
-          map("n", "gD", vim.lsp.buf.declaration, "Declaration")
-          map({ "n", "x" }, "<leader>ca", vim.lsp.buf.code_action, "Code action")
-```
-
-The keys are buffer-local, so they don't exist in files without a server. Keys such as `K` and `grn` are built into Neovim, so the config leaves them alone.
+Three keymaps come from this file, added in the same `LspAttach` handler. A small local `map()` helper wraps `vim.keymap.set`, makes each key buffer-local and prefixes the description with "LSP: ". The keys are `gd` (definition), `gD` (declaration) and `<leader>ca` (code action). They are buffer-local, so they don't exist in files without a server. Keys such as `K` and `grn` are built into Neovim, so the config leaves them alone.
 
 ### Diagnostics
 
-```lua title="lua/ryanparker/plugins/lsp.lua"
-      vim.diagnostic.config({
-        underline = true,
-        virtual_text = { current_line = true },
-        severity_sort = true,
-        jump = {
-          on_jump = function(_, bufnr)
-            vim.diagnostic.open_float({ bufnr = bufnr, scope = "cursor", focus = false })
-          end,
-        },
-        float = { border = "rounded", source = true },
-      })
-```
-
-This sits in the plugin's `init`, so it is in place before any client attaches. What each part does:
+The `vim.diagnostic.config` call sits in the plugin's `init`, so it is in place before any client attaches. What each part does:
 
 - `virtual_text = { current_line = true }` shows the message at the end of the line only for the line your cursor is on.
 - `severity_sort` puts errors before warnings.
@@ -159,103 +327,234 @@ This sits in the plugin's `init`, so it is in place before any client attaches. 
 - `source = true` names the tool that reported the problem.
 
 <Callout type="note">
-  Older guides show `jump = { float = true }`. That option is deprecated, so this config opens
+  Older guides show `jump = { float = true }`. That option is deprecated, so your config opens
   the float itself with `on_jump`.
 </Callout>
 
-## Step 3: completion with blink.cmp
+## Step 2: completion with blink.cmp
 
-blink.cmp is the completion menu. Database lines are left out for Part 3:
+blink.cmp is the completion menu.
 
-```lua title="lua/ryanparker/plugins/completion.lua"
-    opts = {
-      keymap = { preset = "enter" },
-      signature = { enabled = true },
-      completion = { documentation = { auto_show = true, auto_show_delay_ms = 500 } },
-      sources = {
-        default = { "lsp", "path", "snippets", "buffer" },
-        per_filetype = {
-          lua = { inherit_defaults = true, "lazydev" },
-          -- …
-        },
-        providers = {
-          lazydev = { name = "LazyDev", module = "lazydev.integrations.blink", score_offset = 100 },
-          -- …
-        },
-      },
-    },
-```
+1. Create `lua/config/plugins/completion.lua` with this content:
+
+   ```lua title="lua/config/plugins/completion.lua" {4,8,11,18}
+   return {
+     {
+       "saghen/blink.cmp",
+       version = "1.*",
+       event = "InsertEnter",
+       dependencies = { "rafamadriz/friendly-snippets" },
+       opts = {
+         keymap = { preset = "enter" },
+         signature = { enabled = true },
+         appearance = { nerd_font_variant = "mono" },
+         completion = { documentation = { auto_show = true, auto_show_delay_ms = 500 } },
+         sources = {
+           default = { "lsp", "path", "snippets", "buffer" },
+           per_filetype = {
+             lua = { inherit_defaults = true, "lazydev" },
+           },
+           providers = {
+             lazydev = { name = "LazyDev", module = "lazydev.integrations.blink", score_offset = 100 },
+           },
+         },
+       },
+     },
+   }
+   ```
+
+2. Save the file.
+
+This is the short version. Part 3 replaces the whole file with a longer one that adds database completion, so don't worry that it looks small.
 
 The spec is pinned to `version = "1.*"`, so an update can't jump to a new major release. The `enter` preset means <kbd>Enter</kbd> accepts the highlighted item. Signature help is on, and documentation pops up after 500 ms. Suggestions come from the language server, file paths, snippets and words in the buffer, and in Lua files lazydev ranks first through a `score_offset` of 100.
 
 In insert mode, `<C-s>` is the built-in signature help.
 
-## Step 4: format on save with conform
+## Step 3: format on save with conform
 
-conform.nvim runs a formatter when you save. It picks the formatter by file type:
+conform.nvim runs a formatter when you save. It picks the formatter by file type.
 
-```lua title="lua/ryanparker/plugins/formatting.lua"
-    opts = {
-      notify_on_error = false,
-      format_on_save = { timeout_ms = 1500, lsp_format = "fallback" },
-      formatters_by_ft = {
-        lua = { "stylua" },
-        python = { "ruff_organize_imports", "ruff_format" },
-        -- …
-        sh = { "shfmt" },
-        -- …
-        terraform = { "terraform_fmt" },
-        -- …
-      },
-    },
-```
+1. Create `lua/config/plugins/formatting.lua` with this content:
 
-`timeout_ms = 1500` stops a slow formatter from freezing the save. `lsp_format = "fallback"` handles file types without an entry, such as Java, TOML and Dockerfile: if their language server can format, it does. Python runs two steps, organize imports and then format, both from ruff. The web file types and Markdown use `prettier`.
+   ```lua title="lua/config/plugins/formatting.lua" {17,18}
+   return {
+     {
+       "stevearc/conform.nvim",
+       event = { "BufWritePre" },
+       cmd = { "ConformInfo" },
+       keys = {
+         {
+           "<leader>cf",
+           function()
+             require("conform").format({ async = true, lsp_format = "fallback" })
+           end,
+           mode = { "n", "v" },
+           desc = "Format",
+         },
+       },
+       opts = {
+         notify_on_error = false,
+         format_on_save = { timeout_ms = 1500, lsp_format = "fallback" },
+         formatters_by_ft = {
+           lua = { "stylua" },
+           python = { "ruff_organize_imports", "ruff_format" },
+           javascript = { "prettier" },
+           javascriptreact = { "prettier" },
+           typescript = { "prettier" },
+           typescriptreact = { "prettier" },
+           html = { "prettier" },
+           css = { "prettier" },
+           json = { "prettier" },
+           jsonc = { "prettier" },
+           yaml = { "prettier" },
+           ["yaml.cloudformation"] = { "prettier" },
+           markdown = { "prettier" },
+           sh = { "shfmt" },
+           bash = { "shfmt" },
+           sql = { "sqlfluff" },
+           ["sql.dbt"] = { "sqlfluff" },
+           dbt = { "sqlfluff" },
+           terraform = { "terraform_fmt" },
+           ["terraform-vars"] = { "terraform_fmt" },
+           hcl = { "terraform_fmt" },
+         },
+       },
+     },
+   }
+   ```
+
+2. Save the file.
+
+`timeout_ms = 1500` stops a slow formatter from freezing the save. `lsp_format = "fallback"` handles file types without an entry, such as Java, TOML and Dockerfile: if their language server can format, it does. Python runs two steps, organize imports and then format, both from ruff. The web file types and Markdown use `prettier`. The `sql`, `sql.dbt` and `dbt` entries use `sqlfluff`, which Part 3 puts to work.
 
 `notify_on_error = false` keeps failures silent. That is quiet, but a broken formatter won't tell you, so run `:ConformInfo` to see what happened.
 
 `<leader>cf` formats the buffer by hand, in normal and visual mode, so you can format just a selection. It runs asynchronously, so the editor never waits.
 
-## Step 5: linting with nvim-lint
+## Step 4: linting with nvim-lint
 
-A linter runs a command-line tool and turns its output into diagnostics. The map from file type to linter:
+A linter runs a command-line tool and turns its output into diagnostics.
 
-```lua title="lua/ryanparker/plugins/linting.lua"
-      lint.linters_by_ft = {
-        javascript = { "eslint_d" },
-        -- …
-        sh = { "shellcheck" },
-        -- …
-        terraform = { "tflint" },
-        -- …
-        yaml = { "yamllint" },
-        -- …
-      }
-```
+1. Create `lua/config/plugins/linting.lua` with this content:
 
-The file adds three rules on top.
+   ```lua title="lua/config/plugins/linting.lua" {28,57,68,79}
+   return {
+     {
+       "mfussenegger/nvim-lint",
+       event = { "BufReadPost", "BufNewFile" },
+       dependencies = { "mason-org/mason.nvim" },
+       config = function()
+         local lint = require("lint")
+         lint.linters_by_ft = {
+           javascript = { "eslint_d" },
+           javascriptreact = { "eslint_d" },
+           typescript = { "eslint_d" },
+           typescriptreact = { "eslint_d" },
+           sh = { "shellcheck" },
+           bash = { "shellcheck" },
+           dockerfile = { "hadolint" },
+           sql = { "sqlfluff" },
+           ["sql.dbt"] = { "sqlfluff" },
+           dbt = { "sqlfluff" },
+           terraform = { "tflint" },
+           ["terraform-vars"] = { "tflint" },
+           hcl = { "tflint" },
+           markdown = { "markdownlint-cli2" },
+           yaml = { "yamllint" },
+           ["yaml.cloudformation"] = { "cfn_lint" },
+         }
 
-**Only installed linters run.** The config checks that a linter's command exists on your machine. Only successful checks are remembered, so a tool you install mid-session is found next time.
+         -- Slow linters: never run while typing (InsertLeave).
+         local slow = { sqlfluff = true }
 
-**Slow linters skip `InsertLeave`.** Linting runs on save, on open and when you leave insert mode. Slow tools would make that last one sluggish, so they are marked and skipped there:
+         -- Per-linter availability cache: only hits are cached, so tools installed mid-session are picked up.
+         local availability = {}
 
-```lua title="lua/ryanparker/plugins/linting.lua"
-      local slow = { sqlfluff = true }
-      -- …
-      vim.api.nvim_create_autocmd("InsertLeave", {
-        group = group,
-        callback = function(args)
-          try_lint(args.buf, { skip_slow = true })
-        end,
-```
+         local function resolve_linter(name)
+           local linter = lint.linters[name]
+           if type(linter) == "function" then
+             local ok, resolved = pcall(linter)
+             if not ok then
+               return nil
+             end
+             linter = resolved
+           end
+           return linter
+         end
 
-**Workflows get actionlint.** YAML under `.github/workflows/` is a GitHub Actions file, so it gets a different linter:
+         local function linter_is_available(name)
+           if availability[name] then
+             return true
+           end
+           local available = false
+           local linter = resolve_linter(name)
+           if linter then
+             local cmd = linter.cmd
+             if type(cmd) == "function" then
+               local ok, resolved = pcall(cmd)
+               cmd = ok and resolved or nil
+             end
+             available = type(cmd) == "string" and vim.fn.executable(cmd) == 1
+           end
+           if available then
+             availability[name] = true
+           end
+           return available
+         end
 
-```lua title="lua/ryanparker/plugins/linting.lua"
-        if ft == "yaml" and vim.api.nvim_buf_get_name(bufnr):find("/%.github/workflows/") then
-          return { "actionlint" }
-        end
-```
+         local function linters_for(bufnr)
+           local ft = vim.bo[bufnr].filetype
+           if ft == "yaml" and vim.api.nvim_buf_get_name(bufnr):find("/%.github/workflows/") then
+             return { "actionlint" }
+           end
+           return lint.linters_by_ft[ft]
+         end
+
+         local function try_lint(bufnr, opts)
+           local names = linters_for(bufnr)
+           if not names then
+             return
+           end
+           local available = vim.tbl_filter(function(name)
+             if opts and opts.skip_slow and slow[name] then
+               return false
+             end
+             return linter_is_available(name)
+           end, names)
+           if vim.tbl_isempty(available) then
+             return
+           end
+           lint.try_lint(available)
+         end
+
+         local group = vim.api.nvim_create_augroup("nvim_lint", { clear = true })
+         vim.api.nvim_create_autocmd({ "BufWritePost", "BufReadPost" }, {
+           group = group,
+           callback = function(args)
+             try_lint(args.buf)
+           end,
+         })
+         vim.api.nvim_create_autocmd("InsertLeave", {
+           group = group,
+           callback = function(args)
+             try_lint(args.buf, { skip_slow = true })
+           end,
+         })
+       end,
+     },
+   }
+   ```
+
+2. Save the file.
+
+The `linters_by_ft` table at the top maps a file type to its linters. The file adds three rules on top, and the highlighted lines show each one.
+
+**Only installed linters run.** The config checks that a linter's command exists on your machine (the `vim.fn.executable` line). Only successful checks are remembered, so a tool you install mid-session is found next time.
+
+**Slow linters skip `InsertLeave`.** Linting runs on save, on open and when you leave insert mode. Slow tools would make that last one sluggish, so the `slow` table marks them and the `skip_slow` check leaves them out there.
+
+**Workflows get actionlint.** YAML under `.github/workflows/` is a GitHub Actions file, so `linters_for()` returns `actionlint` for it instead of `yamllint`.
 
 The plugin depends on mason.nvim, so Mason's `bin` folder is on `PATH` before the first lint runs. Here is the full picture, by language:
 
@@ -274,19 +573,74 @@ The plugin depends on mason.nvim, so Mason's `bin` folder is on `PATH` before th
 
 dbt/SQL and CloudFormation are covered in Part 3, Java in Part 4.
 
-## Step 6: check that everything works
+## Step 5: fix the .tf file type
 
-Run `:checkhealth vim.lsp` for the language server report.
+Sometimes Neovim guesses the file type wrong. New empty `.tf` files are detected as `tf`, so Terraform formatters and the language server would miss them until you reopen the file. One small mapping fixes that.
+
+1. Open `lua/config/core/autocmds.lua`, which you created in Part 1.
+2. Add these lines at the very top of the file, above `local augroup = …`, and leave one blank line between them and that line:
+
+   ```lua title="lua/config/core/autocmds.lua"
+   -- Filetype hints for SRE/data files that Neovim cannot always infer.
+   vim.filetype.add({
+     extension = {
+       -- Built-in detection returns "tf" for empty or comment-only files, so new
+       -- Terraform buffers would miss the terraform formatters/LSP until reopened.
+       tf = "terraform",
+     },
+   })
+   ```
+
+3. Save the file.
+
+This is the start of a `vim.filetype.add` call. Part 3 adds more detection rules to it.
+
+## Step 6: install everything
+
+1. Quit Neovim and start it again. lazy.nvim installs the new plugins on its own. Wait until `:Lazy` shows no pending installs.
+2. Open any file, for example `nvim hello.py`. This loads nvim-lspconfig, and mason-lspconfig starts installing the servers. A few seconds later mason-tool-installer starts on the formatters and linters.
+3. Run `:Mason` to watch the downloads. The Java tools are large, so the first install can take a few minutes.
+4. When `:Mason` shows no running installs, run `:MasonToolsInstall` once. It installs anything on the list that is still missing, and it does nothing if everything is there.
+
+You should see the installed tools listed under `:Mason`. Restart Neovim once more so the servers start with all their tools in place.
+
+## Step 7: check that everything works
+
+First check Python, which uses the most pieces at once.
+
+1. Create a folder and a file with some untidy code:
+
+   ```sh
+   $ mkdir -p ~/lsp-test && cd ~/lsp-test
+   $ nvim hello.py
+   ```
+
+2. Type this into the file:
+
+   ```python
+   import sys,os
+   def greet(name):
+       return "hello " + name
+   x=greet("world")
+   print(x)
+   ```
+
+3. Wait a second or two. The statusline lists `basedpyright` and `ruff`, and ruff warns about the import line.
+4. Put the cursor on `greet` and press <kbd>K</kbd>. basedpyright shows the function signature.
+5. On a new line, type `prin`. The completion menu offers `print`.
+6. Save with `:w`. The file is rewritten: the imports are sorted onto two lines, `x = greet("world")` gets its spaces, and two blank lines appear before `def`. Run `:ConformInfo` and you see `ruff_organize_imports` and `ruff_format`.
+
+Then test three more files:
+
+- `nvim main.tf`: the statusline lists `terraformls`. Save with `:w`, and `:ConformInfo` shows `terraform_fmt`.
+- `nvim test.sh`: start the file with `#!/usr/bin/env bash`, add `echo $1` and save. A note about quoting should appear, from shellcheck.
+- `nvim package.json`: add a key, and completion suggests known keys, from SchemaStore.
+
+Finally, run `:checkhealth vim.lsp` for the language server report.
 
 <Callout type="tip">
   `:LspInfo` is only an alias for `:checkhealth vim.lsp`. You will see it in older guides.
 </Callout>
-
-Then test three real files:
-
-- `nvim main.tf`: the statusline shows `terraformls`. Save with `:w`, and `:ConformInfo` shows `terraform_fmt`.
-- `nvim test.sh`: start the file with `#!/usr/bin/env bash`, add `echo $1` and save. A note about quoting should appear, from shellcheck.
-- `nvim package.json`: add a key, and completion suggests known keys, from SchemaStore.
 
 To list the clients attached to the current buffer, run `:lua =vim.lsp.get_clients({ bufnr = 0 })`.
 
@@ -305,35 +659,24 @@ To list the clients attached to the current buffer, run `:lua =vim.lsp.get_clien
 | `<leader>cd` / `<leader>cl` | line diagnostics / diagnostic location list |
 | `]d` / `[d` | next / previous diagnostic |
 
-Only `gd`, `gD` and `<leader>ca` come from this config. The rest are built into Neovim: most since 0.11, `grt` and `grx` since 0.12. trouble.nvim (`<leader>xx`) gives a diagnostics list; it comes up in Part 5.
+Only `gd`, `gD` and `<leader>ca` come from the files you wrote. The rest are built into Neovim: most since 0.11, `grt` and `grx` since 0.12. trouble.nvim (`<leader>xx`) gives a diagnostics list; it comes up in Part 5.
 
 ## Add a language of your own
 
 A new language touches three files, and Terraform is already set up that way:
 
-1. **Server and tools** in `lua/ryanparker/plugins/lsp.lua`. Add the server name to `lsp_servers`, and any formatter or linter to `mason_tools()`. Add a `vim.lsp.config` block only if the server needs an override.
-2. **Formatter** in `lua/ryanparker/plugins/formatting.lua`. Add a line to `formatters_by_ft`.
-3. **Linter** in `lua/ryanparker/plugins/linting.lua`. Add a line to `linters_by_ft`.
+1. **Server and tools** in `lua/config/plugins/lsp.lua`. Add the server name to `lsp_servers`, and any formatter or linter to `mason_tools()`. Add a `vim.lsp.config` block only if the server needs an override.
+2. **Formatter** in `lua/config/plugins/formatting.lua`. Add a line to `formatters_by_ft`.
+3. **Linter** in `lua/config/plugins/linting.lua`. Add a line to `linters_by_ft`.
 
-Sometimes Neovim guesses the file type wrong. New empty `.tf` files are detected as `tf`, so the config maps the extension:
-
-```lua title="lua/ryanparker/core/autocmds.lua"
-vim.filetype.add({
-  extension = {
-    -- Built-in detection returns "tf" for empty or comment-only files, so new
-    -- Terraform buffers would miss the terraform formatters/LSP until reopened.
-    tf = "terraform",
-  },
-```
-
-If you also want syntax highlighting, add the language's Treesitter parser in `lua/ryanparker/plugins/treesitter.lua`. This is the pattern the files follow, not advice from the plugins' documentation, so check each tool's own docs for its details.
+If Neovim guesses the file type wrong, add a mapping like the one in Step 5. If you also want syntax highlighting, add the language's Treesitter parser in `lua/config/plugins/treesitter.lua`. This is the pattern the files follow, not advice from the plugins' documentation, so check each tool's own docs for its details.
 
 ## Troubleshooting
 
 - **A server doesn't attach.** Run `:checkhealth vim.lsp`, then open `:Mason` and check that the server shows as installed.
 - **Saving didn't format.** Formatter errors are silent by design. Run `:ConformInfo` to see which formatter ran and what went wrong.
 - **A linter does nothing.** It only runs when it is installed. Run `:MasonToolsInstall`, then save again.
-- **A new `.tf` file has file type `tf`.** This happens if you did not copy `core/autocmds.lua`, which maps the extension. Reopen the file, or run `:set ft=terraform`.
+- **A new `.tf` file has file type `tf`.** This happens if you skipped Step 5, which maps the extension. Add the lines, reopen the file, or run `:set ft=terraform`.
 - **`sqlfluff` is missing.** Your Python is older than 3.10, so the config skips it. See [Part 1](/blog/neovim-setup-1-zero-to-editor/).
 
 ## What's next

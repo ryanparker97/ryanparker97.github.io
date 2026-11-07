@@ -25,7 +25,7 @@ const links = (
 
 <header class="nav" data-nav lang={chromeLang}>
   <div class="bar chrome-row">
-    <a href={localePath('/', lang)} class="brand" aria-label={t('nav.home')}>
+    <a href={localePath('/', lang)} class="logo" aria-label={t('nav.home')}>
       Ryan Parker
     </a>
     <nav aria-label={t('nav.primary')} class="links">
@@ -109,12 +109,12 @@ const links = (
     justify-content: space-between;
     height: 100%;
   }
-  .brand {
+  .logo {
     display: inline-flex;
     align-items: center;
     min-height: 44px;
     color: var(--text);
-    font-size: 1rem;
+    font-size: 0.875rem;
     font-weight: 600;
     letter-spacing: -0.016em;
   }
@@ -140,7 +140,7 @@ const links = (
     align-items: center;
     min-height: 44px;
     padding-inline: 8px;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     line-height: 1.3334;
     letter-spacing: -0.01em;
   }

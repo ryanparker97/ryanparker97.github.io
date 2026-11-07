@@ -1,0 +1,116 @@
+---
+/** Blog index lead card (spec §4.5): the newest post as one wide Newsroom-style tile. */
+import { Image } from 'astro:assets';
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+import { formatDate } from '~/lib/format';
+import type { PostRow } from '~/lib/topics';
+
+interface Props {
+  lang: Lang;
+  row: PostRow;
+}
+const { lang, row } = Astro.props;
+const t = useT(lang);
+const { post } = row;
+---
+
+<article class:list={['lead-card', !post.image && 'lead-card--plain']} data-post={post.slug}>
+  {post.image && (
+    <Image
+      class="lead-card__cover"
+      src={post.image}
+      alt=""
+      width={960}
+      height={960}
+      loading="eager"
+      fetchpriority="high"
+    />
+  )}
+  <div class="lead-card__text">
+    <p class="t-news-cat">
+      {row.part ? `${t('series.part', { n: row.part })} · ${row.seriesTitle}` : t('blog.article')}
+    </p>
+    <h2 class="t-news-title">
+      <a href={localePath(`/blog/${post.slug}/`, lang)}>{row.partTitle ?? post.title}</a>
+    </h2>
+    <p class="lead-card__desc">{post.description}</p>
+    <p class="lead-card__meta">
+      <time datetime={post.pubDate.toISOString()}>{formatDate(post.pubDate, lang)}</time>
+      {' · '}
+      {t('blog.readingTime', { n: post.minutes })}
+    </p>
+  </div>
+</article>
+
+<style>
+  .lead-card {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    align-items: center;
+    padding: 24px;
+    border-radius: 24px;
+    background: var(--surface-2);
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  .lead-card__cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    object-fit: contain;
+    background: var(--fill);
+    border-radius: 18px;
+  }
+  .lead-card__text {
+    min-width: 0;
+  }
+  .lead-card .t-news-title {
+    margin: 12px 0 0;
+  }
+  .lead-card .t-news-title a {
+    display: inline-block;
+    margin-block: -10px;
+    padding-block: 10px;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .lead-card .t-news-title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  .lead-card__desc {
+    margin: 12px 0 0;
+    color: var(--text-2);
+  }
+  .lead-card__meta {
+    margin: 16px 0 0;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.4286;
+  }
+  .lead-card:has(a:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  .lead-card a:focus-visible {
+    outline: none;
+  }
+  @media (min-width: 735px) {
+    .lead-card:not(.lead-card--plain) {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 40px;
+    }
+  }
+  @media (min-width: 1069px) {
+    .lead-card {
+      padding: 32px;
+      border-radius: 32px;
+    }
+  }
+</style>

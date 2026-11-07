@@ -15,7 +15,14 @@ const { id, tone = 'bg', wide = false, labelledby, class: cls, tight = false } =
 
 <section
   id={id}
-  class:list={['section', { 'section--surface': tone === 'surface', 'section--tight': tight }, cls]}
+  class:list={[
+    'section',
+    {
+      'section--surface': tone === 'surface',
+      'section--tight': tight,
+    },
+    cls,
+  ]}
   aria-labelledby={labelledby}
 >
   <div class:list={['section-inner', { 'section-inner--wide': wide }]}>

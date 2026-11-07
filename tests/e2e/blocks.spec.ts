@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test.describe('hover lift', () => {
   test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
   for (const [path, sel] of [
-    ['/experiences/', '.gallery-card.lift'],
+    ['/', '.gallery-card.lift'],
     ['/blog/series/', '.news-tile.lift'],
   ]) {
     test(`${path} ${sel} scales on hover after the reveal`, async ({ page }) => {
@@ -21,7 +21,7 @@ test.describe('hover lift', () => {
 test.describe('hover lift under reduced motion', () => {
   test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
   test('a hovered card does not scale', async ({ page }) => {
-    await page.goto('/experiences/');
+    await page.goto('/');
     const card = page.locator('.gallery-card.lift').first();
     await card.scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
@@ -33,19 +33,24 @@ test.describe('hover lift under reduced motion', () => {
 
 test.describe('in-context promo headline', () => {
   for (const [width, size, line] of [
-    [1440, '48px', '52.8px'],
-    [900, '36px', '39.6px'],
+    [1440, '40px', '44px'],
+    [900, '32px', '35.2px'],
     [375, '32px', '35.2px'],
   ] as const) {
     test(`grid-tile h2 is ${size}/${line} at ${width}`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto('/');
+      await page.goto('/projects/');
       const h = page.locator('.grid-tile h2.t-promo').first();
       await expect(h).toHaveCSS('font-size', size);
       // WebKit reports 35.200001px; compare numerically.
       const lh = parseFloat(await h.evaluate((e) => getComputedStyle(e).lineHeight));
       expect(lh).toBeCloseTo(parseFloat(line), 2);
       if (width === 375) await expect(h).toHaveCSS('letter-spacing', /^(normal|0px)$/);
+      if (width === 1440)
+        expect(parseFloat(await h.evaluate((e) => getComputedStyle(e).letterSpacing))).toBeCloseTo(
+          -0.2,
+          2,
+        );
     });
   }
 });

@@ -20,6 +20,8 @@ interface Props {
   start?: boolean;
   intro?: boolean;
   reveal?: boolean;
+  /** Wraps the headline in the page's one `.text-gradient` span. */
+  gradient?: boolean;
 }
 const {
   id,
@@ -33,6 +35,7 @@ const {
   start = false,
   intro = false,
   reveal = false,
+  gradient = false,
 } = Astro.props;
 const H = level === 1 ? 'h1' : 'h2';
 const item = (i: number, on = true) => ({
@@ -67,7 +70,7 @@ const hasEyebrow = !!eyebrowSlot || !!eyebrow;
     style={reveal ? '--i:1' : undefined}
     data-reveal={reveal ? '' : undefined}
   >
-    {title}
+    {gradient ? <span class="text-gradient">{title}</span> : title}
   </H>
   {subline && (
     <p

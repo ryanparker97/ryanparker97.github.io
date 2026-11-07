@@ -1,0 +1,57 @@
+---
+/**
+ * "Let's talk." closing section (spec §4.1): email and LinkedIn actions, location and languages,
+ * and the milestones art. Shared by Home; moved verbatim from the Experiences page.
+ */
+import type { CollectionEntry } from 'astro:content';
+import ExperiencesArt from '~/assets/art/experiences-path.svg';
+import Section from '~/components/tile/Section.astro';
+import SectionHeader from '~/components/tile/SectionHeader.astro';
+import { externalAttrs } from '~/lib/links';
+import { useT, type Lang } from '~/i18n';
+
+interface Props {
+  lang: Lang;
+  profile: CollectionEntry<'profile'>['data'];
+  tone?: 'bg' | 'surface';
+}
+const { lang, profile: p, tone = 'surface' } = Astro.props;
+const t = useT(lang);
+---
+
+<Section id="more" {tone} labelledby="more-title">
+  <SectionHeader id="more-title" title={t('home.contact.title')} subline={t('home.contact.text')}>
+    <Fragment slot="actions">
+      <a href={`mailto:${p.email}`} class="btn btn-primary">
+        {t('home.contact.email')}
+      </a>
+      <a href={p.socials.linkedin} {...externalAttrs(p.socials.linkedin)} class="btn btn-secondary">
+        {t('cv.linkedin')}
+      </a>
+    </Fragment>
+  </SectionHeader>
+  <ul class="facts" data-facts>
+    <li>{p.location}</li>
+    {p.realName && <li data-real-name>{t('home.contact.realName', { name: p.realName })}</li>}
+    {p.spokenLanguages.map((l) => (
+      <li>
+        {l.language} — {l.proficiency}
+      </li>
+    ))}
+  </ul>
+  <ExperiencesArt class="page-art page-art--closing" role="img" aria-label={t('exp.more.art')} />
+</Section>
+
+<style>
+  .facts {
+    display: grid;
+    gap: 2px;
+    margin: 0 0 40px;
+    padding: 0;
+    list-style: none;
+    color: var(--text-2);
+    font-size: 0.75rem;
+    line-height: 1.3334;
+    text-align: center;
+  }
+</style>

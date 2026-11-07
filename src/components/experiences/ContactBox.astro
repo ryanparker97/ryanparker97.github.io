@@ -1,0 +1,84 @@
+---
+/** Contact box (spec §4.2): the grey closing box on Experiences with email, mobile and LinkedIn. */
+import type { CollectionEntry } from 'astro:content';
+import { externalAttrs } from '~/lib/links';
+import { useT, type Lang } from '~/i18n';
+
+interface Props {
+  lang: Lang;
+  profile: CollectionEntry<'profile'>['data'];
+}
+const { lang, profile: p } = Astro.props;
+const t = useT(lang);
+---
+
+<div class="contact-box">
+  <h2 id="contact-title" class="t-section">
+    {t('exp.contact.title')}
+  </h2>
+  <p class="t-subhead">{t('home.contact.text')}</p>
+  <ul class="contact-lines">
+    <li>
+      <span class="contact-label">{t('cv.email')}</span>
+      <a href={`mailto:${p.email}`}>{p.email}</a>
+    </li>
+    {p.phone && (
+      <li>
+        <span class="contact-label">{t('cv.phone')}</span>
+        <a href={`tel:${p.phone}`}>{p.phoneDisplay}</a>
+      </li>
+    )}
+    <li>
+      <a href={p.socials.linkedin} {...externalAttrs(p.socials.linkedin)}>
+        {t('cv.linkedin')}
+      </a>
+    </li>
+  </ul>
+</div>
+
+<style>
+  .contact-box {
+    max-width: var(--content);
+    margin-inline: auto;
+    padding: 40px;
+    border-radius: 28px;
+    background: var(--surface-2);
+    text-align: start;
+  }
+  .contact-box h2 {
+    margin: 0;
+  }
+  .contact-box .t-subhead {
+    margin: 12px 0 0;
+  }
+  .contact-lines {
+    display: grid;
+    gap: 4px;
+    margin: 24px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .contact-label {
+    display: block;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.3334;
+  }
+  .contact-lines a {
+    display: inline-block;
+    padding-block: 12px;
+    font-size: 1.0625rem;
+    overflow-wrap: anywhere;
+  }
+  @media (max-width: 1068px) {
+    .contact-box {
+      padding: 32px;
+    }
+  }
+  @media (max-width: 734px) {
+    .contact-box {
+      padding: 24px;
+    }
+  }
+</style>

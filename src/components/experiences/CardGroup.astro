@@ -1,0 +1,146 @@
+---
+/**
+ * Card group (spec §4.2): a titled grid of white, type-only cards, as on apple.com/leadership.
+ * Cards are 4 / 2 / 1 up. A card with an `href` is one big link (stretched `::after`); a card with
+ * a `link` carries a chevron link. An optional Iconify `logo` (certification issuers) sits above the eyebrow.
+ */
+import { Icon } from 'astro-icon/components';
+import ChevronLink from '~/components/ui/ChevronLink.astro';
+import SectionHeader from '~/components/tile/SectionHeader.astro';
+
+interface Item {
+  id?: string;
+  eyebrow: string;
+  logo?: string;
+  title: string;
+  href?: string;
+  text?: string;
+  link?: { href: string; label: string; name: string };
+}
+interface Props {
+  id: string;
+  title: string;
+  items: Item[];
+  /** Hairline above the group (between two groups). */
+  rule?: boolean;
+}
+const { id, title, items, rule = false } = Astro.props;
+---
+
+<div class:list={['card-group', { 'card-group--rule': rule }]} id={id}>
+  <SectionHeader id={`${id}-title`} align="start" {title} />
+  <ul class="group-cards" data-reveal-group>
+    {items.map((item, i) => (
+      <li
+        id={item.id}
+        class:list={['group-card', { lift: !!item.href }]}
+        data-reveal
+        style={`--i:${Math.min(i, 3)}`}
+      >
+        {item.logo && <Icon name={item.logo} class="group-card__logo" size={32} aria-hidden="true" />}
+        <p class="group-card__eyebrow">{item.eyebrow.replace(/ · (?=[^ ]+$)/, ' ·\u00A0')}</p>
+        <h3 class="t-card">{item.href ? <a href={item.href}>{item.title}</a> : item.title}</h3>
+        {item.text && <p class="group-card__text">{item.text}</p>}
+        {item.link && (
+          <ChevronLink href={item.link.href} label={item.link.name}>
+            {item.link.label}
+          </ChevronLink>
+        )}
+      </li>
+    ))}
+  </ul>
+</div>
+
+<style>
+  .card-group--rule {
+    margin-top: 48px;
+    padding-top: 48px;
+    border-top: 1px solid var(--border);
+  }
+  .group-cards {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    text-align: start;
+  }
+  .group-card {
+    position: relative;
+    min-height: 180px;
+    padding: 28px;
+    border-radius: 28px;
+    background: var(--bg);
+    scroll-margin-top: calc(var(--sticky-h) + 16px);
+  }
+  .group-card__logo {
+    display: block;
+    margin: 0 0 12px;
+  }
+  .group-card__eyebrow {
+    margin: 0 0 8px;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.3334;
+  }
+  .group-card :is(h3) {
+    margin: 0;
+    overflow-wrap: break-word;
+    font-size: 1.3125rem;
+  }
+  .group-card h3 a {
+    color: inherit;
+  }
+  .group-card h3 a:hover {
+    text-decoration: none;
+  }
+  .group-card h3 a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  .group-card:has(a:focus-visible) {
+    outline: 2px solid var(--focus, var(--accent));
+    outline-offset: 2px;
+  }
+  .group-card h3 a:focus-visible {
+    outline: none;
+  }
+  .group-card__text {
+    margin: 8px 0 0;
+    color: var(--text-2);
+    font-size: 1.0625rem;
+    line-height: 1.4706;
+  }
+  .group-card :global(.link-chevron) {
+    display: inline-block;
+    margin-top: 12px;
+    padding-block: 12px;
+    margin-block: 0 -12px;
+  }
+  @media (min-width: 735px) and (max-width: 1068px) {
+    .group-cards {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .card-group--rule {
+      margin-top: 40px;
+      padding-top: 40px;
+    }
+  }
+  @media (max-width: 734px) {
+    .group-cards {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .group-card {
+      min-height: 0;
+      padding: 24px;
+    }
+    .card-group--rule {
+      margin-top: 32px;
+      padding-top: 32px;
+    }
+  }
+</style>

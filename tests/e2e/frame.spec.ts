@@ -5,7 +5,10 @@ test.use({ reducedMotion: 'reduce' });
 
 const INNER = [
   '/experiences/',
+  '/experiences/datum-security-bank-data-engineer/',
   '/projects/',
+  '/projects/agentic-coding-workflow/',
+  '/skills/',
   '/star/',
   '/star/emr-cost-optimization/',
   '/blog/',
@@ -64,7 +67,7 @@ test.describe('tokens and fonts', () => {
     expect(v.link).toBe('rgb(0, 80, 159)');
     expect(v.pill).toBe('rgb(0, 83, 166)');
     expect(v.pillText).toBe('rgb(255, 255, 255)');
-    expect(v.pillFont).toBe('19px');
+    expect(v.pillFont).toBe('17px');
     expect(parseFloat(v.pillRadius)).toBeGreaterThan(100);
   });
 
@@ -77,12 +80,12 @@ test.describe('tokens and fonts', () => {
 
 test.describe('type scale (§5.4)', () => {
   const EXPECTED: Record<string, Record<number, number>> = {
-    't-hero': { 1440: 96, 900: 72, 375: 40 },
-    't-unit': { 1440: 64, 900: 56, 375: 32 },
-    't-section': { 1440: 56, 900: 48, 375: 32 },
-    't-promo': { 1440: 48, 900: 36, 375: 32 },
-    't-subhead': { 1440: 28, 900: 24, 375: 21 },
-    't-body': { 1440: 19, 900: 19, 375: 19 },
+    't-hero': { 1440: 96, 900: 64, 375: 40 },
+    't-unit': { 1440: 56, 900: 48, 375: 32 },
+    't-section': { 1440: 48, 900: 40, 375: 32 },
+    't-promo': { 1440: 40, 900: 32, 375: 32 },
+    't-subhead': { 1440: 28, 900: 24, 375: 19 },
+    't-body': { 1440: 17, 900: 17, 375: 17 },
   };
   for (const w of [1440, 900, 375]) {
     test(`sizes at ${w}px`, async ({ page }) => {
@@ -102,10 +105,37 @@ test.describe('type scale (§5.4)', () => {
       for (const [c, bySize] of Object.entries(EXPECTED)) expect(sizes[c], c).toBe(bySize[w]);
     });
   }
+
+  const TRACKING: Record<string, Record<number, number>> = {
+    't-hero': { 1440: -2.112, 900: -1.408, 375: -0.6 },
+    't-unit': { 1440: -0.672, 900: -0.576, 375: -0.16 },
+    't-section': { 1440: -0.432, 900: -0.36, 375: -0.096 },
+    't-promo': { 1440: -0.2, 900: -0.16, 375: 0 },
+  };
+  for (const w of [1440, 900, 375]) {
+    test(`display tracking at ${w}px`, async ({ page }) => {
+      await page.setViewportSize({ width: w, height: 900 });
+      await page.goto('/');
+      const tracking = await page.evaluate((classes) => {
+        const out: Record<string, number> = {};
+        for (const c of classes) {
+          const el = document.createElement('p');
+          el.className = c;
+          document.body.append(el);
+          const v = parseFloat(getComputedStyle(el).letterSpacing);
+          out[c] = Number.isNaN(v) ? 0 : v;
+          el.remove();
+        }
+        return out;
+      }, Object.keys(TRACKING));
+      for (const [c, bySize] of Object.entries(TRACKING))
+        expect(tracking[c], c).toBeCloseTo(bySize[w], 2);
+    });
+  }
 });
 
 test.describe('local nav on every inner page', () => {
-  for (const path of INNER) {
+  for (const path of [...INNER, '/']) {
     test(`${path}: directly under the global nav, 52px at 1440, one H1`, async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto(path);
@@ -136,9 +166,11 @@ test.describe('local nav on every inner page', () => {
       const summary = local.locator('summary');
       const count = await local.locator('.links a').count();
       if (count === 0) {
-        // Single-link pages: no chevron, a chevron text link on the right.
+        // Single-link pages: no chevron, a chevron text link on the right (or the pill alone).
         await expect(summary).toHaveCount(0);
-        await expect(local.locator('.solo-link')).toBeVisible();
+        await expect(
+          local.locator(path.endsWith('/projects/') ? '.pill' : '.solo-link').first(),
+        ).toBeVisible();
         return;
       }
       await summary.click();
@@ -154,7 +186,7 @@ test.describe('local nav on every inner page', () => {
   test('Projects local nav hides the kind links when there is only one kind', async ({ page }) => {
     await page.goto('/projects/');
     await expect(page.locator('.local-nav .links a[data-kind]')).toHaveCount(0);
-    await expect(page.locator('.local-nav .solo-link[data-expand]')).toHaveCount(1);
+    await expect(page.locator('.local-nav .pill')).toHaveAttribute('href', '/cv.pdf');
   });
 
   test('blog nav has the RSS pill; a post shows a single chevron link', async ({ page }) => {
@@ -171,7 +203,7 @@ test.describe('local nav on every inner page', () => {
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/experiences/');
+    await page.goto('/skills/');
     const local = page.locator('[data-local-nav]');
     await local.locator('summary').click();
     const link = local.locator('.tray a').first();
@@ -184,9 +216,7 @@ test.describe('local nav on every inner page', () => {
     expect(top).toBeGreaterThanOrEqual(64 - 1);
   });
 
-  test('Home and 404 have no local nav', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('[data-local-nav]')).toHaveCount(0);
+  test('404 has no local nav', async ({ page }) => {
     await page.goto('/404.html');
     await expect(page.locator('[data-local-nav]')).toHaveCount(0);
   });
@@ -199,7 +229,7 @@ test.describe('local nav on every inner page', () => {
       viewport: { width: 375, height: 812 },
     });
     const page = await context.newPage();
-    await page.goto('/experiences/');
+    await page.goto('/skills/');
     await page.locator('[data-local-nav] summary').click();
     const link = page.locator('[data-local-nav] .tray a').first();
     await expect(link).toBeVisible();
@@ -271,7 +301,7 @@ test.describe('footer', () => {
       'Connect',
       'Resources',
     ]);
-    await expect(cols.nth(3).getByRole('link', { name: 'Download PDF' })).toHaveAttribute(
+    await expect(cols.nth(3).getByRole('link', { name: 'Download CV' })).toHaveAttribute(
       'href',
       '/cv.pdf',
     );
@@ -372,7 +402,7 @@ test.describe('search panel', () => {
     const quick = page.locator('#search-quick a');
     await expect(quick).toHaveCount(4);
     await expect(quick.nth(0)).toHaveText('Experiences');
-    await expect(quick.nth(2)).toHaveText('Download PDF');
+    await expect(quick.nth(2)).toHaveText('Download CV');
     // The panel drops from under the bar, full width, over a curtain.
     const box = (await panel.boundingBox())!;
     expect(Math.round(box.y)).toBe(44);
@@ -524,7 +554,7 @@ test.describe('chrome alignment, transparency and the sticky bar (§5.2, §5.7, 
     expect(v.top + 7).toBeGreaterThanOrEqual(0);
   });
 
-  test('the small pill is ~26.7px tall (24px at compact chrome) with a 44px tap area that touches no neighbour', async ({
+  test('the small pill is 24px tall with a 44px tap area that touches no neighbour', async ({
     page,
   }) => {
     for (const w of [1440, 375]) {
@@ -545,10 +575,7 @@ test.describe('chrome alignment, transparency and the sticky bar (§5.2, §5.7, 
           gap: tapLeft - prev.getBoundingClientRect().right,
         };
       }, w);
-      // 14px type at full chrome (3px padding, 1px border): about 26.67px; 24px at compact chrome.
-      if (w > 833) expect(v.h, `${w}`).toBeCloseTo(26.67, 0);
-      else expect(v.h, `${w}`).toBe(24);
-      expect(v.h, `${w}`).toBeGreaterThanOrEqual(24);
+      expect(v.h, `${w}`).toBe(24);
       expect(v.bw).toBeGreaterThanOrEqual(44);
       expect(v.bh).toBeGreaterThanOrEqual(44);
       expect(v.gap, `${w}`).toBeGreaterThanOrEqual(8);
@@ -575,8 +602,8 @@ test.describe('chrome alignment, transparency and the sticky bar (§5.2, §5.7, 
 
   test('an anchor lands below the stuck local nav (--sticky-h)', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/experiences/');
-    const link = page.locator('.local-nav .links a').nth(2);
+    await page.goto('/skills/');
+    const link = page.locator('.local-nav .links a').nth(1);
     const hash = (await link.getAttribute('href'))!;
     await link.click();
     await page.waitForTimeout(300);
@@ -613,7 +640,7 @@ test.describe('local nav dropdown at 375px (§5.8)', () => {
     });
     expect(v.bar).toBe('rgb(250, 250, 252)');
     expect(v.tray).toBe('rgb(250, 250, 252)');
-    expect(v.size).toBe('16px');
+    expect(v.size).toBe('14px');
     expect(v.h).toBeGreaterThanOrEqual(44);
     expect(v.after).not.toContain('✓');
     expect(parseFloat(v.before)).toBeCloseTo(1.2, 1);
@@ -650,7 +677,7 @@ test.describe('mobile menu rows at 375px (§5.7)', () => {
     });
     expect(v.short).toEqual([]);
     expect(new Set(v.more.map((m) => m.join('|'))).size).toBe(1);
-    expect(v.more[0][1]).toBe('19px');
+    expect(v.more[0][1]).toBe('17px');
     expect(v.more[0][2]).toBe('600');
     expect(v.firstTop).toBeLessThanOrEqual(56);
     expect(v.mainColor).toBe('rgb(51, 51, 54)');
@@ -729,19 +756,19 @@ test.describe('search panel frame (§5.7)', () => {
     expect(v.outline).toBe('none');
     expect(v.shadow).toBe('none');
     expect(v.navBg).toBe('rgb(250, 250, 252)');
-    expect(v.size).toBe('14px');
+    expect(v.size).toBe('12px');
     expect(v.arrow).toContain('→');
     expect(v.close).toBe('none');
   });
 
-  test('quick links are 19px and at least 44px tall at 375px; the ✕ shows; results use plurals', async ({
+  test('quick links are 17px and at least 44px tall at 375px; the ✕ shows; results use plurals', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/projects/');
     await page.getByRole('button', { name: 'Search' }).first().click();
     const q = page.locator('#search-quick a').first();
-    expect(await q.evaluate((e) => getComputedStyle(e).fontSize)).toBe('19px');
+    expect(await q.evaluate((e) => getComputedStyle(e).fontSize)).toBe('17px');
     expect((await q.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await expect(page.locator('#search-dialog .close')).toBeVisible();
     await page.locator('#search-input').fill('lazy-loaded plugins');

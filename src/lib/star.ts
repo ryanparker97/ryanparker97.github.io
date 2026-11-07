@@ -1,3 +1,5 @@
+import { parseHighlights, type Highlight } from './cv';
+
 export interface StoryLike {
   slug: string;
   data: { role?: string; date: Date; metrics: { label: string; value: string }[] };
@@ -81,4 +83,19 @@ export function graphBars(compare: { label: string; value: number }[]) {
     w: Number((c.value / max).toFixed(3)),
     after: i === compare.length - 1,
   }));
+}
+
+/**
+ * The Action section's labelled bullets (spec §4.4), for the "Step by step." stage. Empty unless
+ * the Action has at least two bold-labelled bullets.
+ */
+export function actionSteps(body: string): Highlight[] {
+  const parts = body.split(/^## .*$/m); // [lead, S, T, A, R]
+  const steps = parseHighlights(parts[3] ?? '').filter((h) => h.label);
+  return steps.length >= 2 ? steps : [];
+}
+
+/** Removes the first list from rendered HTML (the stage shows the Action's bullets as cards). */
+export function stripFirstList(html: string): string {
+  return html.replace(/<ul\b[^>]*>[\s\S]*?<\/ul>/i, '').trim();
 }

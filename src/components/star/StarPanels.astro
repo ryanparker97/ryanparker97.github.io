@@ -15,8 +15,10 @@ interface Props {
   lang: Lang;
   /** Heading level of the panel labels: 4 inside a story card (H3 question), 3 on a story page. */
   level?: 3 | 4;
+  /** Panels to render (default all four); each keeps its fixed index into `html`. */
+  only?: ('s' | 't' | 'a' | 'r')[];
 }
-const { html, metrics, lang, level = 4 } = Astro.props;
+const { html, metrics, lang, level = 4, only } = Astro.props;
 const t = useT(lang);
 const H = `h${level}` as const;
 const panels = [
@@ -29,30 +31,32 @@ const panels = [
 
 <div class="star-panels-wrap">
   <div class="star-panels">
-    {panels.map((p, i) => (
-      <section class={`panel panel-${p.key}`} data-star-panel={p.key}>
-        <H class="panel-label">{p.label}</H>
-        <div class="panel-body">
-          <Fragment set:html={html[i]} />
-        </div>
-        {p.key === 'r' && metrics.length > 0 && (
-          <ul class="result-stats" aria-label={t('star.metrics')}>
-            {metrics.map((m) => (
-              <li class:list={['result-stat', { 'stat-graph': !!m.compare }]}>
-                <Stat
-                  card
-                  above={m.prefix}
-                  value={m.value}
-                  below={m.label}
-                  nocap={!m.prefix && metrics.some((x) => x.prefix)}
-                />
-                {m.compare && <GraphBars compare={m.compare} {lang} />}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    ))}
+    {panels.map((p, i) =>
+      only && !only.includes(p.key) ? null : (
+        <section class={`panel panel-${p.key}`} data-star-panel={p.key}>
+          <H class="panel-label">{p.label}</H>
+          <div class="panel-body">
+            <Fragment set:html={html[i]} />
+          </div>
+          {p.key === 'r' && metrics.length > 0 && (
+            <ul class="result-stats" aria-label={t('star.metrics')}>
+              {metrics.map((m) => (
+                <li class:list={['result-stat', { 'stat-graph': !!m.compare }]}>
+                  <Stat
+                    card
+                    above={m.prefix}
+                    value={m.value}
+                    below={m.label}
+                    nocap={!m.prefix && metrics.some((x) => x.prefix)}
+                  />
+                  {m.compare && <GraphBars compare={m.compare} {lang} />}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ),
+    )}
   </div>
 </div>
 
@@ -88,7 +92,7 @@ const panels = [
   .panel-label {
     margin: 0 0 8px;
     color: var(--text-2);
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     font-weight: 600;
     line-height: 1.3334;
     letter-spacing: 0.06em;

@@ -35,7 +35,7 @@ const t = useT(lang);
       subline={role ? companyLabel(role.data.company, role.data.client) : undefined}
     >
       {role && (
-        <ChevronLink slot="cta" href={localePath(`/experiences/#${role.slug}`, lang)}>
+        <ChevronLink slot="cta" href={localePath(`/experiences/${role.slug}/`, lang)}>
           {t('star.viewCv')}
         </ChevronLink>
       )}

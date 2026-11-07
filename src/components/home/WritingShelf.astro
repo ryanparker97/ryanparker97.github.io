@@ -1,0 +1,135 @@
+---
+/** Home "Writing" shelf (spec §4.1.1): every published post as a gallery card, newest first. */
+import { Image } from 'astro:assets';
+import CoverCredit from '~/components/blog/CoverCredit.astro';
+import Gallery from '~/components/tile/Gallery.astro';
+import SectionHeader from '~/components/tile/SectionHeader.astro';
+import ChevronLink from '~/components/ui/ChevronLink.astro';
+import { localePath } from '~/i18n/routes';
+import { useT, type Lang } from '~/i18n';
+import { formatDate } from '~/lib/format';
+import type { PostRow } from '~/lib/topics';
+
+interface Props {
+  lang: Lang;
+  rows: PostRow[];
+  tone?: 'bg' | 'surface';
+}
+const { lang, rows, tone = 'bg' } = Astro.props;
+const t = useT(lang);
+const credits = [...new Set(rows.map((r) => r.post.imageCredit).filter((c): c is string => !!c))];
+---
+
+<section
+  class:list={['section', 'writing', { 'section--surface': tone === 'surface' }]}
+  id="writing"
+>
+  <div class="section-inner section-inner--wide">
+    <SectionHeader
+      id="writing-title"
+      align="start"
+      eyebrow={t('home.writing.eyebrow')}
+      title={t('blog.hero')}
+    >
+      <ChevronLink slot="cta" href={localePath('/blog/', lang)}>
+        {t('home.posts.all')}
+      </ChevronLink>
+    </SectionHeader>
+  </div>
+  <Gallery
+    {lang}
+    labelledby="writing-title"
+    id="writing-list"
+    few={rows.length <= 3}
+    prevLabel={t('gallery.prevPosts')}
+    nextLabel={t('gallery.nextPosts')}
+  >
+    {rows.map((row, i) => (
+      <li class="gallery-card post-card lift" data-reveal style={`--i:${Math.min(i, 3)}`}>
+        {row.post.image && (
+          <Image
+            class="post-card__cover"
+            src={row.post.image}
+            alt=""
+            width={640}
+            height={640}
+            loading="lazy"
+          />
+        )}
+        <p class="post-card__kicker">
+          {row.part
+            ? `${t('series.part', { n: row.part })} · ${row.seriesTitle}`
+            : t('blog.article')}
+        </p>
+        <h3 class="t-card">
+          <a href={localePath(`/blog/${row.post.slug}/`, lang)}>
+            {row.partTitle ?? row.post.title}
+          </a>
+        </h3>
+        <p class="post-card__meta">
+          <time datetime={row.post.pubDate.toISOString()}>
+            {formatDate(row.post.pubDate, lang)}
+          </time>
+          {' · '}
+          {t('blog.readingTime', { n: row.post.minutes })}
+        </p>
+      </li>
+    ))}
+  </Gallery>
+  {credits.length > 0 && (
+    <div class="section-inner section-inner--wide">
+      {credits.map((c) => (
+        <p class="t-caption cover-credits">
+          <CoverCredit {lang} credit={c} />
+        </p>
+      ))}
+    </div>
+  )}
+</section>
+
+<style>
+  .writing :global(.gallery) {
+    background: transparent;
+  }
+  .post-card {
+    position: relative;
+  }
+  .section--surface .post-card {
+    background: var(--bg);
+  }
+  .post-card__cover {
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: contain;
+    background: var(--fill);
+    border-radius: 18px;
+    margin-bottom: 16px;
+  }
+  .post-card__kicker {
+    margin: 0;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2858;
+  }
+  .post-card h3 {
+    margin-top: 8px;
+  }
+  .post-card h3 a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .post-card h3 a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  .post-card__meta {
+    margin: auto 0 0;
+    padding-top: 16px;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    line-height: 1.4286;
+  }
+</style>

@@ -2,8 +2,8 @@
 
 | | |
 |---|---|
-| **Status** | Draft v4.4 (one consolidated Apple design system, §5; page specs §4; history in Appendix C) |
-| **Last updated** | 2026-10-30 |
+| **Status** | Draft v6.0 (one consolidated Apple design system, §5; page specs §4; history in Appendix C) |
+| **Last updated** | 2026-11-07 |
 | **Hosting** | GitHub Pages — `https://ryanparker97.github.io` |
 | **Stack** | Astro + Tailwind CSS, all content in Markdown/MDX |
 
@@ -52,15 +52,15 @@ The look follows **apple.com** closely (§5): white pages with Apple's light gre
 | Styling | Tailwind CSS with CSS custom-property design tokens |
 | Site structure | Multi-page: Home, Experiences, Projects, STAR, Blog (+ tag and series pages, search, 404) |
 | Theme | **Light (white) by default** whatever the OS setting; dark only when picked in the toggle (Light → Dark → System) (§5.12) |
-| Palette | Apple's: white `#FFFFFF`, grey `#F5F5F7` bands, text `#1D1D1F` / `#6E6E73`, blue `#0053A6` pills / `#00509F` links (Apple's #0071E3 / #0066CC darkened to reach 7:1); mint only for tech highlights, tech chips and the "Current" chip (§5.3) |
+| Palette | Apple's: white `#FFFFFF`, grey `#F5F5F7` bands, text `#1D1D1F` / `#6E6E73`, blue `#0053A6` pills / `#00509F` links (Apple's #0071E3 / #0066CC darkened to reach 7:1); mint only for tech highlights, tech chips and the "Current" chip (§5.3); four highlight colours `--hl-1…4` (green, orange, purple, pink) for the Home stat-card values only (§5.3) |
 | Apple-style elements | Apple's breakpoints (734 / 1068, chrome at 833) and type scale; 44px global nav with a search flyout and full-screen mobile menu; 52px product-style local nav on every inner page (chevron dropdown on phones); square homepage units with 12px gaps; 28px-radius cards; Apple global footer with breadcrumbs and directory; four scroll effects (§5) |
 | Fonts | System SF stack everywhere (incl. blog bodies), self-hosted Inter as an un-preloaded fallback, no Newsreader (§5.4) |
-| Home layout | **Apple homepage units** (§4.1): one idea per unit, centred headline, at most two pills: **Hero** (name, headline, two pills, stat strip) → **Experiences** → **Technical skills** → a **two-up tile grid** (featured project · featured STAR story · latest writing · certifications) → **Contact**. No local nav, sidebar or scroll-spy |
-| Experiences page sections | **Chapters** (§4.2): **no hero** (visually hidden H1), local nav of roles with a Download PDF pill, one full-width chapter per role with achievement **highlight cards** (sticky storytelling at L), closing section. **No summary on the web page** (it stays in the PDF). **Projects, skills and certifications are not on the Experiences page**: projects live on `/projects/`, skills and certifications on Home. No education section |
-| Projects page | `/projects/` in the main nav (after Experiences). Lists **all** projects (personal, work, open source) with a kind filter in the local nav. Tiles expand in place, **no detail pages** |
+| Home layout | **Product page** (§4.1): a local nav, then touching full-bleed bands: **Hero** (gradient headline, two pills, stat strip) → **highlights** gallery → **Take a closer look.** → **STAR story** → **career** row → **writing** shelf → **Let's talk.** |
+| Experiences page sections | A Layout B **hero** ("Built for banking data."), local nav of roles (each links to its role page, §4.2.3) with a Download CV pill, a grey band of Leadership-style **cards** ("Experience." one per role, "Certifications." one per certification), and a grey **contact box**. **No summary on the web page** (it stays in the PDF). The highlights gallery and career row live on Home (§4.1); the role chapters live on the role pages. No education section |
+| Projects page | `/projects/` in the main nav (after Experiences). an Apple lineup of **all** projects (personal, work, open source), one feature tile each, with a kind filter in the local nav; each tile links to its product page (§4.6.1) |
 | Experiences route | The web CV page is named **Experiences** and lives at `/experiences/` (VI: *Kinh nghiệm*, `/vi/experiences/`). The old `/cv/` and `/vi/cv/` stay as redirects (Astro `redirects`, meta refresh on static hosting), out of the sitemap, search index and Lighthouse URLs. The PDF stays a CV: `/cv.pdf`, `/vi/cv.pdf`, `Ryan-Parker-CV.pdf` |
 | CV PDF | Built automatically in CI with Playwright, **US Letter**. Contains the Experiences page content **plus** the summary, selected projects, the technical skills table (with spoken languages) and certifications, as in `cv.tex`. The Markdown content replaces `cv.tex` as the single source of truth |
-| CV contact details | Email, phone, LinkedIn and GitHub: in the PDF, the Home Contact unit and the footer's Connect column |
+| CV contact details | Email, phone, LinkedIn and GitHub: in the PDF and the footer's Connect column |
 | STAR organisation | Grouped by role/company, linked from the Experiences chapters |
 | STAR display | Four-panel grid: Situation · Task side by side, Action and Result full width, all visible at once |
 | Blog | Tags + tag pages, RSS, reading time, sticky TOC, Shiki syntax highlighting, **series** (series box, prev/next part, series index page), callouts, code block titles, inline SVG diagrams |
@@ -82,12 +82,15 @@ The look follows **apple.com** closely (§5): white pages with Apple's light gre
 ### 3.1 Sitemap
 
 ```
-/                         Home (tiles: hero, experiences, skills, project · story · writing · certifications grid, contact)
-/experiences/             Experiences (role chapters, Download PDF; /cv/ redirects here)
+/                         Home (product page: hero, highlights, closer look, story, career, writing, Let's talk.)
+/experiences/             Experiences (Leadership-style role and certification cards, contact box; /cv/ redirects here)
 /projects/                Projects (all kinds, filter chips, cards expand in place)
+/skills/                  Skills (Tech Specs rows: skill groups, certifications, languages)
+/experiences/<slug>/     One role (hero + highlight cards, Layout D)
 /experiences/print/       Print-only CV layout used to make the PDF (noindex)
 /cv.pdf                   Generated PDF (English)
 /star/                    STAR stories grouped by role/company
+/projects/<slug>/         One project as a product page (Layout B)
 /star/<slug>/             Single STAR story (deep-linkable, shareable)
 /blog/                    Blog index (newest first)
 /blog/<slug>/             Blog post
@@ -119,11 +122,14 @@ Every page is built from the shared design system in §5: the global nav (§5.7)
 
 | Page | Local nav (§5.8) | Hero (§5.10.1) | Content | Closing |
 |---|---|---|---|---|
-| Home `/` | — | Name, headline, two pills, stat strip | Units with 12px gaps (§4.1) | Contact unit |
-| Experiences `/experiences/` | Roles · **Download PDF** pill | **None** (visually hidden H1) | One chapter per role (§4.2) | "Want the full picture?" |
-| Projects `/projects/` | All · Personal · Work · Open source · Expand all | "Things I've built." | Tile grid of projects (§4.6) | — |
+| Home `/` | Overview · Experiences · Skills · **Download CV** pill | Gradient headline H1 (no eyebrow), one line, two pills, stat strip | Full sections (§4.1) | "Let's talk." |
+| Experiences `/experiences/` | "Experiences" + one link per role (to its page) · **Download CV** pill | Role eyebrow · "Built for banking data." · positioning · Email me · Download CV | "Experience." and "Certifications." card groups (§4.2) | Contact box |
+| Role `/experiences/<slug>/` | "Experiences" + one link per role (the open one current) · **Download CV** pill | Company eyebrow, role H1, dates · location | The §4.2.1 chapter with H2 "Highlights." (§4.2.3) | — |
+| Projects `/projects/` | All · Personal · Work · Open source · **Download CV** pill | "Things I've built." | Lineup of feature tiles (§4.6) | — |
+| Skills `/skills/` | Certifications · Languages · **Download CV** pill | "The tools I build with." | Tech Specs rows (§4.8) | — |
+| Project `/projects/<slug>/` | Project title · "All projects ›" | Eyebrow "Project", title, subtitle | Laptop frame, big stats, problem → approach → design → workflow → result (§4.6.1) | "More from the work." |
 | STAR `/star/` | One link per role group | "Stories from the work." + competency chips | One chapter per role group (§4.4) | — |
-| STAR story `/star/<slug>/` | Role name · "All stories ›" | Story title + question | Four-panel grid | "All stories ›" · "Read the role ›" |
+| STAR story `/star/<slug>/` | Role name · "All stories ›" | Story title + question | S + T, Step by step. stage, Result | "All stories ›" · "Read the role ›" |
 | Blog index, topic, tag, series pages | All posts · Topics · Series · **RSS** pill | "Notes on data and tools." | Topic-grouped hairline list (§4.5) | — |
 | Blog post `/blog/<slug>/` | Series name (or "Blog") · "All posts ›" | Newsroom-style header | Reading column (§4.5) | More in this series / More posts |
 | 404 | — | "Page not found." + Go home · Search | — | — |
@@ -132,133 +138,98 @@ The local nav sits **directly under the global nav, above the hero**, as on Appl
 
 ### 4.1 Home (`/`)
 
-Home follows the **apple.com homepage**: a stack of units on a white page, separated by **12px gaps**, each unit telling **one idea** with a short headline, one subhead and at most two pills.
+Home follows an **apple.com product page** (like /airpods-pro/): the owner is the one "product". Full-width sections **touch and alternate** between `--bg` and `--surface-2` (inner-page style, §5.10.2); there are no 12px-gap units and no tile grid. A local nav (§5.8) sits above the hero.
 
 #### 4.1.0 Principles
 
-- **One idea per unit:** who is this, what have they done, what can they do, what have they built, how do I reach them.
-- **Headline first.** Every unit leads with a headline of at most 6 words that ends with a period, and one subhead of at most 120 characters (§5.14). Detail lives on the linked page.
-- **At most two actions per unit**: primary pill first, then a secondary pill.
-- **Centred text** in every unit at L and M. At S, a unit whose copy is longer than 120 characters switches its whole lockup to start-aligned (Apple's `small-uncentered`†, §5.10.4). The certification rows are always left-aligned inside their centred block (§4.1.5).
-- **No local nav, sidebars, sticky panels, in-page index or scroll-spy.** The page is a single scroll and needs no Home-specific JavaScript.
+- **One idea per section** with a short headline that ends with a period and at most one subhead of 120 characters (§5.14). Detail lives on the linked page.
+- **At most two actions per section**: primary pill first, then a secondary pill.
+- **Result first:** the stat strip with the >50% result is on screen one (peek rule: at least 64px of the next band shows at 1440 × 900 and 375 × 812).
+- **Local nav** (§5.8): title "Ryan Parker", links **Overview** (current, `/`) · **Experiences** (`/experiences/`) · **Skills** (`/skills/`) and the **Download CV** pill (`/cv.pdf`, `download="Ryan-Parker-CV.pdf"`). These are page links, not in-page anchors.
+- The final order is `top, highlights, closer-look, story, career, writing, more`, then the footnotes. Each section is left out when its content is missing, and the alternation still holds for the sections shown: tones are derived from the sections actually rendered (`bandTones`, `src/lib/bands.ts`) and alternate from the white hero, so no two neighbours share a tone and no band is black. Footnotes and footer stay `--surface-2`. `highlights` needs at least one card, `closer-look` a featured project with ≥ 2 labelled bullets, `story` a story, `career` a role, `writing` a post.
+- **Scripts:** Home loads only `gallery.ts`, `closer-look.ts` and the shared scripts.
 
 #### 4.1.1 Page structure
 
-| # | Unit | Kind (§5.10) | Background | `id` |
-|---|---|---|---|---|
-| 1 | Hero + stat strip | Full unit | `--bg` | `top` |
-| 2 | Experiences | Full unit | `--surface-2` | `experience` |
-| 3 | Technical skills | Full unit | `--bg` | `skills` |
-| 4 | Project · STAR story · Writing · Certifications | Tile grid, 2-up | `--surface-2` each | `work`, `stories`, `writing`, `certifications` |
-| 5 | Contact | Full unit | `--surface-2` | `contact` |
+| # | Section | Background | `id` |
+|---|---|---|---|
+| 1 | Hero | `--bg` | `top` |
+| 2 | **Get the highlights.** | `--surface-2` | `highlights` |
+| 3 | **Take a closer look.** (featured project, shown with ≥ 2 labelled body bullets) | `--bg` | `closer-look` |
+| 4 | **STAR story** (the featured story from `pickStory`) | `--surface-2` | `story` |
+| 5 | Career | `--bg` | `career` |
+| 6 | **Writing** (every published post) | `--surface-2` | `writing` |
+| 7 | "Let's talk." | `--bg` | `more` |
+| 8 | Footnotes (§5.10.12) | `--surface-2` | none |
 
-- Units follow §5.10.2 (Home units). The hero uses `.unit--stack` (actions → 64px → stat strip); Experiences is split (lockup on top, career rail at the bottom); Skills and Contact use `.unit--flow` (Contact: lockup → 40px → icons → 16px → legal name (`realName`, "Legal name: …", when set) → 2px → languages, under 500px tall at L). square corners, a 12px gap between every unit, the min-heights in §5.10.2, and content centred vertically and horizontally.
-- **Headings:** the H1 is the name, in the hero. Each unit and each grid tile has an H2.
-- **Anchors:** `/#experience`, `/#skills`, `/#work`, `/#stories`, `/#writing`, `/#certifications` and `/#contact` land below the global nav (§5.10.6).
+Tones shown are for the all-present page; they shift when a section is missing (§4.1.0).
+
+- **Get the highlights.** (`id="highlights"`, `--surface-2`, after the hero): start-aligned header with **Read the STAR stories ›** (→ `/star/`), then a scroll gallery (§5.10.7) of up to four **tall stat cards** (`StatCard`, `--bg`: white on the grey band, black in the dark theme; card 3 stays white in both; min-height 640 / 560 / 520, padding 36/32 · 36/28 · 32/24): an H3 (Card headline), a 104 / 96 / 72px 700 value at the bottom, coloured by position (`--hl-1…4`: green, orange, purple, pink, repeating every four), a 17px `--text-2` caption, an optional chevron link. Cards, each from content and left out when its source is missing: (1) `yearsOfExperience` with the companies oldest first, no footnote ref; (2) `headlineMetric` with "As <role> at <company>, since <date>."; (3) the featured story's title and first metric, **white** (`color-scheme: light`, value in its position colour, purple), **Read the story ›**, no footnote ref; (4) the featured project's first three `tech` names (56 / 48 / 40px), "A human signs off before building starts and at review." (`exp.hl.agentsCap`, under the headline "Agents do the work. Four gates check it."), **See the project ›**.
+  
+  The hero carries the page's footnotes; gallery cards carry none.
+- **STAR story** (`id="story"`, tone from the rendered sequence (`--surface-2` after `#closer-look`), between `#closer-look` and `#career`): centred header with eyebrow "STAR story" (`home.stories.eyebrow`), H2 = the story title, subhead = its question, actions **Read the story** (primary, → `/star/<slug>/`, accessible name "Read the story: <title>") · **All stories** (secondary, → `/star/`), then a default-size stat strip with the story's first two metrics as a number pair (values may be words: >50% and unchanged today), without footnote refs (the hero strip carries the note). The strip is left out when the story has no metrics. There is no super stat on Home.
+- **Career row** (`id="career"`, tone from the rendered sequence, `--bg` on the all-present page): a start-aligned header (H2 *"Experience."*, subhead "<role> at <company>, since <Mon YYYY>."), then one entry per role, newest first: at L five columns (`auto-fit, minmax(176px, 1fr)`); at M (735–1068px) **Tech Specs rows** (§4.8, with the L label geometry), one full-width row per role with the years in a 220px label column and the company and role stacked on the right (24px row padding, nothing scrolls); at S the columns stack. Each entry has a 2px top rule (`--accent` for the current role, `--border` otherwise), the years (*2026–now*, 14/600, `--link` when current), the company label as an H3 link to its role page (`/experiences/<role-slug>/`, §4.2.3) (24/600 `--text`), the role (17px `--text-2`). The company link is at least 44px tall (8px block padding).
+- **Writing** (`id="writing"`, tone from the rendered sequence, after `#career`): start-aligned header (eyebrow "Writing", H2 "Notes on data and tools."/`blog.hero`, **All posts ›** → `/blog/`), then a scroll gallery (§5.10.7) with one card per published post, newest first (it grows with posts). Each card: the post cover (square, shown whole on `--fill` with `object-fit: contain`, radius 18px) when it has one, a 14/600 `--text-2` kicker ("Part N · <Series>", as on the Blog rows, or "Article"), the title as an H3 link (the whole card is the target), and "<date> · N min read". No chips. Three posts or fewer share the row. Paddles are named "Previous posts" / "Next posts". Cover credits sit under the gallery.
+- **Headings:** the H1 is the gradient headline; each later section has an H2; gallery cards have H3s, and so do career entries.
+- **Anchors:** every section heading id lands below both bars with its eyebrow visible.
+- Skills, certifications and languages in full are on `/skills/` (§4.8). Contact links are also in the footer's Connect column.
 
 #### 4.1.2 Hero (`id="top"`)
 
-- Eyebrow: the location with a `map-pin` icon.
-- **H1:** the name, in Hero size (§5.4).
-- Subhead: the headline and tagline as one line, e.g. *Senior Data Engineer & Team Lead — DBT, Airflow, PySpark, AWS & GitLab CI/CD*. The headline part (*Senior Data Engineer & Team Lead*) is the page's one **gradient-text phrase** (§5.10.8); the tagline stays `--text`.
-- The one-line positioning statement in **Lockup copy** (§5.4): `--text-2` with its `**bold**` phrases in `--text`, at most 60ch.
-- Actions: **Learn more** (primary, → `/experiences/`, accessible name "Learn more about my experience") · **Download PDF** (secondary, `download="Ryan-Parker-CV.pdf"`).
-- **Stat strip** (§5.10.5), 48px below the actions, **numbers only**, up to three stat lockups:
-  1. `profile.yearsOfExperience` → "years of experience"
-  2. `profile.headlineMetric` (e.g. *7* → "engineers led"; the leading number is split from the label at the first space; optional `headlineMetricPrefix` as the caption above, e.g. "Led")
-  3. the featured STAR story's first metric, if its value contains a digit, e.g. *Cut / >50% / EMR costs*
+- `Hero tight` (§5.10.1). **No eyebrow** (the title is the headline). **H1:** the profile headline (*Senior Data Engineer & Team Lead*) inside the page's one **gradient-text phrase** (§5.10.8). No icon, no location.
+- Subhead: one line, *"Data pipelines and cloud platforms for banking markets."* (i18n `home.hero.subline`).
+- Actions: **Learn more** (primary → `/experiences/`, accessible name "Learn more about my experience") · **Download CV** (secondary, `download="Ryan-Parker-CV.pdf"`).
+- **Stat strip** (`.stat-strip--big`, the hero's extra slot): numbers only, up to three: years of experience, the headline metric (caption above, e.g. "Led") and the featured STAR story's first metric with a digit (the >50% result). A stat with no digit is left out; with none, the strip is not rendered. Each stat with a content note gets a footnote ref (§5.10.12). Footnote numbers run once for the page, from the hero strip only. If the peek rule fails with the big strip, the default strip variant is used; no stat is dropped.
+- **Hero intro:** subhead → pills → stats fade up (§5.11 effect 1). **The H1 is never animated.** The pipeline visual no longer appears on Home.
 
-  A stat whose source is empty or has no digit is left out; with no stats, the strip is not rendered. The company is not a stat: the Experiences unit right below names it.
-- **Hero intro** (on load, CSS only): eyebrow → subhead → positioning line → pills → stat strip fade up in sequence (§5.11 effect 1 values, 150ms apart). **The H1 is never animated** (it is the LCP element).
-- The hero has no avatar, card or social icons. Those live in Contact (§4.1.7).
+#### 4.1.3 "Let's talk." (`id="more"`)
 
-#### 4.1.3 Experiences (`id="experience"`)
+The `#more` section (the shared `LetsTalk` component): `--surface-2`, H2 *"Let's talk."*, subhead, **Email me** · **LinkedIn**, the location, legal name and spoken languages, and the milestones art.
 
-- Eyebrow "Experiences". **H2:** the current role title, e.g. *Senior Data Engineer (Team Lead).*
-- Subhead: "<Company> · since <Mon YYYY>", then the years of experience.
-- **Career rail** (the unit's visual, replacing the old company line): `<ol class="rail" aria-label="Career">` with one row per company, newest first (two stints at one company share a row; back-to-back roles at the same company merge into one bar): the company (19/600, `--text` for the current company, `--text-2` for earlier ones), a caption with its years (*2020–2021 · 2026–now*, 14px `--text-2`, 5px† above the bar), and a track with one graph bar (§5.10.9) per stint, positioned by `--s` (start) and `--w` (width) as fractions of the whole career span, computed at build time from the experience collection. Current stint `--accent`, past stints `#86868B`†; rows 32 / 24 / 20px apart; first and last year as 14px ticks under the last row; centred 692px column. Each row has a visually hidden sentence ("FPT Software: 2020 to 2021, and 2026 to now."). Bars grow with the §5.10.9 motion. Each track shows a faint full-width `--fill` track behind its bars, the company label and years are start-aligned above their track, and each bar is at least 24px wide so a short current stint never reads as a dot. Bars grow after their row has faded in (delay ≥ the row's reveal).
-- Actions: **Learn more** (primary → `/experiences/`) · **Download PDF** (secondary).
+#### 4.1.4 Footnotes
 
-#### 4.1.4 Technical skills (`id="skills"`)
-
-- Eyebrow "Technical skills". **H2:** *"The tools I build with."* Subhead: *"From ingestion to data quality, on AWS and Azure."* (i18n).
-- **Skill grid:** one cell per `skills` entry, in `order`, in the wide content width (§5.2). It has 3 columns at L, 2 at M and 1 at S, with a 24px gap. Cells are plain centred blocks with **no background, shadow or border**:
-  - a Lucide icon, 32px, in `--text`;
-  - the name (H3, Card headline size);
-  - the description (at most 200 characters, Body-reduced, `--text-2`), hidden at S to shorten the phone page;
-  - up to **5 top-level item names** as one `·`-separated line (no children), then "+N more".
-- `size` and `tint` from the schema are not used.
-- Action: **See where I used them ›** (chevron link → `/experiences/`).
-
-#### 4.1.5 Tile grid
-
-Four grid tiles (§5.10.3), in this order. A tile with no content is left out and the grid closes up (odd-count rule, §5.10.3).
-
-| Tile | `id` | Content (centred) | Actions |
-|---|---|---|---|
-| **Featured project** | `work` | Eyebrow "Project", project title (H2), subtitle as subhead, kind chip, up to 4 tech names as the tile's visual: one centred, wrapping line at Card headline size (28/600) in `--text-2`, at most 2 lines | **Learn more** (primary → `/projects/#<slug>`) · **All projects** (secondary) |
-| **Featured STAR story** | `stories` | Eyebrow "STAR story", story title (H2), up to 3 competency chips, and the result metric as the tile's **super stat** visual (§5.10.5) at the bottom | **Read the story** (primary) · **All stories** (secondary) |
-| **Latest writing** | `writing` | Eyebrow "Blog", newest published post title (H2), date · reading time, series chip if any; for a post in a series, the visual is the part numerals *1 2 3 4 5* at Promo size, 24px apart, the current part `--text` and the rest `--border` (`aria-hidden`), under a Caption line "Part 1 of 5 · Neovim setup guide". When the post has a `heroImage`, the visual starts with it as a centred square (280 / 240 / 200px, radius 18, keyline outline, alt "Cover art: <title>" from `blog.coverAlt`), 24px above the progress, and the tile is split (not stacked) | **Read the post** (primary) · **All posts** (secondary) |
-| **Certifications** | `certifications` | Eyebrow "Certifications", H2 *"Certified on the platforms I use."*, up to 3 rows (badge 56px, else the issuer logo on a white 56px disc, else monogram, name as H3 at 21/600, issuer · year at 16px, 20px between rows), then "+N more". The rows form one fit-content block centred in the tile, with badges and text **left-aligned inside it** so they line up | **Verify ›** per row when `credentialUrl` is set (`target="_blank" rel="noopener noreferrer"`). No tile-level action |
-
-- **Which item is shown:** the first `featured` project; the newest `featured` STAR story by `date`, else the newest story; the newest published post.
-- **Writing headline:** when the post title is longer than 8 words, it is cut at the first colon (e.g. "Neovim setup guide, Part 1"), else at 8 words with "…". The full title is the accessible name of the post link.
-- **Subhead guard:** any subhead longer than 120 characters is cut at a word boundary and ends with "…".
-- **Empty states:** with no projects, stories or certifications, that tile is left out. With no posts, Writing shows "First post coming soon." with no actions.
-
-#### 4.1.6 Motion
-
-Home uses the hero intro (§4.1.2), effect 1 (staggered fade-up) for every unit's content, and effect 3 (hero fades on scroll) from §5.11. Skill cells and stats stagger. Grid tiles do not scale.
-
-#### 4.1.7 Contact (`id="contact"`)
-
-- **H2:** *"Let's talk."* Subhead: *"Open to data engineering roles and interesting data problems."* (i18n).
-- Actions: **Email me** (primary, `mailto:`) · **Download PDF** (secondary).
-- Below the actions, the social icon buttons (Email, Phone, LinkedIn, GitHub; 20px icons in 44px targets). This is the only place on the site with social **icons**; the footer lists the same links as text (§5.9).
-- Spoken languages as one Caption line per `profile.spokenLanguages` entry, e.g. *English — Professional working proficiency*.
+The hero strip's notes, numbered once for the page.
 
 **Acceptance criteria (Home)**
-- Exactly one H1; headings go H1 → H2 → H3 with no skipped levels.
-- The units appear in the §4.1.1 order. Every pair of neighbouring units is separated by a 12px gap of `--bg`, and full units span the viewport width at every width from 320px up.
-- At L, the tile grid is two-up and fills the viewport width minus 2 × 12px; tiles in a row have equal heights and the §5.10.3 min-height. At S it is one column with no side padding.
-- All unit text is centred at L and M (except the certification rows); at 375px, every `.lockup--long` is start-aligned.
-- Exactly one `.text-gradient` on `/` and `/vi/` (the hero role); every `#top .stat-value` contains a digit. No unit has more than two unit-level actions, and every EN unit headline is at most 6 words (the Writing headline follows its own rule).
-- The hero contains only the eyebrow, name, subhead, positioning line, two pills and the stat strip.
-- Adding or removing a skill, project, story, post or certification file updates the matching unit with no code changes, and the grid closes up with no empty cell.
-- Skill cells appear in `order` and show at most 5 item names plus "+N more".
-- Every Home anchor lands below the global nav with its eyebrow visible.
-- With JavaScript off, every unit is visible. No Home-specific script is loaded.
+- Exactly one H1; headings go H1 → H2 with no skipped levels. The H1 is the profile headline.
+- Sections appear in the §4.1.1 order. Neighbouring sections touch (within 1px) at every width from 320px up.
+- Exactly one `.text-gradient` on `/` and `/vi/`, inside the H1; every hero `.stat-value` contains a digit; no `.lockup--long` at 375px. No section has more than two actions.
+- The gallery has up to four stat cards. At 1440 with more than 3 cards it scrolls and its paddles enable/disable at the ends; with JS off it still scrolls by swipe/keyboard and the paddles are hidden; at 375 its cards are 260px wide with no page overflow.
+- The career row has one entry per role, newest first, each company linking to `/experiences/<role-slug>/`; five columns at L, Tech Specs rows at M, stacked at S, links ≥ 44px. Footnote ids on `/` are unique.
+- The local nav lists Overview · Experiences · Skills with Overview current, and the PDF pill; on `/vi/` the links keep the `/vi/` prefix.
+- Peek rule: the second section starts at least 64px above the bottom of the viewport at 1440 × 900 and 375 × 812.
+- With JavaScript off, every section is visible.
 - Lighthouse on `/` and `/vi/` ≥ 0.95 in every category, CLS < 0.05; axe has zero serious or critical violations in light and dark, EN and VI.
 
 ### 4.2 Experiences (`/experiences/`)
 
 The old `/cv/` and `/vi/cv/` URLs redirect to `/experiences/` and `/vi/experiences/` (static meta-refresh pages generated by Astro `redirects`; excluded from the sitemap and the search index).
 
-The page shows **work experience only**. The summary, projects, technical skills and certifications are **not** on this page: projects live on `/projects/` (§4.6), skills and certifications on Home (§4.1.4, §4.1.5), and all of them, plus the summary, are in the PDF (§4.3).
+The page is a **Leadership-style index**: a hero, one grey band of white, type-only cards (no image, icon or avatar; certification cards may carry one optional issuer logo) in two groups, and a closing contact box. The summary, projects and skills are **not** on this page: projects live on `/projects/` (§4.6), skills on `/skills/` (§4.8), the highlights gallery and career row on Home (§4.1), each role's highlights on its own page (§4.2.3); all of them, plus the summary, are in the PDF (§4.3).
 
 #### 4.2.0 Page structure
 
 | # | Block | Kind | `id` |
 |---|---|---|---|
 | 1 | Local nav | §5.8 | — |
-| 2 | **Get the highlights.** | Full section on `--bg` with a scroll gallery (§5.10.7) | `highlights` |
-| 3 | One chapter per role, newest first | Full section; backgrounds alternate `--surface-2` / `--bg`, starting with `--surface-2` | the role slug, e.g. `fpt-software-senior-data-engineer` |
-| 4 | Closing section | Full section, the opposite background to the last chapter | `more` |
+| 2 | Hero | §5.10.1, `--bg` | `hero` |
+| 3 | Role and certification cards | One `--surface-2` section holding two card groups separated by a 1px `--border` rule | `roles` (groups `experience`, `certifications`) |
+| 4 | Contact box | `--bg` section holding a `--surface-2` box | `contact` |
 
-- **No hero.** The page opens with the local nav and the **highlights gallery**, then the chapters. Its one **H1** is visually hidden (`sr-only`): the page title *"Experiences"* (`cv.title`), placed before the local nav, so the outline and screen readers start with the page name.
-- **Highlights gallery (`id="highlights"`):** a section header with **H2** *"Get the highlights."* (i18n; no subhead or actions), then a scroll gallery (§5.10.7) with **one card per role**, newest first:
-  - label: *FPT Software · 2026* (17/600†, 14/600† at S, `--text-2`);
-  - **H3**: the role's highlight bullet label (Card headline size), 8px† below the label; the bullet is chosen by the optional `highlight` frontmatter field (§6.2, 1-based, default 1);
-  - body: that bullet's text cut at a word boundary to at most 140 characters, 12px† below, keeping `mark.tech`;
-  - **Read the role ›** (→ `#<role-slug>`).
-  
-  The gallery is the page's visible opening, so the page never starts on a bare grey band.
-- **Headings:** the gallery and each chapter have an H2; gallery cards and highlight cards have H3s.
-- **Anchors:** each chapter's `id` is the role slug, so links from STAR (`/experiences/#<role-slug>`) and from search land below both bars (§5.10.6). Heading ids (`#<slug>-title`, the targets of Pagefind sub-results) land with the eyebrow visible.
-- **Local nav:** title "Experiences"; one link per role, newest first, labelled with the company's **short name** (`shortName`, §6.2; default the `client` if set, else `company`), adding the start year only when the same short name appears twice (e.g. *FPT Software 2026 · Security Bank · TymeX · FPT Software 2020 · Hitachi Vantara*), linking to `#<role-slug>`; all links fit at L and M; the small pill **Download PDF**.
-- **Scripts:** only the shared local-nav helper (§5.8). There is no scroll-spy.
+- **Hero** (Layout B): eyebrow = the profile headline, **H1** *"Built for banking data."* (i18n), the positioning line as Lockup copy (`exp.hero.copy`), **Email me** (primary, `mailto:`) · **Download CV**.
+- **Card groups** (`CardGroup`): a start-aligned H2 (*"Experience."*, *"Certifications."*) over a list of cards on `--bg` (white; the band is grey), radius 28, padding 28 / 28 / 24, minimum height 180px at M and L, 20px gap; **4 up at L, 2 at M, 1 at S**, inside the 980px `--content` grid (as apple.com/leadership), not the wide width. The count is never fixed: the lists come from the `experience` and `certifications` collections.
+  - **Role card** (`id` = the role slug): eyebrow = year range (*2021–2024*, *2026–now*), **H3** = company label (a link to `/experiences/<slug>/` stretched over the whole card), role title below in `--text-2`. Newest first (§4.2.1 sort).
+  - **Certification card:** an optional issuer logo (Iconify svg) above the eyebrow = *issuer · year*, **H3** = name, and a **Verify ›** chevron link when the certification has a `credentialUrl`. Newest year first.
+  - **Card H3 (both kinds):** 21px at every width with `overflow-wrap: break-word`; the "· year" in the eyebrow keeps a no-break space so it never wraps alone.
+  - A group renders only when its collection has entries.
+- **Contact box** (`ContactBox`, H2 *"Get in touch."*): `--surface-2`, radius 28, padding 40 / 32 / 24, `--content` wide and centred, start-aligned text; the subhead is `home.contact.text`; lines **Email** (`mailto:`), **Mobile** (`tel:`, shown as `phoneDisplay`) and **LinkedIn** (new tab). Every link is at least 44px tall.
+- **Footer:** there are no stats, so no footnotes; the last band is white and the footer has no top rule.
+- **Headings:** H1 (hero) → H2 (*Experience.*, *Certifications.*, *Get in touch.*) → H3 (one per card), no skipped levels.
+- **Anchors:** each role card's `id` is the role slug, so the old `/experiences/#<role-slug>` links (STAR, search) land on the card below both bars (§5.10.6).
+- **Local nav:** title "Experiences" (a link to `/experiences/`); one link per role, newest first, labelled with the company's **short name** (`shortName`, §6.2; default the `client` if set, else `company`), adding the start year only when the same short name appears twice, linking to `/experiences/<role-slug>/`; all links fit at L and M; the small pill **Download CV**.
+- **Scripts:** only the shared local-nav helper (§5.8).
 
-#### 4.2.1 Role chapter (`id="<role-slug>"`)
+#### 4.2.1 Role chapter (used on role pages, §4.2.3)
 
 One full section per role, sorted with the current role first, then `start` descending (year-only dates sort as January). Two roles at the same company stay two chapters.
 
@@ -279,26 +250,23 @@ One full section per role, sorted with the current role first, then `start` desc
 - **Motion:** the header and each card use effect 1 (staggered fade-up); cards are never scaled.
 - **Sticky storytelling (L only):** for every chapter with 1 or more cards, scroll effect 4 (§5.11) puts the header in a sticky left column and the cards in one right column. At M and S, and with no cards, the chapter keeps the centred, stacked layout above.
 
-#### 4.2.2 Closing section (`id="more"`)
+#### 4.2.3 Role page (`/experiences/<slug>/`)
 
-- **H2:** *"Want the full picture?"* Subhead: *"Projects, skills and certifications are all in the PDF."* (i18n).
-- Actions: **Download PDF** (primary) · **View projects** (secondary → `/projects/`).
-- **Art:** below the header, a token-coloured inline illustration of milestones rising to the current role (§5.10.11; 480 / 400 / 280px wide, 2:1), `role="img"` with `exp.more.art` as its name.
+Every `experience` file is also a page at `/experiences/<slug>/` (and `/vi/experiences/<slug>/`); `print` is reserved. Local nav: title "Experiences" (→ `/experiences/`), one link per role (newest first, labelled as in §4.2.0) to its page with `aria-current` on the open one, and the **Download CV** pill. A tight hero (§5.10.1): eyebrow = company label, **H1** = role, subhead = date range · location. Then one `--surface-2` chapter (§4.2.1) with the H2 *"Highlights."* in place of the role header (no dates, no Current chip), cards, tech chips and the STAR pill in the sticky left column at L. No closing section; the chapter is the last band, so the footer has a top rule. Description: `exp.role.description`. Indexed by search as Experiences (`searchType="cv"`).
 
 **Acceptance criteria (Experiences)**
-- Adding a file to `src/content/experience/` adds a chapter and a local-nav link with no code changes.
-- No summary, projects, skills, certifications, hero, stat strip or contact row (no `#summary`, no `#top`). The only H1 is the visually hidden page title.
-- Headings go H1 → H2 (the gallery, one per chapter, the closing section) → H3 (one per gallery card and per labelled card) with no skipped levels.
-- The gallery has one card per role. At 1440 with more than 3 roles it scrolls and its paddles enable/disable at the ends; with JS off it still scrolls by swipe/keyboard and the paddles are hidden; at 375 its cards are 260px wide with no page overflow.
-- Roles are sorted current first, then `start` descending; year-only dates render without a month; month dates render as `MMM YYYY` (EN) or `MM/YYYY` (VI).
-- Two roles at the same company render as two chapters with two local-nav links.
-- Every bullet appears as exactly one card, with its label as the H3 and all bold terms kept.
-- Every occurrence of a vocabulary term in card text is inside a `mark.tech`, longest match first, and no non-tech bold term is highlighted. Each chapter shows its full `tech` list as chips.
-- Every local-nav link and every `/experiences/#<role-slug>` URL lands with the chapter eyebrow visible below both bars, at 375 and 1440.
-- The local nav stays visible through every chapter and never causes horizontal page scroll from 320px up.
-- With JavaScript off, every chapter and card is visible. The Download PDF pill and button point to a file that exists in the build.
+- There is exactly one role card per `experience` file, in sort order (current first, then `start` descending), each linking to `/experiences/<slug>/`; the local-nav links have the same targets in the same order. Adding a file to `src/content/experience/` adds a card, a local-nav link and a role page with no code changes.
+- Certification cards follow the `certifications` collection, newest year first (*Amazon Web Services · 2022* after *Datadog · 2023*).
+- Cards are 4 up at 1440, 2 up at 900 and 1 up at 375; no card holds an `img`, `svg` or `picture`.
+- Headings go H1 → H2 (*Experience.*, *Certifications.*, *Get in touch.*) → H3 (one per card) with no skipped levels.
+- No summary, skills, highlights gallery, career row, chapters, featured band, "Let's talk." section, stat strip or footnotes.
+- The old `/experiences/#<role-slug>` URLs land on the role's card below both bars, at 375 and 1440.
+- The contact box has a `mailto:` link, a `tel:+84963378831` link shown as *(+84) 963 378 831* and a LinkedIn link that opens a new tab; every contact link is at least 44px tall.
+- The last band (`#contact`) is white, so the footer has no top rule.
+- The peek rule holds at 1440 × 900 and 375 × 812: `#roles` starts at least 64px above the viewport bottom.
+- The local nav never causes horizontal page scroll from 320px up; with JavaScript off every card is visible and the Download CV pill points to a file that exists in the build.
 - Lighthouse on `/experiences/` and `/vi/experiences/` ≥ 0.95, CLS < 0.05; axe has zero serious or critical violations in light and dark, EN and VI.
-- Every experience bullet in `cv.tex` appears on `/experiences/`, every project bullet on `/projects/`, and every skill and certification on Home; all of them, plus the summary, appear in the PDF (Appendix A checklist, ticked in M2).
+- Every experience bullet in `cv.tex` appears on a role page, every project bullet on `/projects/`, and every skill and certification on `/skills/`; all of them, plus the summary, appear in the PDF (Appendix A checklist, ticked in M2).
 
 ### 4.3 CV PDF (built automatically)
 
@@ -326,10 +294,10 @@ One full section per role, sorted with the current role first, then `start` desc
 
 ### 4.4 STAR stories (`/star/`)
 
-- **Hero:** eyebrow "STAR stories", **H1** *"Stories from the work."*, subhead *"<n> stories across <m> roles."* (counts at build time). Under the subhead, an illustration of four rising steps with a spark (§5.10.11; 360 / 360 / 280px wide, 12:5, 32 / 28 / 24px above the filter, `star.art`), then the **competency filter**: centred chips that wrap at M and L and form one horizontally scrolling row at S. Choosing chips hides non-matching stories and updates the URL (`?c=leadership`). A group with no matching story is hidden together with its local-nav link; if nothing matches, the page shows *"No stories match."* and a **Show all** button (as §4.6).
+- **Hero:** no eyebrow, **H1** *"Stories from the work."*, subhead *"<n> stories across <m> roles."* (counts at build time). Under the subhead, an illustration of four rising steps with a spark (§5.10.11; 360 / 360 / 280px wide, 12:5, 32 / 28 / 24px above the filter, `star.art`), then the **competency filter**: centred chips that wrap at M and L and form one horizontally scrolling row at S. Choosing chips hides non-matching stories and updates the URL (`?c=leadership`). A group with no matching story is hidden together with its local-nav link; if nothing matches, the page shows *"No stories match."* and a **Show all** button (as §4.6).
 - **Local nav:** title "STAR stories"; one link per role group.
 - **Groups:** one chapter per role, ordered like Experiences (newest first), backgrounds alternating `--surface-2` / `--bg`, starting with `--surface-2`. Each chapter's `id` is the role slug, so Experiences can link to it. Stories without a `role` go in a final **"Other / Personal"** chapter.
-  - Header (Section header): eyebrow = dates, **H2** = role, subhead = company label, then **View in experiences ›** (→ `/experiences/#<role-slug>`).
+  - Header (Section header): eyebrow = dates, **H2** = role, subhead = company label, then **View in experiences ›** (→ `/experiences/<role-slug>/`).
   - **Expand all / Collapse all** is a chevron-style text control 12px above the first chapter's cards, end-aligned to the **card column it controls** (with one centred 760px card, to that card's right edge).
 - **Story cards** (§5.10.4 Card) in a 2-up grid at M and L (one card: centred, at most 760px wide), 1 column at S, in the opposite colour of their band:
   - competency chips (neutral, §5.6);
@@ -337,8 +305,8 @@ One full section per role, sorted with the current role first, then `start` desc
   - the headline result metric as a **stat lockup** (§5.10.5, card size), e.g. *Cut / >50% / EMR costs*;
   - the **four-panel grid**, opened by a **plus disc** (§5.6) labelled "Learn more about <title>";
   - a **permalink ›** to `/star/<slug>/`.
-- **Four-panel grid** (`StarPanels`): all four parts visible at once, no nested toggles. **Situation** and **Task** sit side by side; **Action** and **Result** span the full width below (Action carries the most detail). One column when the grid is narrower than 520px (container query). Each panel has a small uppercase label (`--text-2`, 14/600, H4 in a card, H3 on the story page), its body in `--text-2` with bold terms in `--text`, 18px radius, a 4% `--text` tint so it reads on either band, and 12px gaps. The Result panel shows every `metrics` entry as a stat lockup, plus **graph bars** (§5.10.9) for a metric that has `compare` values. No pastel colours.
-- **Story page `/star/<slug>/`:** local nav = the role name as the title and **All stories ›**; hero with the role · company as the eyebrow, the story title as **H1**, and 32px below it the interview question as a **centred quote** (§5.10.8, reduced size, `width: fit-content; max-inline-size: 760px; margin-inline: auto; text-align: center` with inline, not hanging, quote marks; figcaption "Interview question", centred) in place of the subhead, then 48px below it the result metric as a **super stat** (§5.10.5); one alignment (centred) throughout the hero; the four-panel grid in a 760px column on a `--surface-2` section; closing section with **All stories ›** and **Read the role ›** (`/experiences/#<role-slug>`).
+- **Four-panel grid** (`StarPanels`): all four parts visible at once, no nested toggles. **Situation** and **Task** sit side by side; **Action** and **Result** span the full width below (Action carries the most detail). One column when the grid is narrower than 520px (container query). Each panel has a small uppercase label (`--text-2`, 12/600, H4 in a card, H3 on the story page), its body in `--text-2` with bold terms in `--text`, 18px radius, a 4% `--text` tint so it reads on either band, and 12px gaps. The Result panel shows every `metrics` entry as a stat lockup, plus **graph bars** (§5.10.9) for a metric that has `compare` values. No pastel colours.
+- **Story page `/star/<slug>/`:** local nav = the role name as the title and **All stories ›**; hero with the role · company as the eyebrow, the story title as **H1**, and 32px below it the interview question as a **centred quote** (§5.10.8, reduced size, `width: fit-content; max-inline-size: 760px; margin-inline: auto; text-align: center` with inline, not hanging, quote marks; figcaption "Interview question", centred) in place of the subhead, then 48px below it the result metric as a **super stat** (§5.10.5); one alignment (centred) throughout the hero; the **Situation** and **Task** panels side by side in a 760px column on a `--surface-2` section; then the **"Step by step." stage** (`#steps`, white, `StepStage`): at L with motion allowed and JS on, the left column is pinned (eyebrow "Action", H2 "Step by step.", the question as the subline, then the Action's intro prose) while the right column scrolls one numbered card per labelled Action bullet (`ol`, the step number shown above the label); stacked (M/S, reduced motion, no JS) the stage sits in the 760px column with its header and intro centred (intro ≤ 68ch, 32px above the first card); then a `--surface-2` section with the **Result** panel (full width of its 760px column). The stage appears only when the Action has at least two bold-labelled bullets; otherwise the page keeps the four-panel grid in one 760px column. The Action text appears once. The `/star/` index cards keep the four-panel grid. Closing section with **All stories ›** and **Read the role ›** (`/experiences/<role-slug>/`).
 
 **Acceptance criteria (STAR)**
 - Every story file has exactly four H2 headings, `Situation`, `Task`, `Action`, `Result`, in that order (VI: `Bối cảnh`, `Nhiệm vụ`, `Hành động`, `Kết quả`); otherwise the build fails with an error naming the file.
@@ -352,7 +320,7 @@ One full section per role, sorted with the current role first, then `start` desc
 **Index (`/blog/`), topics (`/blog/topics/…`), tag pages (`/blog/tags/<tag>/`) and series pages (`/blog/series/…`)**
 - **Hero:** eyebrow "Blog", **H1** *"Notes on data and tools."*, subhead (i18n). Tag page: H1 "#<tag>", subhead "<n> posts". Series page: H1 the series title, subhead "<x> of <y> published", then the series description. Topic page: eyebrow "Topics", H1 the topic title, then the topic intro (plain text, from the `topics` body, §6.9).
 - **Local nav:** title "Blog"; links All posts · Topics · Series; small pill **RSS**. Tags are not in the local nav; the footer "Writing" column links to `/blog/tags/`.
-- **Index list:** one flat hairline list (`.hl-list.post-rows`) of every published post, newest first. It is not grouped by topic and has no newest line or jump links. Each series part is its own row; a standalone post is one row.
+- **Index:** a lead card (`.lead-card`, `--surface-2`, radius 32 at L, 24 below; cover square (shown whole on `--fill`; the first image is eager with `fetchpriority="high"`) radius 18 left, stacked on top at ≤ 734px; Newsroom category kicker, H2 stretched link, description, "date · reading time") for the newest post, then an H2 "More posts" (`blog.more`) and the rest as the hairline list (`.hl-list.post-rows`) in two columns at ≥ 735px (one column at S), newest first. It is not grouped by topic and has no jump links. Each series part is its own row; a standalone post is one row. Tag, topic and series pages are unchanged.
 - **Row:** a square thumbnail (112px, 72px at S) and the text side by side at every width. The text is the "Part N · Series" kicker for series posts, the title (the short part title for a series part), a description (clamped to two lines, hidden below 735px) and "date · reading time". The whole row is one link, at least 44px tall. The thumbnail is `heroImage` (decorative, `alt=""`) or a generated token cover (`.post-cover`: series name or "Article" label, large part number or the title's first letter, `aria-hidden`). When any row has a `heroImageCredit`, one deduplicated "Cover art: …" line (Caption size, `--text-2`, underlined new-tab links) appears under the list.
 - **Series page hero:** the first published part's `heroImage`, centred under the lockup (280 / 240 / 200px, radius 18, keyline outline, alt from `blog.coverAlt` with the series title).
 - **Topics index** (`/blog/topics/`): one hairline row per topic (title, description, post count), ordered by `order`. **Topic page** (`/blog/topics/<slug>/`): the hero above, then a hairline list without group headings in which a series is one row with its parts nested beneath it (short part titles, each a link with date · minutes; unpublished parts show a "Coming soon" chip and are not links). Empty topics get no page.
@@ -363,7 +331,7 @@ One full section per role, sorted with the current role first, then `start` desc
 **Post (`/blog/<slug>/`), Apple Newsroom style**
 - **Local nav:** title = the series name (or "Blog"); link **All posts ›**.
 - **Header** (on `--bg`, left-aligned in the article column, like Newsroom†; category → headline 20px†, date 4px† below the category, and a 1px `--border` keyline 653px wide 44px† below the meta line, 36† at M, 32† at S):
-  - eyebrow in Newsroom style (14px, 600, uppercase, `--text-2`): *"DEVELOPER TOOLS · PART 1 · NEOVIM SETUP GUIDE"* (topic, then series), or just the topic, or *"ARTICLE"*;
+  - eyebrow in Newsroom style (12px, 600, uppercase, `--text-2`): *"DEVELOPER TOOLS · PART 1 · NEOVIM SETUP GUIDE"* (topic, then series), or just the topic, or *"ARTICLE"*;
   - the date (and "Updated <date>" if set) in Body-reduced 600;
   - **H1** in Article headline size (§5.4, 700 as Newsroom†);
   - the description as the Article subhead (24px / 500 / 28px line-height / 0.009em†, `--text`†, 20px† below the H1);
@@ -373,11 +341,11 @@ One full section per role, sorted with the current role first, then `start` desc
 - **Body:** the article column (§5.2), Article body size, `--text`. Paragraphs are 1.4211em† apart. H2s in Article section size (700†) with 52 / 48 / 44px† above and 16px† below. Images and diagrams may break out to the content width.
 - **Quote:** an MDX `<Quote by="…" role="…">` renders as a Newsroom pull quote (§5.10.8). **Drop cap:** with `dropcap: true` in frontmatter (§6.7), the first paragraph opens with a drop cap (§5.10.8).
 - **TOC:** sticky on the right at ≥ 1280px (top offset `var(--sticky-h) + 24px`; at scroll 0 its top lines up with the category eyebrow), Caption-size links at a 26px pitch for single-line items, the current item `--text` and the rest `--text-2`, built from H2/H3, with the current section highlighted while scrolling. Below 1280px it is a collapsed `<details>` "On this page" above the body.
-- **Code blocks:** Shiki with light/dark themes matching the site theme, on `--surface-2` with an 18px radius; a language label and a **Copy** button. They support a **filename title** (` ```lua title="lua/ryanparker/lazy.lua" `) as a header bar, **line highlights** (` {3-5} `) on `--fill`, and `shell`/`sh` blocks whose `$` prompt is **not copied**. At S they run to the screen edges with no radius and scroll inside.
+- **Code blocks:** Shiki with light/dark themes matching the site theme, on `--surface-2` with an 18px radius; a language label and a **Copy** button. They support a **filename title** (` ```lua title="lua/config/lazy.lua" `) as a header bar, **line highlights** (` {3-5} `) on `--fill`, and `shell`/`sh` blocks whose `$` prompt is **not copied**. At S they run to the screen edges with no radius and scroll inside.
 - **Callouts:** `<Callout type="note | tip | warning">` renders as a `--surface-2` panel with an 18px radius, a 4px left accent in `--link`, an icon and a bold label ("Note", "Tip", "Warning"), with `role="note"`. Types differ by icon and label, not by colour.
 - **Keys:** `<kbd>` is a small rounded keycap on `--fill`, e.g. <kbd>Space</kbd> <kbd>f</kbd> <kbd>f</kbd>.
 - **Diagrams:** inline SVG components (§4.5.1).
-- **End of article (Newsroom "More from"):** for a post in a series, a hairline list with the previous and next **published** parts (*"Part 0: …"* / *"Part 2: …"*, 21px/600 titles, 32px row padding); otherwise the two newest other posts. Then the footer.
+- **End of article (Newsroom "More from"):** for a post in a series, a hairline list with the previous and next **published** parts (*"Part 0: …"* / *"Part 2: …"*, 19px/600 titles, 32px row padding); otherwise the two newest other posts. Then the footer.
 - **RSS:** published parts appear like normal posts, with the title prefixed "Part N:" only when it doesn't already include it.
 
 **Series (content)**
@@ -391,6 +359,8 @@ One full section per role, sorted with the current role first, then `start` desc
 - **Accessibility:** `role="img"`, `<title>` and `<desc>`, plus a visually hidden ordered list describing the same flow.
 - **Responsive:** a horizontal layout at M and L and a vertical layout at S, chosen with CSS (twin SVGs, only one shown). Text stays at least 14px, with no horizontal scroll.
 - **i18n:** file and plugin names stay as they are; captions come from a `lang` prop.
+- **Where used:** blog posts, and project pages through `design.diagram` (`AidlcKitDiagram`, the AI-DLC kit).
+- **`AidlcKitDiagram`:** a lifecycle flow in three lanes (Human, Lifecycle, Agents; lane labels from `lang`). Human lane: an **intent** chip, a **sign-off** chip between Inception and Construction, and a final **sign-off** chip with **lead merges**. Lifecycle lane: three phase cards (Inception · research, requirements · units, architecture; Construction · unit by unit, skeleton first, test-first · debug; Review · fresh context, rerun the tests) with the four gate bars inside them (`spec_ready` closes Inception, `unit_done` and `review_now` close Construction, `review_risk` closes Review). Agents lane: Antigravity (research · architecture), Codex (build · debug) and Claude (fresh reviewer) chips under their phases, a **Lead · Claude** bar (plans · routes · runs gates · merges) and a dashed **Jev (optional)** chip (advises). The story (phases, gates, sign-offs) is drawn stronger than the agents lane. A hidden ordered list of six steps repeats the flow; the caption is "Three phases, four gates, two human sign-offs. Agents do the work inside each phase." Wide `viewBox` `-10 0 700 534` (shown from 768px); vertical `0 0 300 957` (max-width 420px), a single stack with the agents as an inset strip inside each phase card. Title, `<desc>`, lane labels, captions and steps come from the `lang` prop (EN/VI); tool, gate, phase and track names stay as they are.
 - **RSS:** the feed gets the ordered list as a text fallback.
 
 **RSS:** `@astrojs/rss` at `/rss.xml` (EN) and `/vi/rss.xml` (VI), published posts only, with title, description, date and link.
@@ -404,32 +374,36 @@ One full section per role, sorted with the current role first, then `start` desc
 
 ### 4.6 Projects (`/projects/`)
 
-A main-nav page with **all** projects (personal, work and open source). There are **no per-project pages**: each tile expands in place.
+A main-nav page with **all** projects (personal, work and open source). Every project also has a product page (§4.6.1).
 
-- **Hero:** eyebrow "Projects", **H1** *"Things I've built."*, subhead *"Personal, work and open-source projects."* (i18n). No actions.
-- **Local nav:** title "Projects"; links **All · Personal · Work · Open source** (with counts, e.g. *Personal 1*) that set `?kind=`, and **Expand all**. The current kind has `aria-current="true"`. Kinds with no projects are hidden; with only one kind, the kind links are hidden. Without JavaScript, every project shows and the kind links are hidden.
-- **Grid:** a tile grid (§5.10.3), one tile per project, 2-up at M and L, 1 column at S.
-  - **Sort:** featured first, then `start` descending, with ongoing projects before finished ones that started in the same year.
-  - **Tile (centred):** the kind as the eyebrow, title (H2 at Promo size), subtitle (subhead), date range (`formatCvDate()`, "Present" when ongoing), the one-line summary, up to 6 tech chips then "+N", optional cover image (16:9, 18px radius, keyline outline, lazy-loaded, alt from `imageAlt`; today an original illustration, §5.10.11), and links **Repo ↗** / **Live ↗** when set.
-  - The native `<details>` summary is a **plus disc** (§5.6) that is always the **last row of the tile**, in normal flow, right-aligned at the right edge of the lockup column (`--content`, or the tile's content box when narrower), and never overlapping other tile content. Closed, it follows the chips and links (24px, the tile gap) and sits at the tile's bottom padding (`margin-top: auto`, so it drops to the bottom of a taller row). Open, it moves below the cards and **At <company> ›** (32px) and stays the toggle (`<details>` is a flex column and the summary has `order: 1`). The visual (cover image when set, else the tech chips) sits 38px below the one-line summary text at M and L (24px at S); chips follow a cover 16px below it, not pushed to the bottom. The disc has the visible text "Learn more" beside it at M and L (accessible name "Learn more about <title>"). **Expanded**, the tile spans both columns (`:has(details[open])`), and the details show the labelled bullets as left-aligned cards in the opposite colour (2-up at M and L), plus **At <company> ›** (→ `/experiences/#<role-slug>`) when `role` is set. The height animates over 320ms only under `@supports (interpolate-size: allow-keywords)` (with `::details-content`); elsewhere it opens instantly. No JS; off under reduced motion. Several tiles can be open at once.
+- **Hero:** no eyebrow, **H1** *"Things I've built."*, subhead *"Personal, work and open-source projects."* (i18n). No actions.
+- **Local nav:** title "Projects"; **All · Personal · Work · Open source** (with counts) setting `?kind=` when two or more kinds exist; the small pill **Download CV**. The current kind has `aria-current="true"`. Without JavaScript, every project shows and the kind links are hidden.
+- **Lineup** (Layout A, apple.com "explore all" tiles): the Home feature grid (`.tiles-2up--feature`, §5.10.3), one tile per project, featured first then `start` descending; an odd last tile spans both columns. Tile: no eyebrow, H2 title (Promo), subhead = subtitle, **See the project** (primary, accessible name "See the project: <title>", → `/projects/<slug>/`) and at most one secondary (**Repo ↗**, else **Live ↗**, else **At <company> ›** (→ `/experiences/<role-slug>/`) when `role` is set); visual = `image` in a CSS laptop frame (§5.10.13), centred under the lockup. No dates, summary, chips or expanders: the product page carries them.
   - Filtering hides non-matching tiles and the grid closes up (odd-count rule).
 - **Empty state:** if a filter matches nothing (e.g. a hand-edited URL), the grid shows *"No projects here yet."* and a **Show all** button.
 
 **Acceptance criteria (Projects)**
 - **Projects** appears in the global nav after **Experiences**, on desktop and in the mobile menu, with `aria-current="page"` on `/projects/` and `/vi/projects/`.
 - Adding a file to `src/content/projects/` adds a tile with no code changes. An unknown `kind` fails the schema.
-- Filtering updates the grid and the URL; `/projects/?kind=work` opens filtered; Back/Forward works.
-- Every tile's details toggle with Enter/Space and announce the expanded state; the summary's box is at least 44 × 44px and its name starts with "Learn more about".
-- There is no `/projects/<slug>/` route. Each tile's `id` is its slug; `/projects/#<slug>` opens that tile.
-- Every project bullet from `cv.tex` appears in its tile's details.
+- Adding a project file adds a tile and a product page with no code changes. Filtering updates the grid and the URL; Back/Forward works; `/projects/#<slug>` scrolls to that tile (resetting a hiding filter). Every project bullet from `cv.tex` appears on its product page.
+
+#### 4.6.1 Project page (`/projects/<slug>/`)
+
+Layout B: local nav (title · **All projects ›**); tight hero (no eyebrow, H1 title, subhead subtitle); a band with `image` in a CSS laptop frame (§5.10.13), eager, `fetchpriority="high"`; **Get the highlights.**: the big stat strip of `stats` (≤ 3; 72 / 48 / 28px), each with its footnote; **The problem.** / **The approach.** (with the terminal loop when `loop` is set) / **The design.** (`design.intro`, the diagram named by `design.diagram` (§4.5.1, `AidlcKitDiagram`: a lifecycle flow of three phases, four gates and two human sign-offs, with a six-step text alternative), then up to 4 `design.decisions` as highlight cards) / **The workflow.** (`workflow.intro`, then `workflow.steps` as numbered highlight cards; every decision and step reads **Label:** problem, choice, benefit) / **The result.** (then the bold-labelled bullets as the closer look (§5.10.14, no image: the laptop frame above shows the cover; with fewer than 2 labelled bullets, highlight cards instead)); closing **More from the work.** (All projects · Download CV, **At <company> ›** (→ the role page `/experiences/<role-slug>/`) when `role` is set); footnotes. Band tones come from the rendered sequence, alternating from the white hero (all present: image band grey, stats white, problem grey, approach white, design grey, workflow white, result grey, more white); a missing section shifts the rest (`bandTones`, §4.1.0).
+
+All copy comes from the project file. Indexed for search as Projects.
 
 ### 4.7 404
 
 - **Hero:** **H1** *"Page not found."*, subhead (i18n), **Go home** (primary) · **Search** (secondary, opens search). Below the actions, an illustration of a magnifying glass over an empty page (§5.10.11; 288 / 280 / 240px wide, 4:3, `notFound.art`).
-- **Site index** (§5.10.10) on a `--surface-2` section: **Explore** (elevated links: Experiences · Projects · STAR stories · Blog), **Latest writing** (the 3 newest posts), **Connect** (Email · LinkedIn · GitHub · Download PDF). Then the footer.
+- **Site index** (§5.10.10) on a `--surface-2` section: **Explore** (elevated links: Experiences · Projects · Skills · STAR stories · Blog), **Latest writing** (the 3 newest posts), **Connect** (Email · LinkedIn · GitHub · Download CV). Then the footer.
 - Acceptance: every index link resolves to a 200 page; the first group's links are 28px at 1440 and 21px at 375.
 
----
+### 4.8 Skills (`/skills/`)
+
+- Apple Tech Specs (Layout B). A tight hero (no eyebrow, H1 *"The tools I build with."*, subhead *"From ingestion to data quality, on AWS and Azure."*), then one `--surface-2` band holding the rows in `--content`: one per `skills` entry in `order`, then **Certifications** (name; issuer · year; **Verify ›** when `credentialUrl` is set) and **Languages** (`profile.spokenLanguages`).
+- Each row: the name (H2, Card headline size) in a `flex: 1 1 220px` label column, then the description (Body-reduced 14px, `--text-2`) and the items in an `auto-fill, minmax(200px, 1fr)` grid (17/600; children as a 14px `--text-2` line below). 1px `--border` hairlines above every row and below the last; rows are padded 32px; the columns stack when they no longer fit.
+- No icons, chips or cards. Not in the search index. Every skill, certification and language from `cv.tex` appears here.
 
 ## 5. Design system
 
@@ -437,7 +411,7 @@ The site follows **apple.com** as closely as a text-only portfolio can. Values m
 
 ### 5.1 Principles
 
-- **White first.** White pages, Apple's light grey `#F5F5F7` for alternate bands, near-black text, and blue only for things you can act on. No gradient backgrounds, glows or pastel surfaces; the one exception is a single gradient-text phrase per page, as Apple does† (§5.10.8).
+- **White first.** White pages, Apple's light grey `#F5F5F7` for alternate bands, near-black text, blue only for things you can act on; and four position colours for the highlight-card numbers (§5.3). No band or card is black in the light theme. No gradient backgrounds, glows or pastel surfaces; the one exception is a single gradient-text phrase per page, as Apple does† (§5.10.8).
 - **One idea per section.** A short headline, one subhead, at most two actions. Detail lives one click deeper.
 - **Big type, few weights.** Headlines are 600 (700 only in the Newsroom-style blog post and tiles†); body is 400. Hierarchy comes from size and space, not colour or decoration.
 - **Space from padding.** Sections touch (inner pages) or sit 12px apart (Home units); no cards with shadows, no borders around sections.
@@ -490,40 +464,41 @@ The default theme is **light (white)**, whatever the system setting (§5.12).
 | `--nav-solid` | `#FAFAFC`† | `#161617`† | Mobile menu and search panel; `.92` opacity fallback when blur is not supported† |
 | `--curtain` | `rgba(232,232,237,.4)`† | `rgba(0,0,0,.4)` | Blurred page curtain behind the search panel |
 | `--mint-tint` | `#A8E6CF` @ 35% | `#A8E6CF` @ 12% | **Only** tech highlights, tech chips and the "Current" chip |
+| `--hl-1` … `--hl-4` | `#0B5D52` / `#8C3800` / `#6136AD` / `#A01549` | `#64D2B4` / `#FFA24D` / `#C9A7FF` / `#FF8FB3` | **Only** the big value on the Home highlight stat cards, by position, cycling every four; never a surface |
 
-- **Bands and cards:** sections alternate `--bg` and `--surface-2`. Cards and tiles take the **opposite** colour of the band they sit on. No shadows and no borders on cards, tiles or sections.
+- **Bands and cards:** sections alternate `--bg` and `--surface-2`. Cards and tiles take the **opposite** colour of the band they sit on. No shadows and no borders on cards, tiles or sections. No band or card sets `color-scheme: dark`; the featured-story stat card sets `color-scheme: light` and stays white in both themes.
 - The old `--sky-*`, `--butter-*` and `--mint-ink` tokens and the hero glow are removed. Mint survives only in the three uses above, never on anything larger than a chip.
-- Every text token reaches **7:1** (WCAG AAA) on the backgrounds it is used on, in both themes. The blues reach 7:1 too: `--link` on `--bg`/`--surface-2`, `--on-accent` on every `--accent` state and `--on-link` on `--link`. Two exceptions stay at least **4.5:1**: `--ft-pipe` (separator glyphs) and `--text-2` on `--fill`. Large text and UI keep at least 3:1. Checked by `tests/unit/contrast.test.ts` (rgba tokens composited over their band) and by axe in CI.
+- Every text token reaches **7:1** (WCAG AAA) on the backgrounds it is used on, in both themes. The blues reach 7:1 too: `--link` and `--hl-*` on `--bg`/`--surface-2`, `--on-accent` on every `--accent` state and `--on-link` on `--link`. Two exceptions stay at least **4.5:1**: `--ft-pipe` (separator glyphs) and `--text-2` on `--fill`. Large text and UI keep at least 3:1. Checked by `tests/unit/contrast.test.ts` (rgba tokens composited over their band) and by axe in CI.
 
 ### 5.4 Typography
 
 - **Font stack** everywhere, including blog bodies: `-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Inter Variable", "Inter Fallback", Helvetica, Arial, sans-serif`. "Inter Fallback" is Arial scaled to Inter's metrics, so the swap does not shift the layout. Apple devices render SF Pro (Text below 20px, Display at 20px and up†) with no download. Self-hosted Inter (Latin + Vietnamese subsets, `font-display: swap`) is the fallback elsewhere and is **not preloaded**, so Apple devices never fetch it. Newsreader is removed. No third-party font requests.
 - `-webkit-font-smoothing: antialiased; font-synthesis: none`†. The root font size stays 100% (Apple's 106.25% root is not copied, so Tailwind spacing stays predictable); sizes below are in px for clarity and written in rem in CSS.
-- **Larger text:** every text size under 21px is 2px larger than Apple's (Body 19, Body-reduced 16, Caption 14), and the post H2 grows to 28 / 24 / 24. Sizes of 21px and up keep Apple's values, except the display headlines, which grow at M and L only: Hero 96 / 72, Unit 64 / 56, Section 56 / 48, Promo 48 / 36. At S they keep Apple's 40 / 32 / 32 / 32, so 320px with 200% text still reflows. STAR story titles keep 80 / 64, so the stepper band still peeks (§D.4). Where another section quotes an older small size, add 2px. Note: the local-nav links between 834px and 1068px use a 10px gap (24px elsewhere) so they fit at 14px, also with Inter, which is wider than SF. At S the Home skill items are 16px, not 17px, so the longest item stays whole at 375px with Inter. Exception: at compact chrome the local-nav title (19px), small pill (12px) and solo link (17px) keep Apple's sizes, so the bar fits at 320px with 200% text.
+- **Apple sizes (v5.0):** every size is apple.com's, so the v4.x +2px and the larger M/L headlines are reverted. The one exception is the page hero, which is **96px at L** as in Layout A (64 / 40 at M / S). At S the headlines stay 40 / 32 / 32 / 32, so 320px with 200% text reflows. Display headlines track slightly tighter at M and L (Hero -0.022em, Unit -0.012em, Section -0.009em, Promo -0.005em); S keeps Apple's tracking. STAR story titles stay 80 / 64 (§D.4). Local-nav links between 834px and 1068px keep a 10px gap (24px elsewhere). Compact-chrome sizes are unchanged (local-nav title 19px, small pill 12px, solo link 17px).
 - **Code:** `ui-monospace, "SF Mono", Menlo, monospace`, 0.9em.
 
 | Role | L | M | S | Line-height | Tracking | Weight |
 |---|---|---|---|---|---|---|
-| **Hero** (page H1) | 96 | 72 | 40† | 1.05† | -0.015em† | 600 |
-| **Unit headline** (Home full-unit H2) | 64 | 56 | 32† | 1.0714† | -0.005em† | 600 |
-| **Section headline** (inner-page H2) | 56 | 48 | 32† | 1.0835† | -0.003em† | 600 |
-| **Promo headline** (grid tile H2) | 48 | 36 | 32 | 1.1† | 0† | 600 |
-| **Subhead** | 28† | 24† | 21 | 1.1429† | 0.007em† | 400 |
+| **Hero** (page H1) | 96 (Layout A) | 64† | 40† | 1.05† | -0.022em (M, L) / -0.015em† (S) | 600 |
+| **Unit headline** (Home full-unit H2) | 56† | 48† | 32† | 1.0714† | -0.012em (M, L) / -0.005em† (S) | 600 |
+| **Section headline** (inner-page H2) | 48† | 40† | 32† | 1.0835† | -0.009em (M, L) / -0.003em† (S) | 600 |
+| **Promo headline** (grid tile H2) | 40† | 32† | 32 | 1.1† | -0.005em (M, L) / 0† (S) | 600 |
+| **Subhead** | 28† | 24† | 19† | 1.1429† | 0.007em† | 400 |
 | **Card headline** (H3) | 28† | 24† | 21† | 1.1429 | 0.007em | 600 |
-| **Eyebrow** | 21† | 21 | 19 | 1† | 0.011em† | 600, `--text-2` |
-| **Intro** | 21† | 21 | 21 | 1.381† | 0.011em | 400 |
-| **Lockup copy** (paragraph in a hero/unit; `--text-2`, `<strong>` in `--text`†) | 21† | 21† | 21 | 1.381† (1.421† at S) | 0.011em† (0.012em† at S) | 600† |
-| **Stat value** (hero) | 48† | 32† | 28† | 1† | -0.003em | 600, `white-space: nowrap`† |
+| **Eyebrow** | 21† | 19† | 17† | 1† | 0.011em† | 600, `--text-2` |
+| **Intro** | 21† | 21 | 19† | 1.381† | 0.011em | 400 |
+| **Lockup copy** (`--text-2`, `<strong>` in `--text`†) | 21† | 21† | 19† | 1.381† (1.421† at S) | 0.011em† (0.012em† at S) | 600† |
+| **Stat value** (strip) | 48† | 32† | 28† | 1† | -0.003em | 600, `white-space: nowrap`† |
 | **Stat value** (card) | 28† | 24† | 21† | 1.1429 | 0.007em | 600 |
-| **Body** | 19 | 19 | 19 | 1.4706† | -0.022em† | 400 |
-| **Body-reduced** (card bodies at S, meta) | 16 | 16 | 16 | 1.4286† | -0.016em† | 400 |
-| **Caption** (nav links, footer, chips) | 14 | 14 | 14 | 1.3334† | -0.01em† | 400 |
+| **Body** | 17† | 17 | 17 | 1.4706† | -0.022em† | 400 |
+| **Body-reduced** (card bodies at S, meta) | 14† | 14 | 14 | 1.4286† | -0.016em† | 400 |
+| **Caption** (nav links, footer, chips) | 12† | 12 | 12 | 1.3334† | -0.01em† | 400 |
 | **Article headline** (post H1) | 48† | 40† | 32† | 1.0835 | -0.003em | 700† |
 | **Article subhead** | 24† | 21† | 21 | 1.25 | 0.009em | 400 |
-| **Article body** | 21 | 19 | 19 | 1.42† | 0.012em† | 400 |
-| **Article section** (post H2) | 28 | 24 | 24 | 1.1667 | 0.009em | 700† |
+| **Article body** | 19† | 17† | 17 | 1.42† | 0.012em† | 400 |
+| **Article section** (post H2) | 24† | 21† | 21 | 1.1667 | 0.009em | 700† |
 | **Newsroom tile title** | 24† | 21† | 21† | 1.1667 | 0.009em | 700† (clamped to 5 lines†) |
-| **Newsroom category** | 16 | 14 | 14 | 1.2858 | 0 | 700†, uppercase, `--text-2` |
+| **Newsroom category** | 14† | 12† | 12† | 1.2858 | 0 | 700†, uppercase, `--text-2` |
 | **Quote** | 40† | 32† | 28† | 1.2† / 1.25† / 1.286† | 0 | 400† |
 
 - Card bodies use Body at M and L and Body-reduced at S†.
@@ -535,19 +510,19 @@ The default theme is **light (white)**, whatever the system setting (§5.12).
 - **Section padding** (`--section-pad`, top and bottom): **120px / 80px / 56px** at L / M / S† (Apple's "reduced" section padding). Inner-page heroes (Projects, STAR, Blog) use **80 / 64 / 48px** below them (Appendix D), so the first section is in the first viewport. The page hero uses **144px / 120px / 112px**† on top and `--section-pad` below.
 - **Section header → content:** 48px / 40px / 32px†.
 - **Inside a header:** eyebrow → headline 8px; headline → subhead 6px†; subhead → actions 17px†; gap between actions 17px†.
-- **Radius:** Home units and grid tiles **0** (square, as on the Apple homepage†); cards **28px**†; images, code blocks and callouts **18px**†; chips and pills **980px**†; inputs 12px.
+- **Radius:** Home units and grid tiles **0** (square, as on the Apple homepage†); cards **28px**†; images, code blocks and callouts **18px**†; chips and pills **980px**†; inputs 12px. Tokens: `--radius-sm` 12, `--radius-md` 18, `--radius-lg` 28, `--radius-pill` 980.
 - **Depth:** none. No shadows anywhere, including the search panel and mobile menu; the curtain and solid panels separate them†.
 
 ### 5.6 Buttons, links and chips
 
 | Element | Spec |
 |---|---|
-| **Primary pill** | `--accent` fill, `--on-accent` text (white; black in dark), 19px, padding 11px 22px including the 1px border, radius 980px† (44px tall). Hover `--accent-hover`, active `--accent-active`†. |
+| **Primary pill** | `--accent` fill, `--on-accent` text (white; black in dark), 17px, padding 11px 22px including the 1px border, radius 980px† (44px tall). Hover `--accent-hover`, active `--accent-active`†. |
 | **Secondary pill** | Transparent, 1px `--link` border, `--link` text, same size. Hover: `--link` fill with `--on-link` text (white; black in dark). |
-| **Small pill** (local nav) | Primary style at 14px (12px at compact chrome), padding 3px 10px† (about 26.7px tall; 24px at compact chrome, transparent 1px border). A transparent `::before` extends the tap area to 44 × 44px; tap areas of neighbouring links and the pill must not overlap (keep at least 8px between them). |
+| **Small pill** (local nav) | Primary style at 12px†, padding 3px 10px† (24px† tall, transparent 1px border). A transparent `::before` extends the tap area to 44 × 44px; tap areas of neighbouring links and the pill must not overlap (keep at least 8px between them). |
 | **Chevron link** | `--link` text with a trailing `›` (`aria-hidden`, 0.24em† before it), no underline; underline on hover. Used for "Learn more ›", "Read ›", "All stories ›". The accessible name has no chevron and adds context where the text is generic ("Learn more about my experience"). |
 | **Text link** (in prose) | `--link`, underlined in article bodies and cards, no underline elsewhere; underline on hover. |
-| **Chip** | 28px tall, padding 5px 12px with an 18px line, radius 980px, Caption size (14px) at 500 weight. **Neutral** chips (kind, competency, tag, series, "Coming soon") use `--fill` + `--text`. **Mint** chips (tech stack, "Current") use `--mint-tint` + `--text`. Interactive chips (filters, tags) have a 44px tap area and show their selected state with `--text` fill and `--bg` text. |
+| **Chip** | 28px tall, padding 6px 12px with a 16px line, radius 980px, Caption size (12px) at 500 weight. **Neutral** chips (kind, competency, tag, series, "Coming soon") use `--fill` + `--text`. **Mint** chips (tech stack, "Current") use `--mint-tint` + `--text`. Interactive chips (filters, tags) have a 44px tap area and show their selected state with `--text` fill and `--bg` text. |
 | **Icon button** | 16px icon in a 44 × 44px target, `--text` at 80% opacity, 100% on hover. |
 | **Plus disc** (expanders) | A **36px**† circle in a 44 × 44px† target, 16px† from the bottom-right corner of its tile or card (13px† at M and S; a Projects tile's disc is in flow as its last row instead, §4.6), fill `--fill`†, a 2px "+" glyph in `--text` at 56%† (≥ 3:1 on `--fill`). Open: the "+" rotates 45° into "×" over 320ms `--ease`; background transition 100ms linear†. |
 | **Paddle** (gallery) | A **36px**† circle in a 44 × 44px target; fill `rgba(210,210,215,.64)`† (hover `.70`†, active `rgba(193,193,198,.65)`†), arrow `rgba(0,0,0,.72)`; dark: fill `rgba(66,66,69,.72)`†, arrow `rgba(255,255,255,.8)`†. Disabled: opacity .42† and `disabled`. |
@@ -562,17 +537,17 @@ The default theme is **light (white)**, whatever the system setting (§5.12).
 - **Bar:** **44px**† tall (**48px**† at compact chrome). On pages **without** a local nav (Home, 404) it is sticky at the top. On pages **with** a local nav it scrolls away with the page and the local nav sticks at `top: 0` instead, as on Apple product pages† (`#globalnav { position: absolute }`†), so only 48–52px of chrome stays on screen.
 - **Background:** at scroll 0 the bar matches the page (`transparent`, no blur†); once content scrolls under it, it becomes `--nav-glass` with `backdrop-filter: saturate(180%) blur(20px)`†, transitioning `background .24s var(--ease)`†. Implemented with a CSS scroll timeline (`animation-timeline: scroll(root); animation-range: 0 1px`) under `@supports`; without support it is always glass. `--nav-solid` at .92 opacity when blur is not supported†. While the search panel or the mobile menu is open the bar is solid `--nav-solid`.
 - `--nav-h` holds the bar height. `--sticky-h` is the height of whatever is stuck at the top: `--nav-h` on pages without a local nav, `--local-h` on pages with one. Every sticky offset and scroll margin uses `--sticky-h`; none hard-code a number.
-- **Row (above compact chrome):** the `--chrome` row (1024px† outer), items spread with `justify-content: space-between`†: **brand** (the name, 16px/600) · Experiences · Projects · STAR · Blog · **search** · **theme** · **language**. Links are Caption size (14px), `0 8px`† padding, full bar height, coloured `--nav-ink` (`rgba(0,0,0,.8)`† / dark `rgba(255,255,255,.8)`†) and `--nav-ink-hover` (`#000` / `#fff`†) on hover and for `aria-current="page"`, with `color .32s var(--ease-nav)`†. Dim with colour, never `opacity`, so focus rings stay full strength. Focus rings inside both bars use `outline-offset: -7px`† so they are never clipped.
+- **Row (above compact chrome):** the `--chrome` row (1024px† outer), items spread with `justify-content: space-between`†: **brand** (the name, 14px/600) · Experiences · Projects · STAR · Blog · **search** · **theme** · **language**. Links are Caption size, `0 8px`† padding, full bar height, coloured `--nav-ink` (`rgba(0,0,0,.8)`† / dark `rgba(255,255,255,.8)`†) and `--nav-ink-hover` (`#000` / `#fff`†) on hover and for `aria-current="page"`, with `color .32s var(--ease-nav)`†. Dim with colour, never `opacity`, so focus rings stay full strength. Focus rings inside both bars use `outline-offset: -7px`† so they are never clipped.
 - **Search panel** (Apple's search flyout): the search icon, ⌘K / Ctrl+K or `/` opens a panel that drops down from under the bar, full width, `--nav-solid`, no shadow, with the page behind it covered by `--curtain` and `blur(20px)`†.
   - Inside, in the `--chrome` row: a 20px search glyph in `--text-2` (`--text` while focused) and, 8px after it, the input at 24px/600† (28px† at compact chrome; never below 16px, so iOS does not zoom). **No ring or box around the field**†: the caret and the darkened glyph mark focus. 32px† top and 80px† bottom padding.
-  - Before you type, **Quick links** (14px/600, 19px/600 at compact chrome, `#333336`† / dark `#E8E8ED`, each with a → arrow 13px before the text, 16px at compact; padding 4px 8px†, radius 5px†, 4px† apart; hover/focus background `--surface-2`†): Experiences, Projects, Download PDF, the newest post. At compact chrome each quick link is at least 44px tall.
+  - Before you type, **Quick links** (12px/600†, 17px/600† at compact chrome, `#333336`† / dark `#E8E8ED`, each with a → arrow 11px† before the text, 14px† at compact; padding 4px 8px†, radius 5px†, 4px† apart; hover/focus background `--surface-2`†): Experiences, Projects, Download CV, the newest post. At compact chrome each quick link is at least 44px tall.
   - Results (Pagefind) start 32px† (49px† at compact) below the field: type (Blog / STAR / Experiences / Projects), title and highlighted excerpt. Result counts use correct plurals ("1 result", "2 results").
   - **Motion**†: the panel reveals over 240ms `--ease-nav` (`clip-path: inset(0 0 100% 0) → inset(0)`), the field fades in from `translateY(-4px)` (−8px at compact) over 240ms, 200ms delayed, quick links follow 20ms apart, and the curtain fades `opacity .32s var(--ease-nav) 80ms`. None under reduced motion.
   - It is a modal dialog: focus moves to the input on open and **stays inside the panel** (Tab and Shift+Tab cycle through the field, quick links, results and close button). Esc, the curtain or the trigger closes it and returns focus to the trigger. The ✕ button shows only at compact chrome or with a coarse pointer. The browser's own clear button on `type="search"` is hidden (`::-webkit-search-cancel-button { appearance: none }`). The Pagefind script loads on first open.
 - **Mobile menu (compact chrome):**
   - The bar shows the brand on the left, then **search** and the **menu button** on the right. Theme and language move into the menu. The menu button is 48 × 48px†, flush with the right edge (`margin-inline-end: calc(-1 * var(--gutter))`, safe area respected).
   - **Menu button:** two 1px lines that morph into an **✕** (each rotates ±45°, 240ms†, `--ease-nav`). It has `aria-expanded`, `aria-controls="mobile-menu"` and a label that switches between "Menu" and "Close" (i18n).
-  - **Panel:** fixed below the bar, `height: calc(100dvh - var(--nav-h))` (100vh fallback), `--nav-solid`, scrolling on its own, 4px top padding so the first link starts right under the bar†. Links are stacked and left-aligned at **28px/600**† with 48px† side padding and a 46px† pitch: Experiences · Projects · STAR · Blog, in `#333336`† (dark `#E8E8ED`†), `--text` on hover. **No current-page colour** (Apple shows none†); `aria-current="page"` still marks it. Then a group label in 19px `--text-2` ("More") and three 19px/600 rows in the same ink, each at least 44px tall, sharing one style: **Theme: Light** (the three-state toggle, §5.12), **Language: Tiếng Việt / English** (keeps the current page), **Download PDF**.
+  - **Panel:** fixed below the bar, `height: calc(100dvh - var(--nav-h))` (100vh fallback), `--nav-solid`, scrolling on its own, 4px top padding so the first link starts right under the bar†. Links are stacked and left-aligned at **28px/600**† with 48px† side padding and a 46px† pitch: Experiences · Projects · STAR · Blog, in `#333336`† (dark `#E8E8ED`†), `--text` on hover. **No current-page colour** (Apple shows none†); `aria-current="page"` still marks it. Then a group label in 17px† `--text-2` ("More") and three 17px/600† rows in the same ink, each at least 44px tall, sharing one style: **Theme: Light** (the three-state toggle, §5.12), **Language: Tiếng Việt / English** (keeps the current page), **Download CV**.
   - **Motion:** the panel fades in over 240ms†; links fade in from `translateY(-4px)`† over 320ms†, staggered 20ms†. Closing: items go `translateY(-8px)` and fade over 200ms†, no stagger. No animation under reduced motion.
   - **While open:** page scroll is locked (keeping the position), `main` and the footer are `inert`, focus moves to the first link and stays inside the bar and the panel, and the bar turns solid `--nav-solid`.
   - **Closing:** the ✕, Esc, tapping any link (including a same-page anchor) or resizing past compact chrome. Focus returns to the menu button. Changing theme or language does not close it.
@@ -580,7 +555,7 @@ The default theme is **light (white)**, whatever the system setting (§5.12).
 
 ### 5.8 Local nav
 
-Every inner page has one (§4.0); Home and 404 do not.
+Every inner page and Home have one (§4.0); 404 does not.
 
 - **Bar:** directly under the global nav at the top of the page, above the hero, as on Apple product pages; it becomes **sticky at `top: 0`** once the global nav has scrolled away (§5.7). **52px**† tall (**48px**† at compact chrome); `--local-h` holds its height.
 - **Background:** transparent at rest†, glass (`--nav-glass` + blur) once stuck†, with the same scroll-timeline technique and fallback as §5.7. The 1px `--keyline` bottom line is **980px wide and centred at rest**† and **full width once stuck**† (always full width at compact chrome†).
@@ -592,7 +567,7 @@ Every inner page has one (§4.0); Home and 404 do not.
 - **Compact chrome: title + chevron dropdown** (as on Apple product pages on iPhone†):
   - The bar shows the title on the left, then the **chevron on the right next to the small pill**† (16 × 9px, stroke 1.2px†, 80% opacity†). The links row is hidden.
   - The dropdown is a native **`<details>`**: the `<summary>` spans the title and chevron (`flex: 1; justify-content: space-between`), so the whole area is the tap target; accessible name e.g. "Experiences, sections". The chevron rotates 180° when open.
-  - **One surface:** when open, the bar and the tray share one solid `--nav-solid` background (no glass, so page text never shows through), with one `--keyline` under the tray. The tray is at most `60dvh` tall and scrolls inside, padding 16px 16px 20px. Links are **16px/-0.02em**, `--nav-ink`, in **44px** rows (Apple uses 34px†; 44px keeps the tap-target rule), indented 16px; the current item is full ink with a **1.2 × 12px vertical bar 16px before it**† (no ✓).
+  - **One surface:** when open, the bar and the tray share one solid `--nav-solid` background (no glass, so page text never shows through), with one `--keyline` under the tray. The tray is at most `60dvh` tall and scrolls inside, padding 16px 16px 20px. Links are **14px/-0.02em**†, `--nav-ink`, in **44px** rows (Apple uses 34px†; 44px keeps the tap-target rule), indented 16px; the current item is full ink with a **1.2 × 12px vertical bar 16px before it**† (no ✓).
   - **Motion**†: the tray reveals over 320ms `--ease-nav` (clip-path), its links fade from `translateY(-4px)` over 320ms with delays of 260ms + 20ms per link; the bar background returns 240ms after closing. None under reduced motion.
   - It closes on a link tap (then jumps to the anchor), the summary, Esc, a tap outside, or 40px of page scroll. Without JavaScript the `<details>` still opens and its links work.
   - Pages with a single link (blog post, STAR story) show no chevron; the link sits on the right as a chevron text link ("All posts ›"), and the title truncates to make room.
@@ -603,19 +578,19 @@ Every inner page has one (§4.0); Home and 404 do not.
 
 The same footer on every page, modelled on Apple's global footer†. It sits flush under the last section. On a page shorter than the viewport it sits at the bottom of the viewport instead, with `--bg` filling the space above it: on screen only, the body is a `min-height: 100dvh` flex column and the footer takes `margin-top: auto` (no fixed positioning, no JS). The band (background and any top line) spans the full viewport width; the content keeps the 980px column.
 
-- `--surface-2` background, Caption size (14px/1.3334). Colours: text `--ft-text` (`rgba(0,0,0,.68)` / dark `rgba(255,255,255,.66)`), links `--ft-link` (`rgba(0,0,0,.8)` / dark `.8`) with no underline (underline on hover), column titles `--ft-title` (`rgba(0,0,0,.88)`† / dark `.92`†), pipes and separators `--ft-pipe` (`rgba(0,0,0,.56)` / dark `rgba(255,255,255,.48)`). Content row `--chrome` (§5.2; the 980px content edge, while the band itself is full-bleed), plus the bottom safe area. When the last page band is also `--surface-2`, a 1px `--border` line sits above the footer.
-- **Density:** at compact chrome every footer link is at least 44px tall. Above compact chrome (pointer layouts) the footer uses Apple's density†: a 27px link pitch (18.67px line + 0.6em), which meets WCAG 2.2 SC 2.5.8 target spacing (§9).
-- **1. Breadcrumbs** (every page except Home): a home link (the brand initials "RP"), then 6 × 11px chevron separators in `--ft-pipe` with 11px† after them and items 7px† apart, the current section and the current page, e.g. *RP › Blog › Neovim setup guide, Part 1*; 16px vertical padding (about 57px tall). **No hairline under it** above compact chrome†; one hairline at compact chrome†.
+- `--surface-2` background, Caption size (12px/1.3334†). Colours: text `--ft-text` (`rgba(0,0,0,.68)` / dark `rgba(255,255,255,.66)`), links `--ft-link` (`rgba(0,0,0,.8)` / dark `.8`) with no underline (underline on hover), column titles `--ft-title` (`rgba(0,0,0,.88)`† / dark `.92`†), pipes and separators `--ft-pipe` (`rgba(0,0,0,.56)` / dark `rgba(255,255,255,.48)`). Content row `--chrome` (§5.2; the 980px content edge, while the band itself is full-bleed), plus the bottom safe area. When the last page band is also `--surface-2`, a 1px `--border` line sits above the footer.
+- **Density:** at compact chrome every footer link is at least 44px tall. Above compact chrome (pointer layouts) the footer uses Apple's density†: a 25.6px link pitch (16px line + 0.8em†), which meets WCAG 2.2 SC 2.5.8 target spacing (§9).
+- **1. Breadcrumbs** (every page except Home): a home link (the brand initials "RP"), then 6 × 11px chevron separators in `--ft-pipe` with 11px† after them and items 7px† apart, the current section and the current page, e.g. *RP › Blog › Neovim setup guide, Part 1*; 17px† vertical padding (about 56px† tall). **No hairline under it** above compact chrome†; one hairline at compact chrome†.
 - **2. Directory:** four columns (25% each†), each with a 600-weight `--ft-title` title and 0.8em† below it:
-  - **Explore:** Experiences · Projects · STAR stories · Blog
+  - **Explore:** Experiences · Projects · Skills · STAR stories · Blog
   - **Writing:** All posts · Topics · Series · Tags · RSS
   - **Connect:** Email · LinkedIn · GitHub · Phone
-  - **Resources:** Download PDF · Search
+  - **Resources:** Download CV · Search
   
   At compact chrome each column becomes an accordion (native `<details>`): the title at **400**†, a chevron on the right (about 11px, rotating `.3s ease`†), **one hairline under the whole section**† (never between the title and its links, and never doubled against the legal row), and links indented 14px† (`padding: 6px 14px`†) with 5px / 16px† list padding.
 - **3. Legal row** (37px† below the directory, a 1px `--border` line on top, then 17px†/11px† padding, about 26px† tall above compact chrome; no line and no gap at compact chrome): *"Copyright © <year> Ryan Parker. All rights reserved."*, then, 30px† later, only when analytics is on, *Privacy-friendly analytics, no cookies* (no pipe, since it is the only item). The language link (*Tiếng Việt* / *English*) sits at the far end†. At compact chrome the row stacks, left-aligned. There is no separate reach line; the Connect column carries email and LinkedIn.
 - Links to other sites open in a new tab (`target="_blank" rel="noopener noreferrer"`). mailto/tel and same-site links do not. Markdown links get this from `src/lib/rehype-external-links.ts`.
-- No social **icons** in the footer; the Connect column lists the links as text. The Phone link reads "Phone" (not "Mobile"). Home's Contact unit shows the icons (§4.1.7).
+- No social **icons** in the footer; the Connect column lists the links as text. The Phone link reads "Phone" (not "Mobile").
 
 ### 5.10 Page building blocks
 
@@ -633,16 +608,15 @@ Every page uses the same skeleton:
 #### 5.10.2 Full sections and Home units
 
 - **Full section** (inner pages): a `<section>` whose background spans the viewport width, `--section-pad` top and bottom, content in `--content` (or `--content-wide` for grids). Sections **touch**; their backgrounds alternate `--surface-2` / `--bg`.
-- **Home unit** (Home only, as on the Apple homepage†): the same full-width section with **square corners**, but units are separated by **12px**† gaps of `--bg` instead of touching. Units are a flex column with `justify-content: space-between`†: the **lockup at the top** and an optional **type-based visual** at the bottom (`.unit__lockup`, `.unit__visual`: e.g. the stat strip, the company line, a large stat); a unit with no visual centres its lockup. **Visual mass rule:** a unit or tile whose visual is shorter than 120px is not split; it gets `.unit--stack` at build time (lockup and visual centred together, 64 / 48 / 40px apart at L / M / S, min-heights unchanged). Content-heavy units (Skills, Contact) use `.unit--flow`: height from content with `--section-pad`. Min-height **692px**† at L with a viewport at least 776px tall†, **650px**† at M with a viewport at least 734px tall†, otherwise **580 / 570 / 500px**† at L / M / S. Padding 48 / 56px† (56 / 63† on tall L, 54 / 61† at M, 61 / 69† on tall M, 39 / 43† at S); in grid tiles 36 / 40 (L), 32 / 36 (M) and 28 / 32 (S). Inside a unit: subhead 6†/4† below the headline (3†/4† in grid tiles), actions 17† / 16† / 11† below the subhead (12† in grid tiles), 17† between actions (14† at S and in grid tiles).
 - **Peek rule:** at 1440 × 900 and 375 × 812, the first viewport shows at least 64px of the next band on every page, including the STAR story page (reduce its hero padding rather than relax the rule), so every page invites scrolling (Appendix D, whose wireframes are illustrative; this rule and §4 win).
 - **Tiles in a row** align their headlines to the same top (±2px), and the hero stat values sit on one baseline.
 
 #### 5.10.3 Tile grid
 
-Used on Home, Projects and the Blog pages.
+Used on Projects and the Blog pages.
 
 - A CSS grid of `--surface-2` tiles on a `--bg` band: 2 columns (`1fr 1fr`†) with a **12px**† gap and 12px† side padding at M and L, spanning the **full viewport width**; at S, 1 column, **no side padding**†, still with 12px gaps.
-- Tiles are **square** (no radius†) and centre their content both ways, with a min-height of **380px / 340px** at L / M and 340px at S on Home; on Projects and Blog, the min-height is 300px at L and auto below, because those tiles hold more text.
+- Tiles are **square** (no radius†) and centre their content both ways. On Home, the **feature grid** (`.tiles-2up--feature`, Layout A) has min-heights **600 / 560 / 500px** at L / M / S and padding 52/40 · 44/32 · 40/24, and each tile carries a large code-built visual: `grid-tile--bleed` puts it flush on the bottom edge, `grid-tile--fill` centres it under the lockup; on Projects and Blog, the min-height is 300px at L and auto below, because those tiles hold more text.
 - Tiles in a row have equal heights. With an odd number of tiles, the last one spans both columns. A full-width tile (Blog feature, expanded project) spans both columns.
 - **Hover** (pointer devices only): the tile background darkens by 2% over 344ms†. No scale, so the grid never jitters.
 - **Newsroom variant** (Blog "Other posts", series and tag grids†): rounded `--bg` tiles on a `--surface-2` band in `--content` (980px†), radius **32px**† (24px† at M and S), padding 32 / 24 / 24px†, gaps **36px**† (L) / 24px† (M), 1 column at S. Content: Newsroom category (§5.4), 12px† below it the Newsroom tile title, then the description and the timestamp (date · reading time, 14/600 `--text-2`, 16px† above). The whole tile is one link (a stretched `::after` on the title link), with the hover lift (§5.6) and a 3px-offset focus ring.
@@ -656,9 +630,11 @@ Used on Home, Projects and the Blog pages.
 
 #### 5.10.5 Stat lockup and stat strip
 
-- A **stat lockup** is Apple's `figure.stat`†: an optional short caption above (≤ 2 words: "Up to", "Led", "Cut"), the value, and a caption below, in reading order: `<li class="stat"><span class="stat-cap">Cut</span><span class="stat-value">&gt;50%</span><span class="stat-cap">EMR costs</span></li>`. Values use the Stat value sizes (§5.4), captions Body-reduced (16px / 1.2858 / -0.016em); value and captions are both `--text`† (size does the work). No `aria-label` on the value.
+- A **stat lockup** is Apple's `figure.stat`†: an optional short caption above (≤ 2 words: "Up to", "Led", "Cut"), the value, and a caption below, in reading order: `<li class="stat"><span class="stat-cap">Cut</span><span class="stat-value">&gt;50%</span><span class="stat-cap">EMR costs</span></li>`. Values use the Stat value sizes (§5.4), captions Body-reduced (14px / 1.2858 / -0.016em†); value and captions are both `--text`† (size does the work). No `aria-label` on the value.
 - A **stat strip** is a `<ul aria-label="At a glance">` of 1–3 lockups, separated by 1px `--border` hairlines. At S, when every value is at most 5 characters, the strip stays **3 across** (`.stat-strip--compact`, set at build time; captions wrap to at most 2 lines, `text-wrap: balance`); otherwise the lockups stack with hairlines between them.
-- A **super stat** (`.stat--super`) is the visual of the Home STAR tile and the STAR story page: value **80px**† / 64 / 48 at L / M / S, line-height 1, -0.015em, captions **19px**. At most one per page. Stats never count up† (Apple reveals them with the normal fade).
+- Only the hero strip is numbers-only (§4.1); other strips, such as Home `#story`, may show word values like "unchanged".
+- A **big** strip (`.stat-strip--big`, the Home Experiences tile) drops the hairlines and uses values 72 / 48px at L / M (28px at S).
+- A **super stat** (`.stat--super`) is the visual of the Home STAR tile and the STAR story page: value **80px**† / 64 / 48 at L / M / S, line-height 1, -0.015em, captions **17px**†. At most one per page. Stats never count up† (Apple reveals them with the normal fade).
 
 #### 5.10.6 Anchors
 
@@ -669,27 +645,28 @@ Used on Home, Projects and the Blog pages.
 - A horizontally scrolling row of cards†: `<section role="region" aria-labelledby>` → `<ul role="list">`, `overflow-x: auto; scroll-snap-type: x mandatory`†, cards `scroll-snap-align: start`† (the last `start end`†), `scrollbar-width: none`†, `scroll-padding-inline` = the side gutter†.
 - Inline padding `calc((100% - var(--content-wide)) / 2)`, so the first card lines up with the header and the next one **peeks** past the viewport edge†; 10px† top and 30px† bottom padding so focus rings and reveal offsets are not clipped.
 - Cards: `--surface-2` on a `--bg` band, radius 28px†, width **372 / 344 / 260px**†, padding 32 / 28 / 24px†, **20px**† gap, equal heights, hover lift (§5.6).
+- Stat cards (`StatCard`) colour only their big value, by `:nth-child(4n+k)` → `--hl-k`, so any number of cards cycles. Surfaces stay `--bg`.
 - With **3 cards or fewer** at L, the cards share the row width and do not scroll†, and the paddles are hidden.
-- **Paddles** (§5.6): two buttons below the gallery, end-aligned in `--content-wide`, 18px† apart, `aria-label` "Previous highlights" / "Next highlights", `aria-controls` the list. A click scrolls by the visible cards' width (`behavior: smooth`, `auto` under reduced motion); an IntersectionObserver (threshold .95) on the first and last cards toggles `disabled`. Script `gallery.ts` ≤ 0.8 KB gzipped, loaded only on pages with a gallery; paddles start `hidden` and the script reveals them.
+- **Paddles** (§5.6): two buttons below the gallery, end-aligned in `--content-wide`, 18px† apart, `aria-label` "Previous highlights" / "Next highlights" by default (the `prevLabel` / `nextLabel` props name them per gallery, e.g. "Previous posts" / "Next posts" on Home `#writing`), `aria-controls` the list. A click scrolls by the visible cards' width (`behavior: smooth`, `auto` under reduced motion); an IntersectionObserver (threshold .95) on the first and last cards toggles `disabled`. Script `gallery.ts` ≤ 0.8 KB gzipped, loaded only on pages with a gallery; paddles start `hidden` and the script reveals them.
 - **JS off:** no paddles; native swipe, scroll and snap work and every link is in the tab order. Tabbing into a card scrolls it fully into view.
 
 #### 5.10.8 Gradient text, quote and drop cap
 
-- **Gradient text** (Apple's swipe†): at most **one** `.text-gradient` per page, currently only the Home hero role. Colours: light `#00509F → #0B5D52`, dark `#5CB0FF → #64D2B4` (every stop ≥ 7:1 on `--bg` and `--surface-2`). `background-clip: text`, `background-size: 300% 100%`†; under `prefers-reduced-motion: no-preference` it starts as solid `--text` and the gradient sweeps in once, **3.5s linear**† after a 300ms delay, `fill-mode: both`. The static end state (the gradient) is what reduced motion and JS-off see. Forced colours and print fall back to solid text; browsers without `background-clip: text` show `--text`.
+- **Gradient text** (Apple's swipe†): at most **one** `.text-gradient` per page, currently only the Home hero H1. Colours: light `#00509F → #0B5D52`, dark `#5CB0FF → #64D2B4` (every stop ≥ 7:1 on `--bg` and `--surface-2`). `background-clip: text`, `background-size: 300% 100%`†; under `prefers-reduced-motion: no-preference` it starts as solid `--text` and the gradient sweeps in once, **3.5s linear**† after a 300ms delay, `fill-mode: both`. The static end state (the gradient) is what reduced motion and JS-off see. Forced colours and print fall back to solid text; browsers without `background-clip: text` show `--text`.
 - **Quote** (Newsroom†): `<figure class="quote"><blockquote>…</blockquote><figcaption>Name <span>Role</span></figcaption></figure>`, Quote size (§5.4); the opening mark hangs outside the text (`::before { display: inline-block; width: 2em; margin-inline-start: -2em; text-align: end; content: open-quote }`†), and the closing mark appears only after the last paragraph†. Credit 17/600 at 1.6em above†, role 17/400. A **reduced** variant (32 / 28 / 24px†) is used for the STAR story question.
 - **Drop cap** (Newsroom `.dropcaps`†, opt-in per post): the first paragraph's `::first-letter` is **84px/600**† (48px† at S), `float: inline-start`, line-height 1, 8px† (5px† at S) space after it.
 
 #### 5.10.9 Graph bars
 
 - For a STAR metric with `compare` values (§6.6): one bar per entry next to the stat lockup, in a `1fr auto` grid with a 90px† column gap (72px† stat column and 20px† gap at S) and 48 / 32 / 20px† row gaps.
-- Bars are `<hr aria-hidden="true">`†, **10px**† tall (7px† at S), radius half the height†, width proportional to the value (`style="--w:.48"`, set at build time), `transform-origin: left`†. The "after" bar is `--accent`; others `#86868B`. Labels 14px `--text-2`, 5px† above.
+- Bars are `<hr aria-hidden="true">`†, **10px**† tall (7px† at S), radius half the height†, width proportional to the value (`style="--w:.48"`, set at build time), `transform-origin: left`†. The "after" bar is `--accent`; others `#86868B`. Labels 12px `--text-2`, 5px† above.
 - A visually hidden sentence ("Before: 100, after: 48") carries the meaning†.
 - Motion: `scaleX(0 → 1)`, 1000ms `--ease`, 150ms stagger, when 50% visible (via `reveal.ts`). Static under reduced motion and JS off.
 
 #### 5.10.10 Site index
 
-- Apple's end-of-page Index†, inside `<nav aria-label="Site index">` with one H2 per group. Group titles 19 / 16px, **400**†, `--text-2`, 17 / 14px below.
-- The first group uses **elevated links** at 28 / 24 / 21px†, 600, `--text`, no chevron, 11 / 9 / 8px† apart, the group 50% wide† (75% at M†, 100% at S†). Other groups: links 19 / 16px, 600, 14 / 11px† apart, 25% wide†. At S the groups stack, 26px† apart (42px† at M). Every link is at least 44px tall.
+- Apple's end-of-page Index†, inside `<nav aria-label="Site index">` with one H2 per group. Group titles 17 / 14px, **400**†, `--text-2`, 15 / 12px† below.
+- The first group uses **elevated links** at 28 / 24 / 21px†, 600, `--text`, no chevron, 11 / 9 / 8px† apart, the group 50% wide† (75% at M†, 100% at S†). Other groups: links 17 / 14px†, 600, 14 / 11px† apart, 25% wide†. At S the groups stack, 26px† apart (42px† at M). Every link is at least 44px tall.
 - Links fade in with the list link-in motion (§5.11) when the index top crosses 70% of the viewport†.
 
 #### 5.10.11 Page art
@@ -699,6 +676,24 @@ Used on Home, Projects and the Blog pages.
 - Each has `role="img"` and an i18n `aria-label` starting "Illustration:" / "Hình minh họa:". It is centred with `max-width: 100%` and an `aspect-ratio` matching its viewBox (CLS 0).
 - Meaningful shapes (steps, baselines, ticks, page outline) use `--text-2` or `--link` so they reach 3:1 against the page (WCAG 1.4.11); `--fill` and `--border` are for decoration only, never for a shape needed to read the image. Widths: closing 480 / 400 / 280, STAR steps 360 / 360 / 280, 404 256 / 256 / 240 (kept small, with a tight hero, so the 404 fits 1440×1600 with Inter too).
 - Content images (project covers) are `<img>` files with their own dark panel, and their alt comes from content (§6.4 `imageAlt`).
+
+#### 5.10.12 Footnotes
+
+- Apple-style qualifiers: a superscript link after the claim's caption (`<sup class="fn-ref"><a id="fnref-N" href="#fn-N" aria-label="Footnote N">N</a></sup>`, never inside the value) to an ordered list in a `--surface-2` small-print band at the end of `main` (`section.footnotes`, sr-only H2 "Footnotes", Caption 12px `--text-2`), each item with a ↩ back link.
+- Ref and back links have 44px tap areas. Notes come only from content fields (`yearsOfExperienceNote`, `note`) and restate context already in the content; a claim without such context has no footnote.
+
+#### 5.10.13 Device frame, terminal panes and terminal loop
+
+- CSS frames (`DeviceFrame.astro`): a `#1D1D1F` bezel made of padding and a token fill (no border, no shadow), 16:9 screen; `laptop` adds a `--border` base and radius 28 (18 under 480px); `screen` is the bare 18px bezel. No device art is copied.
+- Terminal loop (`TerminalLoop.astro`): a dark `--surface-2` window (title 12/600, lines 15px mono) whose lines are revealed by a stepped `translate` mask over 12s; the window is `aria-hidden` and a visually hidden figcaption carries the transcript; a native **Pause animation** button (`aria-pressed`) appears only once `terminal.ts` runs; with reduced motion or no JS the final frame is static and the button hidden (WCAG 2.2.2). Lines come from the project's `loop` field only.
+
+#### 5.10.14 Closer look
+
+- `CloserLook.astro`: `div.closer[data-closer]` with an optional `.closer-media` (the project `image`, 1280 × 720, lazy, `imageAlt`) and an `ol.closer-list` whose `li.closer-item` holds `h3.closer-label` and `.closer-cap#<id>-c<i>`. Items come from the labelled bold bullets of the project body (`parseHighlights`); unlabelled bullets are skipped, and the section shows with ≥ 2 items.
+- **No JavaScript:** no buttons in the HTML; every caption shows.
+- **With JavaScript** (`closer-look.ts`, ≤ 1 KB gzip): each label becomes a `button.closer-btn` (`aria-controls` = caption id, `aria-expanded`); the first item opens and the others get `hidden`. A click opens that item and closes the rest; clicking the open one keeps it open. No transitions.
+- Sizes: items separated by a 1px `--border` hairline; label 21/600 `--text`; caption 17px `--text-2` (`strong` in `--text`), 0 0 20px padding; button min-height 44px, `:focus-visible` 2px `--link` outline, 3px offset. At ≥ 1069px with an image: grid `2fr / 3fr`, 64px gap, list left, media right; below, the media sits above the list with a 40px gap; image radius 18.
+- The closer look uses the band's own tokens, so text keeps 7:1.
 
 ### 5.11 Motion
 
@@ -711,12 +706,15 @@ Used on Home, Projects and the Blog pages.
 | 1 | **Staggered fade-up** (Apple `StaggeredFadeIn`†) | Section headers, lockups, cards, stats, list items, grid tile content | `opacity 0 → 1` over **900ms**†, `translateY(30px) → 0` over **700ms**†, `--ease-card`†, once. Items in a `[data-reveal-group]` stagger **150ms**† (at most 4 steps; 3 at S), via `--i` set at build time. A group starts when its top crosses 85% of the viewport (`rootMargin: 0px 0px -15% 0px`). `reveal.ts` (≤ 2 KB) only adds `.is-in`; elements start hidden only under `html.reveal`, a class that `reveal.ts` itself adds once it has loaded and run (never the inline `html.js` flag), so a script that fails to load or throws leaves every element visible; any group whose top is above the bottom of the viewport on load (or on `pageshow` after a back/forward restore) is shown at once without animation, and focusing an unrevealed item reveals its group. **Failsafe:** if `reveal.ts` throws, it removes `html.reveal`; with `/_astro/*.js` blocked, every page shows all content; the site index's `--g` / `--k` delays are written into the HTML at build time. The **hero intro** uses the same keyframes on load in pure CSS (`animation-fill-mode: both`), never on the H1. |
 | 2 | **Hero intro** | Page heroes and the Home hero | See effect 1: eyebrow → subhead → copy → actions → stats, 150ms† apart, CSS only. |
 | 3 | **Hero fades on scroll** | The hero content on every page (M and L only) | Scroll-linked: as the hero leaves the viewport, its content goes `opacity 1 → 0`, `scale(1) → 0.94` and `translateY(0) → -40px` (`animation-range: exit 0% exit 80%`). The background stays. No JS. |
-| 4 | **Sticky storytelling** | Experiences chapters with ≥ 1 card, **L only** | Two columns in `--content-wide`: the chapter header (left 40%, left-aligned, `position: sticky; top: calc(var(--sticky-h) + 32px)`) and the cards (right 60%, one column, 16px gap, each with effect 1). The header un-sticks when the chapter ends. Pure CSS. |
+| 4 | **Sticky storytelling** | Role pages (§4.2.3) and the STAR story stage (§4.4), **L only** | Two columns in `--content-wide`: the chapter header (left 40%, left-aligned, `position: sticky; top: calc(var(--sticky-h) + 32px)`) and the cards (right 60%, one column, 16px gap, each with effect 1). The header un-sticks when the chapter ends. Pure CSS, applied only with `prefers-reduced-motion: no-preference` and JavaScript on (`html.js`); otherwise the chapter is stacked and fully visible. |
+
+The terminal loop (§5.10.13) is the one looping animation; it animates `translate` only and has a pause control.
 
 - **List link-in**† (mobile menu, local-nav dropdown, site index): `opacity 0 → 1`, `translateY(-4px) → 0`, 320ms ease†, delay 200ms + 80ms per group + 20ms per link†.
 - **At S**, effects 1 and 2 run with the same values (Apple has no small-screen override†) but at most 3 stagger steps; effect 3 lives inside `@media (min-width: 735px)` and effect 4 inside `(min-width: 1069px)`.
 - **Reduced motion:** `prefers-reduced-motion: reduce` turns every effect, transition and menu animation off†; everything shows immediately and static.
 - No animation libraries.
+- **Page transitions:** every page opts into cross-document view transitions (root cross-fade, browser default timing) inside `@media (prefers-reduced-motion: no-preference)`; browsers without support (Firefox) navigate normally; Astro's `ClientRouter` is not used.
 
 ### 5.12 Theme and dark mode
 
@@ -733,7 +731,7 @@ The per-component rules above already cover phones. These apply everywhere at S:
 - `<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">`; pinch zoom is never disabled.
 - Every tap target is at least **44 × 44px** with at least 8px between neighbours, including in-page text links such as "View in experiences ›" (pad them to 44px tall). Long tokens (chips, URLs) never break mid-word: `overflow-wrap: anywhere` applies only to card bodies, article prose, and headings, subheads, intro, lockup and eyebrow text outside cards (it breaks only a word wider than the line, WCAG 1.4.10), never to `body`, and chips use `white-space: nowrap`.
 - Grids and card lists are one column; Home units and grid tiles run edge to edge.
-- Motion as §5.11 (no scroll-linked effects). Only one bar is stuck at a time: the global nav (48px) on Home and 404, the local nav (48px) elsewhere.
+- Motion as §5.11 (no scroll-linked effects). Only one bar is stuck at a time: the global nav (48px) on 404, the local nav (48px) elsewhere.
 - Code blocks run to the screen edges and scroll inside; the copy button stays visible.
 - Images keep their aspect ratio with `width`/`height` set (CLS 0) and fill the content width.
 - No image or font is loaded only for phones. The mobile menu and local-nav scripts together add at most 1.5 KB gzipped, inside the §9 JS budget.
@@ -743,7 +741,7 @@ The per-component rules above already cover phones. These apply everywhere at S:
 - **Headlines:** short, declarative, sentence case, ending with a period, at most 6 words: *"Stories from the work."*, *"Let's talk."* Names and titles used as headlines (the name, a role title, a post title) keep their own form.
 - **Eyebrows** name the topic or page ("Experiences", "STAR story"), never a sentence.
 - **Subheads:** one line, at most 120 characters, no marketing superlatives.
-- **Actions:** short verbs: **Learn more**, **Download PDF**, **Read the story**, **Email me**, **All posts**. Generic labels get context in the accessible name ("Learn more about my experience").
+- **Actions:** short verbs: **Learn more**, **Download CV**, **Read the story**, **Email me**, **All posts**. Generic labels get context in the accessible name ("Learn more about my experience").
 - Numbers are written as digits ("7 engineers", ">50%"); dates use the formats in §7.
 - VI strings follow the same rules in `vi.json`.
 
@@ -761,9 +759,11 @@ The per-component rules above already cover phones. These apply everywhere at S:
 - **Search:** ⌘K and `/` open the panel with focus in the input; Quick links show before typing; results appear; Esc closes it and restores focus.
 - **Footer:** breadcrumbs on every page except Home; four directory columns at 1440; accordions at 375.
 - At 320, 375 and 430px, no page scrolls horizontally, and every interactive element is at least 44 × 44px.
-- **Motion:** with reduced motion, no element has a non-identity transform or opacity < 1 after load. At 375px, no element in `main` has a scroll-driven animation (the nav bars' 1px scroll-timeline background switch, §5.7–§5.8, is a state change, not motion, and runs at every width). No `.card` or story card has an `animation-timeline` other than `auto`. A revealed 3-item group is fully visible 1.6s after entering view, with item 2's delay 150ms. No hero H1 has a running animation at `domcontentloaded`. Effect 3 applies only where `animation-timeline` is supported and falls back cleanly (Chromium and WebKit). Effect 4: at 1440px the chapter header keeps the same `top` while its cards scroll and un-sticks at the chapter end; at 900px the chapter is stacked and centred.
+- **Motion:** with reduced motion, no element has a non-identity transform or opacity < 1 after load. At 375px, no element in `main` has a scroll-driven animation (the nav bars' 1px scroll-timeline background switch, §5.7–§5.8, is a state change, not motion, and runs at every width). No `.card` or story card has an `animation-timeline` other than `auto`. A revealed 3-item group is fully visible 1.6s after entering view, with item 2's delay 150ms. No hero H1 has a running animation at `domcontentloaded`. Effect 3 applies only where `animation-timeline` is supported and falls back cleanly (Chromium and WebKit). The built CSS holds `@view-transition { navigation: auto }` only inside a `prefers-reduced-motion: no-preference` media rule. Effect 4: at 1440px the role chapter header and the story stage header keep the same `top` while their cards scroll and un-stick at the section end; at 900px, under reduced motion and with JS off they are stacked.
 - Every anchor (local-nav links, `#<slug>`, `#<slug>-title`, search sub-results) lands below both bars with its eyebrow visible.
 - Lighthouse (mobile preset) ≥ 0.95 in every category and CLS < 0.05 on every Lighthouse URL; axe has zero serious or critical violations, including at 375px with the menu, the local-nav dropdown and the search panel open; the JS budget (§9) holds.
+
+---
 
 ---
 
@@ -789,7 +789,9 @@ phone: "+84963378831"           # E.164 format, used for tel: links
 phoneDisplay: "(+84) 963 378 831"
 avatar: "./avatar.jpg"          # optional
 yearsOfExperience: "5+"
-headlineMetric: "7 engineers led"  # optional; shown in the Home stat strip (§4.1.2)
+yearsOfExperienceNote: "…"      # optional footnote (§5.10.12)
+headlineMetric: "7 engineers led"  # optional; shown in the Home stat strip (§4.1.3)
+  note: "…"                     # optional footnote
 headlineMetricPrefix: "Led"     # optional caption above the number (§5.10.5)
 socials:
   linkedin: "https://www.linkedin.com/in/jomatran"
@@ -805,6 +807,8 @@ Body: the CV **Summary** paragraph (Markdown, bold allowed). It is used in the P
 ### 6.2 `experience`
 
 `src/content/experience/en/fpt-software-senior-data-engineer.md`
+
+Each file is also a page at `/experiences/<slug>/` (§4.2.3); `print` is reserved and may not be used as a slug.
 
 ```yaml
 company: "FPT Software"
@@ -849,17 +853,24 @@ items:
 `src/content/projects/en/agentic-coding-workflow.md`
 
 ```yaml
-title: "Agentic Coding Workflow"
-subtitle: "Multi-model Orchestration & Developer Tooling"
+title: "Multi-Agent Coding System"
+subtitle: "AI agents that plan, build and review code, with a human in charge"
 kind: "personal"                # personal | work | open-source
-summary: "A single-orchestrator coding system that coordinates Claude, Gemini and Codex across 11 specialised flows."
+summary: "A Claude lead runs a team of AI coding agents through three phases and four quality gates, and a human signs off before building starts and again at review."
 start: "2025"
 end:                            # empty = Present
-tech: ["Claude", "Gemini", "Codex", "tmux", "hcom", "AI-DLC"]
+tech: ["Claude", "Antigravity", "Codex", "tmux", "hcom", "AI-DLC"]
 repo: ""                        # optional
 demo: ""                        # optional
 image: ""                       # optional cover (16:9)
-imageAlt: ""                    # required when image is set; localised per language file
+imageAlt: ""                    # required when image is set; localised per language file (the sample cover: "Illustration: three stages on a path, with gates between them, two sign-off checkmarks and a lane of agent nodes below.")
+stats: []                       # optional, up to 3 of { value, label, note? }: the big numbers on the project page (sample: 2 human sign-offs per run · 0 auto-merges · 286 automated tests)
+problem: ""                     # optional, the pain in plain words (the sample is three sentences)
+approach: ""                    # optional, the choice and who does what
+result: ""                      # optional, the proof the visitor gets
+loop: {}                        # optional { title, lines }, 2–8 lines: the terminal loop on the project page
+design: {}                      # optional { intro, diagram?, decisions? (≤ 4 "**Label:** problem, choice, benefit") }: "The design." band
+workflow: {}                    # optional { intro?, steps (2–8 "**Label:** problem, choice, benefit") }: "The workflow." band
 featured: true                  # sorted first on /projects/; the first featured project is the Home Project tile
 inPdf: true                     # optional; defaults to the value of `featured`
 role: ""                        # optional reference to experience → "At <company>" link
@@ -875,11 +886,11 @@ name: "AWS Certified Solutions Architect – Associate"
 issuer: "Amazon Web Services"
 year: "2022"
 credentialUrl: ""               # optional, renders a Verify link
-badge: ""                       # optional image (64px display); missing → logo, then monogram
-logo: "logos:aws"               # optional Iconify name (@iconify-json/logos), on a white 56px disc
-monogram: "AWS"                 # 2–3 letters for the fallback
+badge: ""                       # optional image; schema-only, not rendered on the web (item 20)
+logo: "logos:aws"               # optional Iconify issuer logo (@iconify-json/logos), 32px, above the eyebrow, no disc
+monogram: "AWS"                 # 2–3 letters; schema-only, not rendered on the web
 ```
-No body. Shown on Home (§4.1.5, Certifications tile) and in the PDF, **not** on `/experiences/`.
+No body. Shown as type-only cards on `/experiences/` (§4.2, `CardGroup.astro`), with the optional `logo` above the eyebrow, and in the PDF. Home has no certifications tile.
 
 ### 6.6 `star`
 
@@ -895,6 +906,7 @@ metrics:                        # illustrative values; replace with real ones
   - prefix: "Migrated"          # optional caption above the value (§5.10.5)
     label: "jobs"
     value: "<n>"
+    note: "…"                   # optional footnote; only context already in the story
   - label: "delivery speed"
     value: "<+x%>"
     compare:                    # optional, 2–3 entries → graph bars (§5.10.9)
@@ -951,6 +963,8 @@ The Neovim setup guide covers (`src/assets/blog/neovim-setup/part-N.svg`) reuse 
 ```yaml
 title: "Neovim setup guide"
 description: "Build a fast, minimal Neovim 0.12 setup for web, data engineering and SRE work, one step at a time."
+tagline: "Five parts, from zero to a working editor."  # optional, Home Writing tile
+snippet: ['vim.g.mapleader = " "']  # optional, ≤ 6 lines copied verbatim from a part
 topic: developer-tools          # optional, id of an entry in the `topics` collection (§6.9)
 parts:
   - part: 1
@@ -1009,7 +1023,7 @@ Body: the topic intro, 2 to 4 sentences of plain text, shown on the topic page. 
 
 ### 8.3 Contact
 
-- `mailto:`, `tel:`, LinkedIn and GitHub as icon buttons in the Home Contact unit (§4.1.7) and as text links in the footer's Connect column (§5.9), plus the PDF.
+- `mailto:`, `tel:`, LinkedIn and GitHub as links in the footer's Connect column (§5.9; Contact is not on Home), plus the PDF.
 - No form and no third-party scripts.
 
 ### 8.4 SEO and metadata
@@ -1052,15 +1066,15 @@ Body: the topic intro, 2 to 4 sentences of plain text, shown on the topic page. 
 │   ├── components/
 │   │   ├── nav/              # GlobalNav, MobileMenu, ThemeToggle, LangSwitch
 │   │   ├── ui/               # PillButton, Chip, ChevronLink, Card
-│   │   ├── tile/             # Section, Hero, Unit, TileGrid, Tile, SectionHeader, StatStrip (§5.10)
+│   │   ├── tile/             # Section, Hero, TileGrid, Tile, SectionHeader, StatStrip, CloserLook (§5.10)
 │   │   ├── localnav/         # LocalNav (bar + <details> dropdown, §5.8)
 │   │   ├── footer/           # Footer, Breadcrumbs, Directory (§5.9)
-│   │   ├── home/             # HeroTile, ExperienceTile, SkillsTile, ProjectTile, StoryTile, WritingTile, CertificationsTile, ContactTile
-│   │   ├── experiences/      # Chapter, ClosingTile
+│   │   ├── home/             # StoryChapter, WritingShelf, LetsTalk
+│   │   ├── experiences/      # Chapter, CardGroup, ContactBox, CareerRow, HighlightsGallery
 │   │   ├── cv/               # PrintSkillsTable and the print layout's own markup
-│   │   ├── projects/         # ProjectGrid, ProjectTile
-│   │   ├── star/             # StarGroup, StarCard, StarPanels, CompetencyFilter
-│   │   ├── blog/             # PostCard, Toc, CopyCodeButton, ReadingTime, Callout, SeriesBox, SeriesNav, SeriesCard
+│   │   ├── projects/         # ProjectGridTile
+│   │   ├── star/             # StarGroup, StarCard, StarPanels, StepStage, CompetencyFilter
+│   │   ├── blog/             # LeadCard, PostCard, Toc, CopyCodeButton, ReadingTime, Callout, SeriesBox, SeriesNav, SeriesCard
 │   │   │   └── diagrams/     # NeovimStartupDiagram.astro, …
 │   │   └── search/           # SearchPanel (§5.7)
 │   ├── content/
@@ -1078,7 +1092,7 @@ Body: the topic intro, 2 to 4 sentences of plain text, shown on the topic page. 
 │   ├── layouts/              # BaseLayout, PostLayout, PrintLayout
 │   ├── lib/                  # reading-time, remark-star-sections, sort/group utils
 │   ├── pages/                # routes (EN at root, VI under [lang] or /vi)
-│   ├── scripts/              # reveal.ts, theme.ts, toc.ts, search.ts
+│   ├── scripts/              # reveal.ts, theme.ts, toc.ts, search.ts, gallery.ts, closer-look.ts
 │   └── styles/               # tokens.css, global.css, prose.css, print.css
 ├── tests/
 │   ├── unit/                 # Vitest
@@ -1303,7 +1317,7 @@ Done once by hand, or with `scripts/setup-repo.sh` (a `gh api` script added in M
 | Content validation | Astro content collections (Zod) | Required fields, dates, enums, references (`role` must match an experience slug; `series` must exist and `seriesPart` must be unique and listed), competency vocabulary |
 | Unit | Vitest | STAR section parser (valid / missing / out-of-order headings, VI headings), `formatCvDate()` (`YYYY` vs `YYYY-MM`, EN vs VI, empty `end` → Present), role sorting (current first, year-only dates, same company twice), company/client display, reading time, "Other / Personal" grouping, i18n `t()` and route helpers, VI→EN content fallback (`localize()`: VI used with no fallback; missing VI → EN with fallback true), tile subline clamp, tag slugging |
 | CV PDF | Playwright + `pdf-lib` | `dist/cv.pdf` and `dist/vi/cv.pdf` exist, are US Letter, ≤ 2 pages, contain the name, headline, every role title, every `inPdf` project title, every skill group name, "Languages" and every certification name as text, and contain `mailto:` / `tel:` link annotations |
-| E2E | Playwright | **Site frame (§5):** light default with no saved preference, theme cycles Light → Dark → System and survives reload with no flash; language switch keeps the page; global nav heights, `space-between` row and `aria-current`; search panel (⌘K, `/`, Quick links, results, Esc restores focus); mobile menu (open/close/focus trap/scroll lock/JS-off row); local nav on every inner page (links, small pill, dropdown at 375px with its close rules and JS-off `<details>`); footer breadcrumbs, directory and accordions; anchors land below both bars with eyebrows visible; type sizes at 1440 / 900 / 375; no horizontal scroll and 44px targets at 320 / 375 / 430; motion rules (§5.11) with and without reduced motion. **Home (§4.1):** unit order, 12px gaps, one H1, centred text, ≤ 2 actions, stat strip (3 stats, 2 when `headlineMetric` is empty), skill cells in `order` with ≤ 5 names + "+N more", tile grid 2-up at L and 1-up at S with equal heights, empty states and odd-count rule (unit / Astro Container tests with fixtures), Contact icons and spoken languages, one `.text-gradient`, numeric stats, hero H1 not animated, no Home-specific script. **Experiences (§4.2):** no hero/summary/projects/skills/certifications, hidden H1, one chapter per role in sort order with a local-nav link, one card per bullet (label H3, bold kept), tech marks and chips, Current chip only on the ongoing role, STAR pill, closing actions, sticky storytelling at 1440 and stacked at 900, the highlights gallery (paddles, JS-off scrolling, 260px cards at 375). **Projects (§4.6):** nav order, `?kind=` filter + Back/Forward, empty state, Expand all, Learn more toggles by keyboard, `/projects/#<slug>` opens that tile, role link. **STAR (§4.4):** groups, filter + `?c=` (empty groups hidden, empty state), card expand/collapse, four-panel grid layout, Expand all, story page. **Blog (§4.5):** TOC, copy button skips `$`, series box and prev/next skip unpublished parts, "1 of 5 published", diagrams switch layout between S and M, RSS valid XML. **Other:** CV PDF link returns 200 + `application/pdf`; 404 page with its site index. Mobile runs use the `iPhone 13` (WebKit) and `Pixel 7` (Chromium) device profiles plus a 320px viewport |
+| E2E | Playwright | **Site frame (§5):** light default with no saved preference, theme cycles Light → Dark → System and survives reload with no flash; language switch keeps the page; global nav heights, `space-between` row and `aria-current`; search panel (⌘K, `/`, Quick links, results, Esc restores focus); mobile menu (open/close/focus trap/scroll lock/JS-off row); local nav on every inner page (links, small pill, dropdown at 375px with its close rules and JS-off `<details>`); footer breadcrumbs, directory and accordions; anchors land below both bars with eyebrows visible; type sizes at 1440 / 900 / 375; no horizontal scroll and 44px targets at 320 / 375 / 430; motion rules (§5.11) with and without reduced motion. **Home (§4.1):** section order, touching bands, one H1 that is the gradient headline (one `.text-gradient`, inside it), no hero eyebrow, hero stat strip (3 stats, numeric, footnote refs resolve), local nav (Overview · Experiences · Skills, PDF pill, `/vi/` prefix), peek rule at 1440 × 900 and 375 × 812, hero H1 not animated, no horizontal scroll at 320px, JS off, heading ids land below the nav. **Experiences (§4.2):** the Layout B hero, no summary/skills/chapters, one role card per role in sort order linking to its page (local-nav links match), certification cards newest first, 4 / 2 / 1-up columns with no image (only certification cards carry an issuer logo svg), the contact box (mailto, tel, LinkedIn, 44px links), white last band with no footer rule, `#<role-slug>` anchors landing on the card, peek rule, search sub-result into a role page, 320px, JS off. **Role pages (§4.2.3):** one page per role, local nav (title links to `/experiences/`), cards, tech marks and chips, no Current chip, STAR pill, sticky storytelling at 1440 and stacked at 900. **Skills (§4.8):** one row per group, certifications and languages, two columns at L, no icons or chips. **Projects (§4.6):** nav order, `?kind=` filter + Back/Forward, empty state, lineup tile (one primary, laptop-framed cover), `/projects/#<slug>` deep link, product page link. **Project page (§4.6.1):** bands, frame ratio and cover alt, stats (2 / 0 / 286, en and vi labels) and footnotes, design diagram (role=img, title, six-item text alternative, unique ids, text at least 14px from 320 to 1440, en and vi labels fit their boxes and lanes on both axes at 320 / 375 / 768 / 1024 / 1440), highlight cards and the approach band, workflow steps, terminal motion / reduced / no-JS. **STAR (§4.4):** groups, filter + `?c=` (empty groups hidden, empty state), card expand/collapse, four-panel grid layout, Expand all, story page. **Blog (§4.5):** TOC, copy button skips `$`, series box and prev/next skip unpublished parts, "1 of 5 published", diagrams switch layout between S and M, RSS valid XML. **Other:** CV PDF link returns 200 + `application/pdf`; 404 page with its site index. Mobile runs use the `iPhone 13` (WebKit) and `Pixel 7` (Chromium) device profiles plus a 320px viewport |
 | Accessibility | `@axe-core/playwright` | Every route type in light **and** dark, EN **and** VI. Zero serious/critical violations |
 | Visual (optional) | Playwright screenshots | Home, Experiences, Projects, STAR, post at 375 / 900 / 1440 widths (S / M / L) in both themes |
 | Performance | Lighthouse CI | Budgets from §9; fails the PR if a score drops below 95 |
@@ -1357,21 +1371,21 @@ These smaller choices have a default in this spec. Change any you disagree with:
 14. **Dependabot schedule:** Monday 06:00 Ho Chi Minh time. CodeQL weekly scan: Monday 05:00 UTC.
 15. **Cloudflare beacon token:** stored as a repository *variable*, not a secret, because it is public in the HTML.
 16. **Artifact retention:** 7 days for PR runs, 30 days for `main` runs (sets the rollback window).
-17. **Home unit order:** Hero (+ stat strip) → Experiences → Technical skills → tile grid (Featured project · Featured STAR story · Latest writing · Certifications) → Contact.
+17. **Home unit order:** Hero (+ pipeline) → Experiences (black, + stat strip) → feature grid (project · STAR story · writing · certifications).
 18. **Skill descriptions:** first drafts written from `cv.tex` (Appendix A.4). Review and rewrite them in your own voice.
 19. **Skill icons:** Lucide (open-source, outline style, close to SF Symbols). SF Symbols can't be used on the web under Apple's licence.
-20. **Certification badges:** monogram fallback until you add the official badge images (e.g. from Credly) to `src/content/certifications/en/badges/`.
-21. **Experiences page:** no hero (the H1 is the visually hidden page title); the closing section offers Download PDF and View projects.
+20. **Certification badges:** not shown as badge images on the web; certification cards are type-only except an optional issuer logo (Iconify svg).
+21. **Experiences page:** a Layout B hero; role and certification cards and a contact box (see §4.2).
 22. **Projects in the PDF:** only projects marked `featured` (override per project with `inPdf`), so the PDF stays within 2 pages.
 23. **Chip colours:** kind, competency, tag and series chips are neutral grey (`--fill`); only tech chips and the "Current" chip are mint.
 24. **Neovim series plan:** 5 parts. 1 Zero to a working editor · 2 Languages (LSP, completion, format, lint) · 3 Data engineering (DBT, SQL, DB UI, CloudFormation) · 4 Java with nvim-jdtls · 5 Debugging, testing and daily workflow.
 25. **First post slug and tags:** `neovim-setup-1-zero-to-editor`; tags `neovim`, `dotfiles`, `macos`, `developer-tools`.
-26. **"Tested with" note:** although snippets aren't linked, the post states once, at the top, the Neovim version, macOS, and the dotfiles commit the steps were tested against.
+26. **"Tested with" note:** although snippets aren't linked, the post states once, at the top, the Neovim version and macOS the steps were tested against.
 27. **First post date:** publish when M4 ships; `pubDate` is set on merge.
 28. **Home layout:** Apple homepage units: square corners, 12px gaps, min-heights 580 / 570 / 500px; the tile grid runs edge to edge with 12px gutters (no side padding at S).
-29. **Spoken languages on Home:** one Caption line in the Contact unit.
-30. **Skill display on Home:** plain centred cells (icon, name, description, ≤ 5 item names). `size` and `tint` are ignored.
-31. **Certifications on Home:** a grid tile with up to 3 rows and "+N more".
+29. **Spoken languages:** the Languages row on `/skills/`, and the PDF.
+30. **Skill display:** not on Home; Tech Specs rows on `/skills/` (v5.0).
+31. **Certifications on Home:** a grid tile with up to 3 text cards and "+N more"; all of them on `/skills/`.
 32. **Copy (EN; rewrite in your own voice, VI in `vi.json`):** Skills *"The tools I build with."* / *"From ingestion to data quality, on AWS and Azure."*; Certifications *"Certified on the platforms I use."*; Contact *"Let's talk."* / *"Open to data engineering roles and interesting data problems."*; Experiences closing *"Want the full picture?"* / *"Projects, skills and certifications are all in the PDF."*; Projects *"Things I've built."* / *"Personal, work and open-source projects."*; STAR *"Stories from the work."* / *"<n> stories across <m> roles."*; Blog *"Notes on data and tools."*; 404 *"Page not found."*
 33. **Featured STAR story on Home:** one story (the newest `featured` by `date`, else the newest).
 34. **Primary action label:** Home units use Apple's **Learn more** with context in the accessible name, instead of "View experiences" / "All projects" as the primary label.
@@ -1387,12 +1401,12 @@ These smaller choices have a default in this spec. Change any you disagree with:
 44. **STAR filter chips on phones:** one horizontally scrolling row instead of wrapping.
 45. **Code blocks on phones:** full screen width (edge to edge), scrolling inside.
 46. **Search:** Apple's nav search flyout with Quick links, instead of a centred Spotlight-style modal.
-47. **Footer:** Apple's global footer (breadcrumbs, four-column directory, legal row) with text links only; social icons appear only in the Home Contact unit.
+47. **Footer:** Apple's global footer (breadcrumbs, four-column directory, legal row) with text links only; no social icons anywhere.
 48. **Eyebrows:** `--text-2`, 600 weight (Apple), not mint.
 49. **Gradient text:** one phrase per page, only the Home hero role for now (blue → deep mint, contrast-safe).
-50. **Experiences opening:** a "Get the highlights." gallery with one card per role (the first bullet unless `highlight` is set), instead of starting on the first chapter.
+50. **Experiences opening:** a "Get the highlights." gallery of tall stat cards (years, team, the featured story, the featured project).
 51. **Home stats:** numbers only (years, engineers led, the featured STAR metric); "current company" is dropped.
-52. **Dark "Pro" unit:** not used. The research suggested a dark Technical skills unit on Home (Apple's homepage mixes dark tiles); declined to keep white as the main colour. Say the word to add it.
+52. **Dark tiles:** Home's Experiences tile is black (Apple's light / dark rhythm), using the dark tokens, so contrast is unchanged. (superseded: no black in the light theme, Appendix C v6.0)
 53. **Newsroom weights:** the blog post H1/H2 and Newsroom tiles use 700, as Apple Newsroom does; everything else stays 600.
 54. **Global nav on inner pages:** scrolls away and the local nav sticks at the top, as on Apple product pages (only one 48–52px bar stays on screen). Say if you'd rather keep both bars stuck.
 55. **Footer density:** Apple's compact desktop footer (25.6px link pitch, WCAG 2.5.8) with 44px rows only at phone/tablet widths.
@@ -1446,7 +1460,7 @@ Shown on `/projects/` and in the PDF, not on `/experiences/`.
 
 | File slug | Title | Subtitle | Kind | Start → End | Bullets |
 |---|---|---|---|---|---|
-| `agentic-coding-workflow` | Agentic Coding Workflow | Multi-model Orchestration & Developer Tooling | personal | `2025` → Present | 4: Orchestrated Specialist Flows · Autonomous Delivery Controls · Routing, Memory & Recovery · Safety & Verification |
+| `agentic-coding-workflow` | Multi-Agent Coding System | AI agents that plan, build and review code, with a human in charge | personal | `2025` → Present | 4: Orchestrated Specialist Flows · Autonomous Delivery Controls · Routing, Memory & Recovery · Safety & Verification |
 
 ### A.4 Skills → `skills/en/*.md`
 
@@ -1459,7 +1473,7 @@ Shown on `/projects/` and in the PDF, not on `/experiences/`.
 | 5 | `ai-engineering` | AI Engineering | AI-DLC (AI-Driven Development Life Cycle), Prompt Engineering, Agentic Coding, Multi-Agent Orchestration, AI Code Review, Documentation Automation |
 | 6 | `methodologies` | Methodologies | Agile/Scrum, SDLC, Cross-Functional Collaboration |
 
-Items written with parentheses become `name` + `children`. The `Languages` row moves to `profile.spokenLanguages`, which feeds the Languages line in the Home Contact tile (§4.1.7) and the PDF's last skills row.
+Items written with parentheses become `name` + `children`. The `Languages` row moves to `profile.spokenLanguages`, which feeds the Languages line and the PDF's last skills row.
 
 **Draft descriptions** (new, not in `cv.tex`; written from your experience bullets for you to review):
 
@@ -1496,65 +1510,49 @@ Shown on Home and in the PDF, not on `/experiences/`.
 | Series | `neovim-setup-guide`, Part **1** of 5 (§6.8) |
 | Title (EN) | Neovim setup guide, Part 1: from zero to a working editor |
 | Title (VI) | Hướng dẫn thiết lập Neovim, Phần 1: từ con số 0 đến trình soạn thảo chạy được |
-| Description (EN) | Install the tools, get my Neovim 0.12 config running on macOS, and check that everything works, in about 15 minutes. |
+| Description (EN) | Install the tools, write a small Neovim 0.12 config file by file on macOS, and check that it starts and works. |
 | Files | `src/content/blog/en/neovim-setup-1-zero-to-editor.mdx` and `src/content/blog/vi/neovim-setup-1-zero-to-editor.mdx` (same slug) |
 | Tags | `neovim`, `dotfiles`, `macos`, `developer-tools` |
-| Type | Step-by-step **setup guide**. The reader follows along and ends with a working editor |
+| Type | Step-by-step **setup guide**. The reader creates each file and ends with a working editor |
 | Audience | Developers on macOS who are new to Neovim or coming from a big distro (LazyVim, NvChad) and want a small config they understand |
 | Target | **Neovim 0.12+ only**. Stated in the first paragraph and checked in step 1 |
-| Length | ~2,000–2,500 words, ~10–12 min read |
-| Source | `ryanparker97/dotfiles`, folder `nvim/` (public). **Linked once** near the top. Snippets are copied in and **not** linked per block |
+| Length | ~5,000 words including the full files, 26 min read (the reading time counts code) |
+| Source | None linked. Every file the reader needs is shown in full in the posts |
 | Media | **Code snippets** (Shiki, with filename titles) + **one architecture diagram** (inline SVG, §4.5.1). No screenshots or recordings |
 | Languages | **EN + VI at launch.** VI translates the prose, headings, captions, callouts and diagram captions. Code, commands, file names and keymaps stay the same. Code comments stay in English |
 
-### B.2 Outline (H2 = TOC entries)
+### B.2 Outline (13 H2 and 5 H3 = 18 TOC entries; no heading is longer than 38 characters)
 
 1. **Intro** (no heading)
-   - Why a small config: one Lua file per topic, lazy-loaded, built for a mix of web, data engineering and SRE work (Java, Python, DBT/SQL, Terraform, Bash, CloudFormation/YAML, JSON, Docker, frontend).
+   - Why a small config: one Lua file per topic, lazy-loaded, built for a mix of web, data engineering and SRE work (Java, Python, DBT/SQL, Terraform, Bash, CloudFormation/YAML, JSON, Docker, frontend). The reader builds it one file at a time.
    - What this series builds, with a link to the series index.
-   - `<Callout type="note">` **Tested with:** Neovim 0.12, macOS, dotfiles commit `2101fb4`. **Source:** github.com/ryanparker97/dotfiles (folder `nvim/`).
+   - `<Callout type="note">` **Tested with:** Neovim 0.12, macOS. No source link and no commit.
 2. **What you'll have at the end**
-   - A bullet list: plugin manager with 49 lazy-loaded plugins, file explorer (oil), fuzzy finder (telescope), language servers auto-installed by Mason, format on save, linting, Treesitter highlighting, git signs, which-key hints, the catppuccin mocha theme.
-   - States that languages get properly set up in Part 2; Part 1 makes sure everything installs and starts.
+   - A bullet list of what Part 1's files give: lazy.nvim with lazy-loading by default, oil, telescope, smart-splits and flash, autopairs and surround, gitsigns and diffview, Treesitter highlighting, lualine, which-key, catppuccin mocha, sessions.
+   - States that language servers, completion, formatting and linting arrive in Part 2.
 3. **Before you start**
-   - macOS + Homebrew.
+   - macOS + Homebrew (link to brew.sh). One sentence for Linux readers: install Neovim 0.12+ with the package manager (link to the official install page).
    - **Neovim 0.12+**: `nvim --version`, with `brew install neovim` (or `brew upgrade neovim`) if needed. `<Callout type="warning">` explains that 0.11 and older fail on the 0.12-only `pumborder` option and the built-in undotree (`packadd nvim.undotree`).
-   - A **Nerd Font** set in your terminal (e.g. FiraCode Nerd Font: `brew install --cask font-fira-code-nerd-font`), otherwise icons show as boxes.
-   - Xcode Command Line Tools (`xcode-select --install`), for the `make` that builds `telescope-fzf-native`.
-   - Python **3.10+** if you want `sqlfluff` installed by Mason (older versions skip it).
-4. **Step 1: install the host tools**
-   - The `brew install …` and `pipx install dbt-core sqlfluff` commands from the dotfiles README, with one line per tool explaining why it's needed (ripgrep/fd → telescope, tree-sitter → parser builds, node → JS-based language servers and prettier, openjdk → Part 4, …).
-   - Optional: `brew install lazygit` for <kbd>Space</kbd> <kbd>g</kbd> <kbd>g</kbd>.
-5. **Step 2: get the config.** Three ways, as tabs or sub-headings:
-   - **A. The whole dotfiles repo:** `git clone` + `./install.sh`. A warning callout says it also links zsh, tmux, alacritty, yabai, skhd and starship, and backs up anything in the way to `<path>.bak.<timestamp>`.
-   - **B. Neovim only:** back up `~/.config/nvim`, `~/.local/share/nvim`, `~/.local/state/nvim` and `~/.cache/nvim`, then `ln -s ~/dotfiles/nvim ~/.config/nvim`.
-   - **C. Try it without touching your setup:** clone to `~/.config/nvim-ryan` and run `NVIM_APPNAME=nvim-ryan nvim`. Recommended for a first try.
-   - A tip notes that the Lua modules live under `lua/ryanparker/`. You can rename the folder and the `require("ryanparker…")` calls to your own name later.
-6. **How it starts**
-   - **The architecture diagram** (B.3), then a short walkthrough:
-     - `init.lua` turns on `vim.loader` and loads `core` then `lazy` (4-line snippet);
-     - `core/init.lua` sets <kbd>Space</kbd> as leader and turns off netrw for oil;
-     - `lazy.lua` bootstraps lazy.nvim (snippet, highlighting the clone and `defaults = { lazy = true }`) and imports every file in `plugins/`.
-   - A table of the 12 plugin topic files and what each one holds (ui, navigation, editing, git, lsp, completion, formatting, linting, treesitter, data, dev, extras).
-7. **Step 3: first launch**
-   - Run `nvim`. lazy.nvim clones itself and installs the plugins (explain the `:Lazy` window; `:Lazy sync` if anything failed).
-   - Treesitter installs parsers. If the `tree-sitter` CLI is missing you'll see a warning, quoted exactly from the config.
-   - Mason installs tools in the background (mason-tool-installer on `VeryLazy`) and language servers (mason-lspconfig `ensure_installed`). Watch with `:Mason`. A snippet shows the tools list.
-   - Quit and reopen once everything has finished.
-8. **Step 4: check that everything works**
-   - `:checkhealth`: which sections matter (`lazy`, `mason`, `vim.lsp`, `nvim-treesitter`) and which warnings are safe to ignore.
-   - Open a Python file: lualine shows the attached LSP clients (`basedpyright, ruff`), <kbd>K</kbd> shows hover, and saving formats the file with ruff.
-   - `:ConformInfo` and `:LspInfo`-style checks (`:checkhealth vim.lsp`).
-9. **The first keymaps to learn**
-   - <kbd>Space</kbd> opens which-key (shows every group).
-   - A table of about 14 keymaps: `<leader>ff` files, `<leader>fg` grep, `<leader>fb` buffers, `<leader>e` explorer (float), `-` parent dir, `<leader>w` save, `<leader>cf` format, `gd` definition, `K` hover, `grn` rename, `]d`/`[d` diagnostics, `]h`/`[h` git hunks, `<M-h/j/k/l>` splits/tmux panes, `<leader>uu` undo tree.
-10. **Troubleshooting**
+   - A **Nerd Font** set in your terminal, Xcode Command Line Tools, and Python **3.10+** (Part 2 installs `sqlfluff` only on 3.10+).
+4. **Step 1: install the host tools**: the `brew install …` and `pipx install dbt-core sqlfluff` commands with one line per tool (ripgrep/fd → telescope, `tree-sitter-cli` → parser builds, node → JS-based language servers and prettier, openjdk → Part 4, …). Optional `brew install lazygit`, mapped in Part 5.
+5. **Step 2: create the config folder**
+   - Option 1, a fresh setup in `~/.config/nvim` (back up the old folders, then `mkdir -p … lua/config/core … lua/config/plugins`).
+   - Option 2, next to an existing config in `~/.config/nvim-guide`, started with `NVIM_APPNAME=nvim-guide nvim`; a tip callout suggests an alias.
+   - Every path in the guide is relative to this folder; `:echo stdpath("config")` shows which folder Neovim reads.
+6. **How the config fits together**
+   - **The architecture diagram** (B.3), a short startup walkthrough, and a table `File | What it holds | Part` for every file the series creates.
+7. **Step 3: init.lua and core settings**: create `init.lua`, `lua/config/core/init.lua` (leader key, netrw off, provider loop), `options.lua`, `keymaps.lua` and `autocmds.lua`, each in full, with an explanation after each block.
+8. **Step 4: add lazy.nvim**: create `lua/config/lazy.lua` in full, fenced with the title `lua/config/lazy.lua` and highlights `{3-10,23,25}` (the clone call, the `import` line and `defaults = { lazy = true }`).
+9. **Step 5: add the first plugins** with one H3 per file: `ui.lua`, `navigation.lua`, `editing.lua`, `git.lua`, `treesitter.lua`. Each is a full file with a note on the keys it adds.
+10. **Step 6: first launch**: lazy.nvim installs plugins; Treesitter installs parsers (the `tree-sitter` CLI warning is quoted exactly from the file, naming `tree-sitter-cli`); quit and reopen; `--startuptime`.
+11. **Step 7: check that everything works**: `:checkhealth lazy` and `:checkhealth nvim-treesitter`, then Treesitter colours on `init.lua`, which-key on <kbd>Space</kbd>, telescope on `<leader>ff`, oil on `-`, a git sign in the gutter, and the undo tree on `<leader>uu`.
+12. **The first keymaps to learn**: a table of the keys that exist after Part 1 (`<leader>ff`, `<leader>fg`, `<leader>fb`, `<leader>e`, `-`, `<leader>w`, `<leader>j`, `]d`/`[d`, `]h`/`[h`, `<M-h/j/k/l>` between splits, `<leader>uu`).
+13. **Troubleshooting**
     - Icons show as boxes → Nerd Font not set in the terminal.
-    - The `tree-sitter` CLI warning → `brew install tree-sitter`, then `:TSUpdate`.
+    - The `tree-sitter` CLI warning → `brew install tree-sitter-cli`, then `:TSUpdate`.
     - telescope is slow or the fzf extension is missing → install Xcode CLT, then `:Lazy build telescope-fzf-native.nvim`.
-    - `sqlfluff` is missing → Python is older than 3.10.
-    - Start over → remove `~/.local/share/nvim` (or `…/nvim-ryan`) and launch again.
-11. **What's next**
+    - Start over → remove `~/.local/share/nvim` (or `~/.local/share/nvim-guide`) and launch again.
+14. **What's next**
     - A teaser for Part 2 (languages), followed by the series box and the prev/next part links.
 
 ### B.3 Architecture diagram: `NeovimStartupDiagram.astro`
@@ -1565,7 +1563,7 @@ init.lua ──▶ vim.loader.enable()
    ├─▶ core/            options · keymaps · autocmds        (surface-2)
    │
    └─▶ lazy.lua ──▶ lazy.nvim (bootstrap, lazy = true)      (surface-2)
-                      │  import "ryanparker.plugins"
+                      │  import "config.plugins"
                       ▼
         plugins/*.lua (12 topic files)                      (fill)
         ui · navigation · editing · git · lsp · completion
@@ -1582,14 +1580,11 @@ init.lua ──▶ vim.loader.enable()
 - `<title>`: "How the Neovim config starts". `<desc>` and the hidden list repeat the flow above in words.
 - Caption (EN): *"Startup flow: core settings load first, then lazy.nvim loads plugins only when they're needed."* VI caption to be translated.
 
-### B.4 Accuracy rules (because snippets aren't linked)
+### B.4 Accuracy rules (replay)
 
-- Every snippet is copied **as-is** from the dotfiles at the "Tested with" commit. A snippet may be shortened only with an explicit `-- …` line.
-- Every command is run on a fresh setup (path C, `NVIM_APPNAME`) before publishing. Any output quoted in the post is real.
-- **Mismatches to fix in the dotfiles README before publishing**, so the linked repo matches the post:
-  - The README's language table says `pyright`, but `lsp.lua` installs **`basedpyright`**.
-  - The README's plugin layout table leaves out **`dev.lua`** (trouble, grug-far, dap, neotest) and **`extras.lua`** (quicker, treesitter-context, todo-comments, snacks, refactoring, yaml.nvim, overseer).
-  - The README's brew list doesn't mention a Nerd Font, `lazygit`, or the Xcode CLT / `make` requirement.
+- Every file is shown in full, or as an exact addition that says where it goes (after which line, inside which table, or at the end of the file). A block may elide with `-- …` only when it reminds the reader of code they already typed, and it is introduced as such.
+- Each part is replayed on a clean `NVIM_APPNAME=nvim-guide` setup, built from Parts 1..N only and from the posts' code blocks, before publishing: a Lua parse check of every file, `Lazy! sync`, and opening a sample file with no errors. Every command is run; any output quoted in the post is real.
+- A reader finishing Part N needs only Parts 1..N. The posts never point to the author's own repository.
 - When the config changes later, the post gets an `updatedDate` and a refreshed "Tested with" note. It doesn't change silently.
 
 ### B.5 Acceptance criteria
@@ -1599,8 +1594,7 @@ init.lua ──▶ vim.loader.enable()
 - The TOC lists the H2 sections from B.2 in both languages.
 - Every code block has a language and a filename title (where it comes from a file). Copying a shell block leaves out the `$` prompt.
 - The diagram passes axe, is readable in light and dark mode, and switches layout between S and M (734 / 735px).
-- Reading time shows ~10–12 min.
-- The B.4 README fixes are merged into `ryanparker97/dotfiles` before the post goes live.
+- Reading time shows 26 min in both languages.
 
 ---
 
@@ -1619,6 +1613,17 @@ init.lua ──▶ vim.loader.enable()
 | v4.2 | M11 fixes, M12 | Round-2 research merged: frame alignment to Apple's 980px content edge, transparent-at-rest bars, global nav scrolling away under a sticky local nav, Apple search panel / dropdown / menu / footer details, start-aligned inner section headers, split Home units with tall-viewport heights and the peek rule, super and compact stats, Newsroom article rhythm, footer reach line, local-nav current marker; Appendix D page composition guide.
 | v4.3 | M12 fixes | Round-3 research merged: reveal shows in-view content on load with a failsafe, the visual mass rule (`.unit--stack` / `.unit--flow`), larger type visuals in Home tiles, the career rail, balanced centred copy and nowrap list items, a centred STAR story quote, one sticky chapter layout at L for every chapter, Newsroom post subhead and TOC values, singleton control alignment.
 | v4.4 | Final polish | Reveal hides content only after its own script runs (`html.reveal`), career-rail tracks and minimum bar width, tile headline alignment, peek rule without exceptions, Apple tile type sizes, tech marks keep punctuation attached.
+| v5.0 | apple-layout A | Apple type sizes restored site-wide (hero 96 at L); Home rebuilt as apple.com Layout A (gradient role eyebrow + pipeline hero, black Experiences tile with big stats, feature grid with code-built visuals); /skills/ Tech Specs page; Skills and Contact leave Home; tighter display tracking; radius tokens. |
+| v5.0 | apple-layout B | Layout B product pages: Experiences (hero, stat-card highlights, career row, chapters, black featured-project band, Let's talk), project page (laptop frame, big stats, problem → approach → result, terminal loop with pause), Projects lineup; footnotes. |
+| v6.0 | apple-display D | Role pages: `/experiences/<slug>/` (hero + Highlights. chapter, local nav of roles); role links from STAR and project pages go there. |
+| v6.0 | apple-display D/E | Experiences becomes a Leadership-style index: role and certification cards (4 / 2 / 1 up) and a contact box; chapters move to role pages, the gallery and career row to Home. |
+| v6.0 | apple-display A/D | Home becomes a product-launch page (local nav, gradient headline hero with stats, Let's talk.); later rows add its sections. |
+| v6.0 | apple-display (STAR stage) | STAR story page: Situation + Task, a pinned "Step by step." stage for the Action's labelled bullets (≥ 2), then the Result panel; sticky storytelling (role chapters and the stage) only with motion allowed and JS on. |
+| v6.0 | Page transitions | Cross-document view transitions switched on (root cross-fade, reduced-motion guarded, no `ClientRouter`); §5.11 and §5.15 updated. |
+| v6.0 | — | Download label renamed to Download CV / Tải CV. |
+| v6.0 | no black | Light theme has no black: Home closer-look band and stat cards go white; band tones derived by `bandTones`; project approach band; `section--dark` / `unit--dark` removed. |
+| v6.0 | — | Highlight-card values take position colours (`--hl-1…4`); card 3 drops the `--link` value. |
+| v6.0 | — | Neovim series rewritten as a self-contained step-by-step guide (files shown in full, `lua/config/` namespace, no link to a config repo). |
 
 ---
 
@@ -1638,20 +1643,20 @@ Normative for M12: how each page is composed (order, type roles, spacing, first-
 
 ### D.1 Home (`/`)
 
-**Order** (spec §4.1.1): Hero (white) · Experiences (grey) · Technical skills (white) · 2×2 tiles (grey: Project, STAR, Writing, Certifications) · Contact (grey). All separated by 12px of white.
+Superseded by §4.1 (v6.0).
 
-**Composition: Apple's split tile (§5.10.2).** Every unit and tile is a column with `justify-content: space-between`†: a **lockup at the top** (eyebrow, headline, subhead, pills) and a **typographic visual at the bottom**, which stands in for Apple's product image. Padding 56/63† on tall L viewports, 48/56† on L, 61/69† (tall) or 54/61† on M, 39/43† on S. Min-heights: hero 692† (L, ≥776px tall) / 650† (M, ≥734px tall) / 580 / 570 / 500†; tiles 380 / 340 / 340.
+**Order** (spec §4.1.1): Hero (white) · Experiences (black) · 2×2 feature tiles (grey: Project, STAR, Writing, Certifications). All separated by 12px of white.
+
+**Composition: Apple's split tile (§5.10.2).** Every unit and tile is a column with `justify-content: space-between`†: a **lockup at the top** (eyebrow, headline, subhead, pills) and a **typographic visual at the bottom**, which stands in for Apple's product image. Padding 56/63† on tall L viewports, 48/56† on L, 61/69† (tall) or 54/61† on M, 39/43† on S. Min-heights: hero 692† (L, ≥776px tall) / 650† (M, ≥734px tall) / 580 / 570 / 500†; tiles 600 / 560 / 500.
 
 | Unit | Top lockup (roles) | Bottom visual |
 |---|---|---|
-| Hero | eyebrow (Eyebrow 21) · H1 Hero 96 · Subhead 28 (role in gradient) · Lockup copy 21/600 grey · 2 pills | **stat strip**, values 48†, hairline-separated, `max-width: 692px`, centred |
-| Experiences | eyebrow · H2 Unit headline 64 (current role) · subhead "FPT Software · since Aug 2026 · 5+ years" · 2 pills | **company line** as a quiet wordmark row: 21/600, current company `--text`, earlier ones `--text-2`, `·` with 0.6em gaps, wrapping and centred |
-| Technical skills (white) | eyebrow · H2 "The tools I build with." · subhead | 3×2 skill grid in `--content-wide`, 48px row gap / 24px column gap, then "See where I used them ›" 32px below. Content-driven height (not split) |
-| Project tile | eyebrow "Project" · H2 Promo 48 · subhead 21† · kind chip · 2 pills | tech names as one Caption-uppercase row `--text-2`, 0.08em tracking |
-| STAR tile | eyebrow "STAR story" · H2 Promo 48 · competency chips · 2 pills | **super stat** (§5.10.5): caption "Cut" 17†, value **">50%" at 80/64/48†**, caption "EMR costs" |
-| Writing tile | eyebrow "Blog" · H2 (cut title) · "Oct 2026 · 12 min read" · 2 pills | series progress: "Part 1 of 5" Caption + **5 segments** (40×4px, 6px gap, part 1 `--text`, others `--fill`), with `aria-hidden` (the text says it) |
-| Certifications tile | eyebrow · H2 "Certified on the platforms I use." | the left-aligned rows block (spec), bottom-anchored |
-| Contact | H2 "Let's talk." · subhead · 2 pills | social icon row (44px targets, 20px glyphs, 16px gap), then languages Caption 16px below |
+| Hero (white) | eyebrow = role in gradient (21) · H1 Hero 96 · Subhead 28 · 2 pills | the four-card pipeline, 4 × 220 at L, 2 × 2 below |
+| Experiences (black) | eyebrow · H2 "Five years. One focus." · subhead "<role> at <company>." · 2 pills | career rail, then the big stat strip (72px values) |
+| Project tile | eyebrow "Project" · H2 Promo 40 · subhead 21† · 2 pills (See the project, All projects) | dark terminal window, 3 mono panes, 520 × 250, flush on the bottom edge |
+| STAR tile | eyebrow "STAR story" · H2 Promo 40 · competencies as one sentence · 2 pills | huge `--link` figure ">50%" (`clamp(96px, 14vw, 200px)`, 700), visually hidden "Cut >50% EMR costs" |
+| Writing tile | eyebrow "Writing" · H2 series title · its tagline · 2 pills (Read part N, All posts) | code-built editor window, 520 × 250, flush on the bottom edge |
+| Certifications tile | eyebrow · H2 "Certified on the platforms I use." · issuers subhead | up to 3 white text cards, no logos |
 
 **Motion:** the hero intro on load; each unit's lockup reveals as a group, and its visual as a second group 150ms after the last lockup item.
 
@@ -1665,7 +1670,7 @@ y=0    ┌───────────────────────�
 221    │   Senior Data Engineer — dbt, Airflow, PySpark, AWS & GitLab CI/CD      │ 28 (gradient role)
 265    │         Five years shipping data platforms for banks in two markets,         │ 21/600 grey,
        │                     now **leading a team of 7 engineers**.                   │ strong in --text
-345    │                     ( Learn more )     ( Download PDF )                      │ 44, gap 17†
+345    │                     ( Learn more )     ( Download CV )                      │ 44, gap 17†
        │                                                                              │ ← flexible space
 536    │            5+          │           Led            │          Cut            │ 14
        │          years         │            7             │         >50%            │ 48/600
@@ -1690,7 +1695,7 @@ y=0   ┌───────────────────────�
 236   │ Five years shipping data platforms  │ 19/600 grey, 3–4 lines
       │ for banks in two markets, now       │
       │ **leading a team of 7 engineers**.  │
-330   │ (Learn more)  (Download PDF)        │ 44, gap 14†
+330   │ (Learn more)  (Download CV)        │ 44, gap 14†
       │                                     │
 420   │  5+     │   Led    │   Cut          │ 3-up row (§5.10.5), 28† values
       │ years   │    7     │  >50%          │ captions 14, wrap ≤2 lines
@@ -1701,26 +1706,30 @@ y=0   ┌───────────────────────�
 624   │ Senior Data Engineer (Team Lead).   │ 32/600
 812   ┴
 ```
+v5.0: the wireframes above predate Layout A and Apple's v5.0 sizes; §4.1 and the e2e peek rule win.
+
 (Without §5.10.5 the stats stack about 240px tall and the peek shrinks to about 60px, which fails the peek rule.)
 
-**n=1 / empty:** with no STAR metric containing a digit, the STAR tile's visual falls back to its first competency chip row; with no post, the Writing tile shows "First post coming soon." as the H2 and the progress segments are hidden.
+**n=1 / empty:** with no STAR metric containing a digit, the STAR tile has no visual; with no post, the Writing tile shows "First post coming soon." as the H2 and the progress segments are hidden.
 
 ### D.2 Experiences (`/experiences/`)
 
-**Order:** sr-only H1 → local nav → **Highlights** (white) → 5 chapters (grey, white, grey, white, grey) → closing "Want the full picture?" (white) with the milestones art.
+Superseded by §4.2 (v6.0).
 
-- **Highlights band:** padding-top **80 / 64 / 48** (it sits under 96px of bars with no hero; 120 would leave a 216px empty field), padding-bottom 80 / 64 / 48. The header is **start-aligned** at the `--content-wide` edge (§5.10.4): H2 "Get the highlights." (Section headline 56/48/32), no CTA. 48 / 40 / 32† to the gallery. Cards 372 / 344 / 260† wide, `--surface-2`, radius 28†, padding 32 / 28 / 24†: label 17/600 grey → 8† → H3 28 → 12† → body 17 grey (≤140 characters) → `margin-top:auto` → "Read the role ›" 17 link. Paddles below, end-aligned.
-- **Chapter at L (sticky storytelling):** left column 40%, **start-aligned**: Current chip + date · location (Eyebrow) → H2 Section headline 56 → company (Subhead 28 grey) → 24px → **tech chips (wrapping, start-aligned) and the STAR pill**, moved here from under the cards so the sticky column stays informative while the reader scrolls the cards. Right column 60%: cards, one column, 16px gap. 80px gutter between columns.
+**Order:** local nav → hero (white) → **Get the highlights.** (grey, stat cards) → **Experience.** career row (white) → 5 chapters → featured project (black) → **Let's talk.** (grey) → footnotes (grey). The peek note measures `#highlights`.
+
+- **Highlights band (superseded in Phase B by the stat-card gallery of §4.2.0; the card text below is historical):** padding-top **80 / 64 / 48** (it sits under 96px of bars with no hero; 120 would leave a 216px empty field), padding-bottom 80 / 64 / 48. The header is **start-aligned** at the `--content-wide` edge (§5.10.4): H2 "Get the highlights." (Section headline 48/40/32), no CTA. 48 / 40 / 32† to the gallery. Cards 372 / 344 / 260† wide, `--surface-2`, radius 28†, padding 32 / 28 / 24†: label 17/600 grey → 8† → H3 28 → 12† → body 17 grey (≤140 characters) → `margin-top:auto` → "Read the role ›" 17 link. Paddles below, end-aligned.
+- **Chapter at L (sticky storytelling):** left column 40%, **start-aligned**: Current chip + date · location (Eyebrow) → H2 Section headline 48 → company (Subhead 28 grey) → 24px → **tech chips (wrapping, start-aligned) and the STAR pill**, moved here from under the cards so the sticky column stays informative while the reader scrolls the cards. Right column 60%: cards, one column, 16px gap. 80px gutter between columns.
 - **Chapter at M/S:** centred header, 2-up / 1-up cards, then the chips centred (spec).
 - **Rhythm:** chapters touch; the colour flip is the only divider. The current role's chapter uses the `--surface-2` band first (spec), so after the white highlights band the page reads white → grey → white …
-- **Closing:** centred lockup, Section headline 56, 2 pills.
+- **Closing:** centred lockup, Section headline 48, 2 pills.
 
 **1440×900:**
 ```
 y=0    Ryan Parker     Experiences     Projects     STAR     Blog     ⌕   ☀   VI      44
- 44    Experiences   FPT Software 2026 Security Bank TymeX FPT Software 2020 Hitachi Vantara (Download PDF)  52
+ 44    Experiences   FPT Software 2026 Security Bank TymeX FPT Software 2020 Hitachi Vantara (Download CV)  52
  96   ┌─ HIGHLIGHTS · #FFF · pad-top 80 ─────────────────────────────────────────────────┐
-176   │ Get the highlights.                                                             │ 56/600, x=90
+176   │ Get the highlights.                                                             │ 48/600, x=90
 228   │                                                                                 │ 48† gap
 276   │ ┌──────────────┐ ┌──────────────┐ ┌──────────────┐ ┌──────── (peek 174px)       │ 372†, gap 20†
       │ │FPT Software ·│ │Security Bank │ │TymeX · 2021  │ │Hitachi
@@ -1734,13 +1743,13 @@ y=0    Ryan Parker     Experiences     Projects     STAR     Blog     ⌕   ☀ 
 666   │                                                                    (‹)  (›)    │ 36†, gap 18†
 782   └─────────────────────────────────────────────────────────────────────────────────┘ pad-bottom 80
 782   ┌─ CHAPTER 1 · #F5F5F7 ─────────────────── peek 118px ─────────────────────────────┐
-900   ┴ (eyebrow "Current · Aug 2026 – Present · Ho Chi Minh City" visible at y≈902?)  → set highlights
+900   ┴  (tile continues; the laptop frame sits on the bottom edge)  peek: n/a (the tile is the band)
         pad-bottom 64 at L if the measured card height exceeds 360, so the chapter eyebrow shows
 ```
 **375×812:**
 ```
 y=0    Ryan Parker                      ⌕   ≡     48
- 48    Experiences ⌄            (Download PDF)    48
+ 48    Experiences ⌄            (Download CV)    48
  96   ┌─ HIGHLIGHTS · pad-top 48 ───────────────┐
 144   │ Get the highlights.                     │ 32/600, x=23
 212   │ ┌───────────────────────┐ ┌──── (72px  │ 260†, pad 24†
@@ -1761,29 +1770,31 @@ y=0    Ryan Parker                      ⌕   ≡     48
 
 **Order:** local nav → hero (white) → tile grid (white band, `--surface-2` tiles) → footer.
 - **Hero:** centred; eyebrow "Projects" → H1 96 "Things I've built." → subhead 28 grey. Padding top 144 / 120 / 112, **bottom 80 / 64 / 48** (a grid follows; tiles are their own space).
-- **Tiles:** split composition. Top: kind eyebrow → H2 Promo 48 → subhead 21† (3†) → date range (Body-reduced 14/600 grey) → one-line summary (17, ≤68ch). Bottom: the cover art (640 wide at M and L, full width at S), then tech chips (≤6, centred) and Repo ↗ · Live ↗ chevron links 17px, 24px apart; plus disc as the last row, right-aligned at the lockup column edge (§4.6).
-- **n=1 (today):** the single tile spans both columns (odd-count rule). Cap the lockup at `--content` (980) inside the 1416px tile and raise min-height to **380** so it reads as a feature unit, not a stretched card. Hide the local-nav kind links (one kind) → the local nav shows "Projects" + "Expand all ›" (single-link layout).
-- **Expanded:** the details open under the lockup; bullet cards white (the opposite of the tile), 2-up in `--content-wide` minus 2×32px, 16px gap, start-aligned. "At Datum / Security Bank ›" link 32px below the cards. The plus disc follows, 32px below them.
+- **Tiles:** lineup tile. Top: H2 Promo (no eyebrow) → one-line summary → one blue pill to `/projects/<slug>/`. Bottom: the laptop-framed visual. No date range, chips, plus disc or details.
+- **n=1 (today):** the single tile spans both columns (odd-count rule). Cap the lockup at `--content` (980) inside the 1416px tile and use the feature-grid min-heights (**600 / 560 / 500**, §5.10.3) so it reads as a feature unit, not a stretched card. Hide the local-nav kind links (one kind) → the local nav shows "Projects" + the PDF pill.
+- **Details:** there is no expanded state; the detail lives on the project page (§4.6.1).
 
 **1440×900:**
 ```
 y=0    nav 44
- 44    Projects                                                          Expand all ›   52
+ 44    Projects                                                          Download CV   52
  96   ┌─ HERO · #FFF ─────────────────────────────────────────────────────────────────┐
 240   │                                   Projects                                    │ 21/600 grey
 269   │                              Things I've built.                               │ 96/600
 359   │                    Personal, work and open-source projects.                   │ 28 grey
 471   └─ pad-bottom 80 ───────────────────────────────────────────────────────────────┘
-471   ┌12┬─ TILE · #F5F5F7 · spans 2 cols · min-h 380 · pad 36/40 ──────────────────┬12┐
-524   │  │                                   Personal                             │  │
-553   │  │                           Agentic Coding Workflow                      │  │ 48/600
-603   │  │          Multi-model Orchestration & Developer Tooling                 │  │ 21
-636   │  │                         Mar 2026 – Present                             │  │ 14/600 grey
-668   │  │     One-line summary of the project, at most one line at 17px.        │  │
-       │  │                                                                        │  │ ← space
-900   ┴  (tile continues; chips, links and the (+) plus disc follow below)  peek: n/a (the tile is the band)
+471   ┌12┬─ TILE · #F5F5F7 · spans 2 cols · min-h 600 · pad 52/40 ──────────────────┬12┐
+      │  │                                                                        │  │
+      │  │                       Multi-Agent Coding System                        │  │ ← H2 Promo
+      │  │   A Claude lead runs a team of AI coding agents through three phases   │  │ ← summary
+      │  │  and four quality gates, and a human signs off before building starts  │  │
+      │  │                          and again at review.                          │  │
+      │  │                          [ See the project ]                           │  │ ← blue pill
+      │  │                       laptop frame (DeviceFrame)                       │  │ ← flush at the tile bottom
+      (y values below the tile top are illustrative)
+900   ┴  (tile continues; the laptop frame sits on the bottom edge)  peek: n/a (the tile is the band)
 ```
-**375×812:** bars 96 → hero eyebrow at 208 → H1 40 "Things I've built." (1 line, 248–290) → subhead 19 (2 lines, 296–340) → pad 48 → tile from 388, **full bleed** (no side padding†), padding 39/43†, start-aligned if >120 characters of copy; first viewport shows the eyebrow, H2, subhead and date (424px of tile visible).
+**375×812:** bars 96 → hero eyebrow at 208 → H1 40 "Things I've built." (1 line, 248–290) → subhead 19 (2 lines, 296–340) → pad 48 → tile from 388, **full bleed** (no side padding†), padding 39/43†, start-aligned if >120 characters of copy; first viewport shows the eyebrow, H2, summary and pill (424px of tile visible).
 
 ### D.4 STAR (`/star/` and `/star/<slug>/`)
 
@@ -1804,7 +1815,7 @@ y=0    nav 44
 531   └─ pad-bottom 80 ───────────────────────────────────────────────────────────────┘
 531   ┌─ CHAPTER · #F5F5F7 · pad-top 120 ─────────────────────────────────────────────┐
 651   │ Jan 2023 – Jul 2026                                                           │ start-aligned
-680   │ Data Engineer.                                          View in experiences › │ 56 + CTA at baseline
+680   │ Data Engineer.                                          View in experiences › │ 48 + CTA at baseline
 740   │ Datum / Security Bank                                                         │ 28 grey
 900   ┴  (peek 369px; the card starts at ≈836)
 ```
@@ -1821,9 +1832,9 @@ y=0    nav 44
 
 ### D.5 Blog index (`/blog/`) and post (`/blog/<slug>/`)
 
-**Index order:** local nav (All posts · Topics · Series · RSS pill) → hero (white) → post list → footer.
+**Index order:** local nav (All posts · Topics · Series · RSS pill) → hero (white) → lead card (newest post) → "More posts" H2 → two-column dated list → footer.
 - **Hero:** centred; eyebrow "Blog" → H1 96 (2 lines at L and M) "Notes on data and tools." → subhead → pad-bottom 80.
-- **Post list:** one flat hairline list (`--border`), newest first, 980px wide. Each row is a 112px square thumbnail (generated token cover or `heroImage`) with the text beside it: "Part N · Series" kicker, title, description, "date · min read". At 375 the thumbnail is 72px and the description is hidden (below 735px; otherwise clamped to two lines). When any row has a `heroImageCredit`, one deduplicated "Cover art: …" line (Caption size, `--text-2`, underlined new-tab links) appears under the list.
+- **Lead card:** the newest post, one wide `--surface-2` card (radius 32 at L), cover left (square, whole art, radius 18; stacked on top at ≤ 734px), right: kicker, H2 link, description, "date · min read". **More posts:** the remaining posts as a hairline list (`--border`), newest first, two columns at ≥ 735px, one at S. Each row is a 112px square thumbnail (generated token cover or `heroImage`) with the text beside it: "Part N · Series" kicker, title, description, "date · min read". At 375 the thumbnail is 72px and the description is hidden (below 735px; otherwise clamped to two lines). When any row has a `heroImageCredit`, one deduplicated "Cover art: …" line (Caption size, `--text-2`, underlined new-tab links) appears under the list.
 
 **1440×900 (index):**
 ```
@@ -1847,7 +1858,7 @@ y=0    nav 44
 
 **375×812 (index):** hero eyebrow 208 → H1 40 (2 lines) → subhead 19 (2 lines) → pad 48 → rows with a 72px thumbnail beside the kicker, title and meta (no description).
 
-**Post:** local nav (series title + "All posts ›") → **header** (white, start-aligned in the 653†/576†/87.5% column, padding-top 80 / 64 / 48): Newsroom eyebrow 14/700 (16 at L) uppercase grey → date 16/600, 4px† below → **20px†** → H1 48/40/32 at 700† → 16 → subhead 24/21/21 → 16 → meta line (reading time · tags) → **keyline 653px†, 1px `--border`, 44/36/32† below** (§4.5) → hero image when `heroImage` is set (480px at L, 400px at M, full column at S, radius 18, credit caption, 44/36/32 above) → series box (`--surface-2`, radius 18, padding 24) → body 19 (21 at L)/1.4211† with paragraph spacing 1.4211em† → H2 28 / 24 / 24, 700, with 52/48/44† above → TOC fixed right at ≥1280: `left: calc(50% + 653px/2 + 56px)`, width 248 (56px from the article), Caption 14 links at a 26px pitch for single-line items, current item `--text`, the rest `--text-2`.
+**Post:** local nav (series title + "All posts ›") → **header** (white, start-aligned in the 653†/576†/87.5% column, padding-top 80 / 64 / 48): Newsroom eyebrow 12/700 uppercase grey → date 14/600, 4px† below → **20px†** → H1 48/40/32 at 700† → 16 → subhead 24/21/21 → 16 → meta line (reading time · tags) → **keyline 653px†, 1px `--border`, 44/36/32† below** (§4.5) → hero image when `heroImage` is set (480px at L, 400px at M, full column at S, radius 18, credit caption, 44/36/32 above) → series box (`--surface-2`, radius 18, padding 24) → body 19 (17 at M and S)/1.4211† with paragraph spacing 1.4211em† → H2 24 / 21 / 21, 700, with 52/48/44† above → TOC fixed right at ≥1280: `left: calc(50% + 653px/2 + 56px)`, width 248 (56px from the article), Caption 14 links at a 26px pitch for single-line items, current item `--text`, the rest `--text-2`.
 
 ```
 1440×900 (post):

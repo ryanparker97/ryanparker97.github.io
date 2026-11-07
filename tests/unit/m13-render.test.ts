@@ -1,12 +1,9 @@
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it } from 'vitest';
-import CareerRail from '../../src/components/home/CareerRail.astro';
 import Chapter from '../../src/components/experiences/Chapter.astro';
 import DotList from '../../src/components/ui/DotList.astro';
 import SectionHeader from '../../src/components/tile/SectionHeader.astro';
 import SiteIndex from '../../src/components/ui/SiteIndex.astro';
-import { careerRail } from '../../src/lib/home';
-import { projectsNav } from '../../src/lib/localnav';
 
 const render = async (component: never, props: Record<string, unknown>, slots = {}) =>
   (await AstroContainer.create()).renderToString(component, { props, slots });
@@ -54,7 +51,7 @@ describe('Chapter layout', () => {
   it('is sticky with one card, the eyebrow is the date, the location is in the subhead', async () => {
     const html = await render(Chapter as never, { role, lang: 'en', tone: 'bg', stories: [] });
     expect(html).toContain('chapter--sticky');
-    expect(html).toMatch(/<span class="date-range">2024 – Mar 2025<\/span>/);
+    expect(html).toMatch(/<span class="date-range"[^>]*>2024 – Mar 2025<\/span>/);
     expect(html).toContain('Acme · Ho Chi Minh City, Vietnam');
   });
   it('is not sticky with no cards', async () => {
@@ -65,48 +62,6 @@ describe('Chapter layout', () => {
       stories: [],
     });
     expect(html).not.toContain('chapter--sticky');
-  });
-});
-
-describe('careerRail', () => {
-  const roles = [
-    { company: 'FPT Software', start: '2026-08', end: null },
-    { company: 'Datum', start: '2024', end: '2026-03' },
-    { company: 'Datum', start: '2021', end: '2024' },
-    { company: 'FPT Software', start: '2020', end: '2021' },
-    { company: 'Hitachi Vantara Vietnam', start: '2019', end: '2020' },
-  ];
-  const rail = careerRail(roles, new Date(2026, 9, 31));
-  it('has one row per company, newest first, and merges back-to-back stints', () => {
-    expect(rail.rows.map((r) => r.company)).toEqual([
-      'FPT Software',
-      'Datum',
-      'Hitachi Vantara Vietnam',
-    ]);
-    expect(rail.rows[0].stints).toHaveLength(2);
-    expect(rail.rows[1].stints).toHaveLength(1);
-    expect(rail.firstYear).toBe('2019');
-    expect(rail.lastYear).toBe('2026');
-  });
-  it('keeps every stint inside the career span', () => {
-    for (const row of rail.rows)
-      for (const s of row.stints) {
-        expect(s.w).toBeGreaterThan(0);
-        expect(s.w).toBeLessThanOrEqual(1);
-        expect(s.s + s.w).toBeLessThanOrEqual(1.001);
-      }
-    expect(rail.rows[0].stints.map((s) => s.current)).toEqual([false, true]);
-  });
-  it('renders aria-hidden bars, years and a hidden sentence per row', async () => {
-    const html = await render(CareerRail as never, { lang: 'en', rail });
-    expect(html.match(/<li[ >]/g)).toHaveLength(3);
-    expect(html.match(/<hr[^>]*aria-hidden/g) ?? html.match(/<hr/g)).toBeTruthy();
-    expect(html).toContain('2020–2021 · 2026–now');
-    expect(html).toContain('FPT Software: 2020 to 2021, and 2026 to now.');
-    expect(html).toContain('data-reveal-group');
-  });
-  it('is empty with no roles', () => {
-    expect(careerRail([]).rows).toEqual([]);
   });
 });
 
@@ -137,14 +92,5 @@ describe('SiteIndex', () => {
     });
     expect(html).toContain('--g:0;--k:1');
     expect(html).toContain('--g:1;--k:0');
-  });
-});
-
-describe('Projects Expand all', () => {
-  it('is a toggle with a collapse label', () => {
-    const nav = projectsNav('en', ['personal'], { personal: 1 });
-    const expand = nav.links.find((l) => l.data?.expand);
-    expect(expand?.label).toBe('Expand all');
-    expect(expand?.toggleLabel).toBe('Collapse all');
   });
 });

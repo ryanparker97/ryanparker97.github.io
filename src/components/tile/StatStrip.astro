@@ -3,11 +3,17 @@
 import Stat from './Stat.astro';
 
 interface Props {
-  stats: { value: string; above?: string; below?: string }[];
+  stats: {
+    value: string;
+    above?: string;
+    below?: string;
+    ref?: { n: number; label: string };
+    note?: string;
+  }[];
   /** Accessible name of the list, e.g. "At a glance". */
   label: string;
   /** `card` uses the smaller value sizes. */
-  variant?: 'hero' | 'card';
+  variant?: 'hero' | 'card' | 'big';
 }
 const { stats, label, variant = 'hero' } = Astro.props;
 // At S, short values (5 characters at most) stay three across.
@@ -18,7 +24,11 @@ const compact = stats.every((s) => [...s.value].length <= 5);
 <ul
   class:list={[
     'stat-strip',
-    { 'stat-strip--card': variant === 'card', 'stat-strip--compact': compact },
+    {
+      'stat-strip--card': variant === 'card',
+      'stat-strip--big': variant === 'big',
+      'stat-strip--compact': compact,
+    },
   ]}
   aria-label={label}
 >
