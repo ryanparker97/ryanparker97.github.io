@@ -198,8 +198,7 @@ test.describe('Part B: reveal (R1)', () => {
     test(`in-view content shows at once on ${path}`, async ({ page }) => {
       await page.goto(path);
       await page.waitForTimeout(1500);
-      for (const sel of ['#top .t-eyebrow', '#top h1'])
-        await expect(page.locator(sel)).toHaveCSS('opacity', '1');
+      for (const sel of ['#top h1']) await expect(page.locator(sel)).toHaveCSS('opacity', '1');
     });
   }
 

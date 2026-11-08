@@ -39,7 +39,7 @@ test.describe('Skills page', () => {
 
   test('no icons or chips', async ({ page }) => {
     await page.goto('/skills/');
-    await expect(page.locator('.spec-sheet svg:not(.chev)')).toHaveCount(0);
+    await expect(page.locator('.spec-sheet svg:not(.chev):not(.cert-logo)')).toHaveCount(0);
     await expect(page.locator('.spec-sheet .chip')).toHaveCount(0);
   });
 

@@ -503,7 +503,7 @@ test.describe('chrome alignment, transparency and the sticky bar (§5.2, §5.7, 
       const lefts = await page.evaluate(() => {
         const left = (sel: string) => document.querySelector(sel)!.getBoundingClientRect().left;
         return [
-          left('[data-nav] .brand'),
+          left('[data-nav] .logo'),
           left('[data-local-nav] .title'),
           left('footer .crumbs li:first-child a'),
           left('#search-dialog .field svg'),
