@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test';
 
 test.describe('404 site index', () => {
+  // The list-in translate makes boundingBox read sub-pixel heights mid-animation, so measure the links at rest.
+  test.use({ reducedMotion: 'reduce' });
+
   test('hero, three groups, and every index link resolves', async ({ page, request }) => {
     await page.goto('/nope-not-here/');
     await expect(page.locator('h1')).toHaveText('Page not found.');
