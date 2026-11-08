@@ -31,7 +31,7 @@ test.describe('tokens and fonts', () => {
     const files: string[] = [];
     page.on('request', (r) => /\.woff2?$/.test(r.url()) && files.push(r.url()));
     await page.goto('/blog/neovim-setup-1-zero-to-editor/');
-    await page.waitForLoadState('networkidle');
+    await page.evaluate(() => document.fonts.ready.then(() => undefined));
     const family = await page.evaluate(() => getComputedStyle(document.body).fontFamily);
     expect(family.startsWith('-apple-system')).toBe(true);
     expect(files.filter((f) => /newsreader/i.test(f))).toEqual([]);
