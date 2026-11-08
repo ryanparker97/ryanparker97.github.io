@@ -36,10 +36,10 @@ test.describe('desktop nav', () => {
 test.describe('mobile menu', () => {
   test.use({ viewport: { width: 375, height: 800 } });
 
-  test('bar is 48px and shows only brand, search and menu', async ({ page }) => {
+  test('bar is 48px and shows only logo, search and menu', async ({ page }) => {
     await page.goto('/projects/');
     expect((await page.locator('header[data-nav]').boundingBox())!.height).toBe(48);
-    await expect(page.locator('header .brand')).toBeVisible();
+    await expect(page.locator('header .logo')).toBeVisible();
     await expect(page.locator('header [data-search-open]')).toBeVisible();
     await expect(page.locator('header [data-menu-button]')).toBeVisible();
     await expect(page.locator('header .bar [data-theme-toggle]')).toBeHidden();

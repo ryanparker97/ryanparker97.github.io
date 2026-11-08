@@ -19,8 +19,8 @@ const expectPartCovers = async (
   const covers = page.locator('.post-rows img.post-cover');
   await expect(covers).toHaveCount(5);
   await expect(page.locator('.post-cover--gen')).toHaveCount(0);
-  await expect(page.locator('.lead-card img')).toHaveCount(0);
-  await expect(page.locator('.lead-card')).toHaveClass(/lead-card--plain/);
+  await expect(page.locator('.lead-card img.lead-card__cover')).toHaveCount(1);
+  await expect(page.locator('.lead-card')).not.toHaveClass(/lead-card--plain/);
   await expect(page.locator('.post-cover__num')).toHaveCount(0);
   for (let i = 0; i < 5; i++) {
     await expect(covers.nth(i)).toHaveAttribute('alt', '');
@@ -105,7 +105,7 @@ test.describe('blog', () => {
   test('index at 375: the lead card stacks, rows keep covers beside the text', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto('/blog/');
-    await expect(page.locator('.lead-card img')).toHaveCount(0);
+    await expect(page.locator('.lead-card img.lead-card__cover')).toHaveCount(1);
     await expect(page.locator('.lead-card h2')).toBeVisible();
     const g = await geom(page);
     expect(g).toHaveLength(5);

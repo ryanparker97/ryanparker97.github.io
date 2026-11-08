@@ -43,11 +43,7 @@ const roleFor = (slug?: string) => {
   )}
   fallback={fallback || (rolesFallback && projects.some((p) => p.data.role))}
 >
-  <Hero
-    tight
-    title={t('projects.hero')}
-    subline={t('projects.subline')}
-  />
+  <Hero tight title={t('projects.hero')} subline={t('projects.subline')} />
   <TileGrid feature>
     {projects.map((p) => (
       <ProjectGridTile project={p} {lang} role={roleFor(p.data.role)} />
