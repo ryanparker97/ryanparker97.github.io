@@ -41,6 +41,7 @@ test.describe('Experiences index (Leadership cards)', () => {
     await expect(page.locator('main h2')).toHaveText([
       'Experience.',
       'Certifications.',
+      'Education.',
       'Get in touch.',
     ]);
     const cards = await page.locator('.group-card').count();
@@ -76,8 +77,12 @@ test.describe('Experiences index (Leadership cards)', () => {
     expect(await perRow()).toBe(Math.min(2, order.length));
     await page.setViewportSize({ width: 375, height: 812 });
     expect(await perRow()).toBe(1);
-    // Type only, except the issuer logo svg on certification cards.
-    await expect(page.locator('.group-card :is(img, picture)')).toHaveCount(0);
+    // Type only, except the issuer logo svg on certification cards and the school logo img on the education card.
+    await expect(page.locator('#experience .group-card :is(img, picture)')).toHaveCount(0);
+    await expect(page.locator('#certifications .group-card :is(img, picture)')).toHaveCount(0);
+    await expect(page.locator('.group-card :is(img, picture):not(.group-card__logo)')).toHaveCount(
+      0,
+    );
     await expect(page.locator('#experience .group-card svg')).toHaveCount(0);
     await expect(page.locator('.group-card svg:not(.group-card__logo)')).toHaveCount(0);
     await expect(page.locator('.group-card svg.group-card__logo')).toHaveCount(
@@ -94,6 +99,32 @@ test.describe('Experiences index (Leadership cards)', () => {
     const at = (s: string) => text.findIndex((x) => x.includes(s));
     expect(at('Datadog · 2023')).toBeGreaterThanOrEqual(0);
     expect(at('Amazon Web Services · 2022')).toBeGreaterThan(at('Datadog · 2023'));
+  });
+
+  test('education: one card per locale with the school logo, no dates or link', async ({
+    page,
+  }) => {
+    for (const [path, name] of [
+      ['/experiences/', 'Nong Lam University'],
+      ['/vi/experiences/', 'Trường Đại học Nông Lâm TP. Hồ Chí Minh'],
+    ]) {
+      await page.goto(path);
+      const card = page.locator('#education .group-card');
+      await expect(card).toHaveCount(1);
+      await expect(card).toContainText(name);
+      await expect(card).toContainText('NLU');
+      expect(await card.innerText()).not.toMatch(/\d{4}/);
+      if (path === '/experiences/') await expect(card).not.toContainText('Trường');
+      await expect(page.locator('#education .group-card :is(a, svg)')).toHaveCount(0);
+      const logo = page.locator('#education .group-card > img.group-card__logo:first-child');
+      await expect(logo).toHaveCount(1);
+      await expect(logo).toHaveAttribute('alt', '');
+      await expect(logo).toHaveCSS('height', '32px');
+      await logo.scrollIntoViewIfNeeded();
+      await expect
+        .poll(() => logo.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0))
+        .toBe(true);
+    }
   });
 
   test('contact box: grey, mailto, tel and LinkedIn, every link at least 44px tall', async ({
@@ -230,6 +261,7 @@ test('Vietnamese hero and translated group headings', async ({ page }) => {
   await expect(page.locator('main h2')).toHaveText([
     'Kinh nghiệm.',
     'Chứng chỉ.',
+    'Học vấn.',
     'Liên hệ với tôi.',
   ]);
 });

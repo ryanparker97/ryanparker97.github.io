@@ -19,6 +19,8 @@ const { items: allProjects, fallback: f3 } = await getLocalized('projects', lang
 const { items: skills, fallback: f4 } = await getLocalized('skills', lang);
 const { items: certs, fallback: f5 } = await getLocalized('certifications', lang);
 
+const { items: education, fallback: f6 } = await getLocalized('education', lang);
+
 const experience = sortRoles(roles.map((r) => ({ ...r, start: r.data.start, end: r.data.end })));
 const projects = sortProjects(
   allProjects
@@ -33,7 +35,11 @@ const bodies = new Map(
 );
 ---
 
-<PrintLayout title={`${p.name} — ${p.headline} CV`} {lang} fallback={f1 || f2 || f3 || f4 || f5}>
+<PrintLayout
+  title={`${p.name} — ${p.headline} CV`}
+  {lang}
+  fallback={f1 || f2 || f3 || f4 || f5 || f6}
+>
   <div class="cv">
     <header class="top">
       <div>
@@ -127,15 +133,29 @@ const bodies = new Map(
       />
     </section>
 
-    <section>
-      <h2>{t('cv.print.certifications')}</h2>
-      <ul class="certs">
-        {sortedCerts.map((c) => (
-          <li>
-            <strong>{c.data.name}</strong> ({c.data.year})
-          </li>
-        ))}
-      </ul>
-    </section>
+    <div class="tail">
+      <section>
+        <h2>{t('cv.print.certifications')}</h2>
+        <ul class="certs">
+          {sortedCerts.map((c) => (
+            <li>
+              <strong>{c.data.name}</strong> ({c.data.year})
+            </li>
+          ))}
+        </ul>
+      </section>
+      {education.length > 0 && (
+        <section>
+          <h2>{t('cv.print.education')}</h2>
+          <ul class="certs">
+            {education.map((e) => (
+              <li>
+                <strong>{e.data.name}</strong> ({e.data.shortName})
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
   </div>
 </PrintLayout>

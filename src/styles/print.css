@@ -96,6 +96,12 @@ body {
   list-style: none;
   font-size: 0.93rem;
 }
+.cv .tail {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 0 16pt;
+  align-items: start;
+}
 @page {
   size: Letter;
 }

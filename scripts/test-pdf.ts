@@ -15,8 +15,9 @@ const PDFS: { path: string; lang: 'en' | 'vi'; languages: string }[] = [
 const LETTER = [612, 792];
 
 // Whitespace is dropped because PDF text extraction can split glyph runs (e.g. Vietnamese marks).
+// pdf.js extracts the embedded font's Đ glyph as U+00D0 (Ð), so fold ð to đ after lowercasing.
 const norm = (s: string) =>
-  s.normalize('NFC').replace(/[–—]/g, '-').replace(/\s+/g, '').toLowerCase();
+  s.normalize('NFC').replace(/[–—]/g, '-').replace(/\s+/g, '').toLowerCase().replace(/ð/g, 'đ');
 
 async function expectedText(lang: 'en' | 'vi', languagesLabel: string) {
   const str = (v: unknown) => String(v);
@@ -31,12 +32,14 @@ async function expectedText(lang: 'en' | 'vi', languagesLabel: string) {
     ...(await readCollection('skills', lang)).map((g) => str(g.group)),
     languagesLabel,
     ...(await readCollection('certifications', lang)).map((c) => str(c.name)),
+    ...(await readCollection('education', lang)).map((e) => str(e.name)),
     // Section headings (rendered in capitals; matching is case-insensitive).
     ui['cv.summary'],
     ui['cv.experience'],
     ui['cv.print.projects'],
     ui['cv.print.skills'],
     ui['cv.print.certifications'],
+    ui['cv.print.education'],
   ];
 }
 
