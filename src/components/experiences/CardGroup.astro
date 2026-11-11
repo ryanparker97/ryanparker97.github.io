@@ -2,8 +2,10 @@
 /**
  * Card group (spec §4.2): a titled grid of white, type-only cards, as on apple.com/leadership.
  * Cards are 4 / 2 / 1 up. A card with an `href` is one big link (stretched `::after`); a card with
- * a `link` carries a chevron link. An optional Iconify `logo` (certification issuers) sits above the eyebrow.
+ * a `link` carries a chevron link. An optional `logo` (an Iconify issuer logo or a local school logo image) sits above the eyebrow.
  */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
 import { Icon } from 'astro-icon/components';
 import ChevronLink from '~/components/ui/ChevronLink.astro';
 import SectionHeader from '~/components/tile/SectionHeader.astro';
@@ -11,7 +13,8 @@ import SectionHeader from '~/components/tile/SectionHeader.astro';
 interface Item {
   id?: string;
   eyebrow: string;
-  logo?: string;
+  /** String = Iconify name (certification issuers); image = local file (school). */
+  logo?: string | ImageMetadata;
   title: string;
   href?: string;
   text?: string;
@@ -37,9 +40,19 @@ const { id, title, items, rule = false } = Astro.props;
         data-reveal
         style={`--i:${Math.min(i, 3)}`}
       >
-        {item.logo && (
-          <Icon name={item.logo} class="group-card__logo" size={32} aria-hidden="true" />
-        )}
+        {item.logo &&
+          (typeof item.logo === 'string' ? (
+            <Icon name={item.logo} class="group-card__logo" size={32} aria-hidden="true" />
+          ) : (
+            <Image
+              src={item.logo}
+              alt=""
+              height={32}
+              densities={[1, 2]}
+              class="group-card__logo"
+              loading="lazy"
+            />
+          ))}
         <p class="group-card__eyebrow">{item.eyebrow.replace(/ · (?=[^ ]+$)/, ' ·\u00A0')}</p>
         <h3 class="t-card">{item.href ? <a href={item.href}>{item.title}</a> : item.title}</h3>
         {item.text && <p class="group-card__text">{item.text}</p>}
@@ -79,6 +92,10 @@ const { id, title, items, rule = false } = Astro.props;
   .group-card__logo {
     display: block;
     margin: 0 0 12px;
+  }
+  img.group-card__logo {
+    width: auto;
+    height: 32px;
   }
   .group-card__eyebrow {
     margin: 0 0 8px;

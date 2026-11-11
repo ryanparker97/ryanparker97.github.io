@@ -43,6 +43,7 @@
   "cv.print.personalProject": "Personal Project",
   "cv.print.skills": "Technical Skills",
   "cv.print.certifications": "Certifications",
+  "cv.print.education": "Education",
   "cv.print.languages": "Languages",
   "projects.title": "Projects",
   "projects.description": "Projects Ryan Parker has built at work and on his own.",
@@ -251,6 +252,7 @@
   "gallery.prevPosts": "Previous posts",
   "gallery.nextPosts": "Next posts",
   "exp.certs.title": "Certifications.",
+  "exp.edu.title": "Education.",
   "exp.contact.title": "Get in touch.",
   "star.stepByStep": "Step by step."
 }

@@ -43,6 +43,7 @@
   "cv.print.personalProject": "Dự án cá nhân",
   "cv.print.skills": "Kỹ năng chuyên môn",
   "cv.print.certifications": "Chứng chỉ",
+  "cv.print.education": "Học vấn",
   "cv.print.languages": "Ngôn ngữ",
   "projects.title": "Dự án",
   "projects.description": "Các dự án Ryan Parker đã xây dựng tại nơi làm việc và cá nhân.",
@@ -251,6 +252,7 @@
   "gallery.prevPosts": "Bài viết trước",
   "gallery.nextPosts": "Bài viết tiếp theo",
   "exp.certs.title": "Chứng chỉ.",
+  "exp.edu.title": "Học vấn.",
   "exp.contact.title": "Liên hệ với tôi.",
   "star.stepByStep": "Từng bước một."
 }

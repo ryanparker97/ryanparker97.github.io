@@ -20,6 +20,7 @@ const { data: profile, fallback: profileFallback } = await getProfile(lang);
 const { items: allRoles, fallback: rolesFallback } = await getLocalized('experience', lang);
 const roles = sortRoles(allRoles.map((r) => ({ ...r, start: r.data.start, end: r.data.end })));
 const { items: allCerts, fallback: certsFallback } = await getLocalized('certifications', lang);
+const { items: education, fallback: eduFallback } = await getLocalized('education', lang);
 const certs = [...allCerts].sort((a, b) => b.data.year.localeCompare(a.data.year));
 
 const range = (r: (typeof roles)[number]) =>
@@ -32,7 +33,7 @@ const jsonLd = personLd(profile, new URL(localePath('/experiences/', lang), Astr
   title={t('cv.title')}
   description={t('cv.description')}
   {lang}
-  fallback={profileFallback || rolesFallback || certsFallback}
+  fallback={profileFallback || rolesFallback || certsFallback || eduFallback}
   searchType="cv"
   localNav={experiencesNav(lang, roles)}
   {jsonLd}
@@ -77,6 +78,18 @@ const jsonLd = personLd(profile, new URL(localePath('/experiences/', lang), Astr
                 name: `${t('home.certs.verify')}: ${c.data.name}`,
               }
             : undefined,
+        }))}
+      />
+    )}
+    {education.length > 0 && (
+      <CardGroup
+        id="education"
+        rule
+        title={t('exp.edu.title')}
+        items={education.map((e) => ({
+          eyebrow: e.data.shortName,
+          logo: e.data.logo,
+          title: e.data.name,
         }))}
       />
     )}

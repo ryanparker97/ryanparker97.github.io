@@ -56,10 +56,10 @@ The look follows **apple.com** closely (§5): white pages with Apple's light gre
 | Apple-style elements | Apple's breakpoints (734 / 1068, chrome at 833) and type scale; 44px global nav with a search flyout and full-screen mobile menu; 52px product-style local nav on every inner page (chevron dropdown on phones); square homepage units with 12px gaps; 28px-radius cards; Apple global footer with breadcrumbs and directory; four scroll effects (§5) |
 | Fonts | System SF stack everywhere (incl. blog bodies), self-hosted Inter as an un-preloaded fallback, no Newsreader (§5.4) |
 | Home layout | **Product page** (§4.1): a local nav, then touching full-bleed bands: **Hero** (gradient headline, two pills, stat strip) → **highlights** gallery → **Take a closer look.** → **STAR story** → **career** row → **writing** shelf → **Let's talk.** |
-| Experiences page sections | A Layout B **hero** ("Built for banking data."), local nav of roles (each links to its role page, §4.2.3) with a Download CV pill, a grey band of Leadership-style **cards** ("Experience." one per role, "Certifications." one per certification), and a grey **contact box**. **No summary on the web page** (it stays in the PDF). The highlights gallery and career row live on Home (§4.1); the role chapters live on the role pages. No education section |
+| Experiences page sections | A Layout B **hero** ("Built for banking data."), local nav of roles (each links to its role page, §4.2.3) with a Download CV pill, a grey band of Leadership-style **cards** ("Experience." one per role, "Certifications." one per certification, "Education." one per school: name and school logo only, no degree, dates or major), and a grey **contact box**. **No summary on the web page** (it stays in the PDF). The highlights gallery and career row live on Home (§4.1); the role chapters live on the role pages |
 | Projects page | `/projects/` in the main nav (after Experiences). an Apple lineup of **all** projects (personal, work, open source), one feature tile each, with a kind filter in the local nav; each tile links to its product page (§4.6.1) |
 | Experiences route | The web CV page is named **Experiences** and lives at `/experiences/` (VI: *Kinh nghiệm*, `/vi/experiences/`). The old `/cv/` and `/vi/cv/` stay as redirects (Astro `redirects`, meta refresh on static hosting), out of the sitemap, search index and Lighthouse URLs. The PDF stays a CV: `/cv.pdf`, `/vi/cv.pdf`, `Ryan-Parker-CV.pdf` |
-| CV PDF | Built automatically in CI with Playwright, **US Letter**. Contains the Experiences page content **plus** the summary, selected projects, the technical skills table (with spoken languages) and certifications, as in `cv.tex`. The Markdown content replaces `cv.tex` as the single source of truth |
+| CV PDF | Built automatically in CI with Playwright, **US Letter**. Contains the Experiences page content **plus** the summary, selected projects, the technical skills table (with spoken languages), certifications and education, as in `cv.tex`. The Markdown content replaces `cv.tex` as the single source of truth |
 | CV contact details | Email, phone, LinkedIn and GitHub: in the PDF and the footer's Connect column |
 | STAR organisation | Grouped by role/company, linked from the Experiences chapters |
 | STAR display | Four-panel grid: Situation · Task side by side, Action and Result full width, all visible at once |
@@ -123,7 +123,7 @@ Every page is built from the shared design system in §5: the global nav (§5.7)
 | Page | Local nav (§5.8) | Hero (§5.10.1) | Content | Closing |
 |---|---|---|---|---|
 | Home `/` | Overview · Experiences · Skills · **Download CV** pill | Gradient headline H1 (no eyebrow), one line, two pills, stat strip | Full sections (§4.1) | "Let's talk." |
-| Experiences `/experiences/` | "Experiences" + one link per role (to its page) · **Download CV** pill | Role eyebrow · "Built for banking data." · positioning · Email me · Download CV | "Experience." and "Certifications." card groups (§4.2) | Contact box |
+| Experiences `/experiences/` | "Experiences" + one link per role (to its page) · **Download CV** pill | Role eyebrow · "Built for banking data." · positioning · Email me · Download CV | "Experience.", "Certifications." and "Education." card groups (§4.2) | Contact box |
 | Role `/experiences/<slug>/` | "Experiences" + one link per role (the open one current) · **Download CV** pill | Company eyebrow, role H1, dates · location | The §4.2.1 chapter with H2 "Highlights." (§4.2.3) | — |
 | Projects `/projects/` | All · Personal · Work · Open source · **Download CV** pill | "Things I've built." | Lineup of feature tiles (§4.6) | — |
 | Skills `/skills/` | Certifications · Languages · **Download CV** pill | "The tools I build with." | Tech Specs rows (§4.8) | — |
@@ -205,7 +205,7 @@ The hero strip's notes, numbered once for the page.
 
 The old `/cv/` and `/vi/cv/` URLs redirect to `/experiences/` and `/vi/experiences/` (static meta-refresh pages generated by Astro `redirects`; excluded from the sitemap and the search index).
 
-The page is a **Leadership-style index**: a hero, one grey band of white, type-only cards (no image, icon or avatar; certification cards may carry one optional issuer logo) in two groups, and a closing contact box. The summary, projects and skills are **not** on this page: projects live on `/projects/` (§4.6), skills on `/skills/` (§4.8), the highlights gallery and career row on Home (§4.1), each role's highlights on its own page (§4.2.3); all of them, plus the summary, are in the PDF (§4.3).
+The page is a **Leadership-style index**: a hero, one grey band of white, type-only cards (no image, icon or avatar; certification cards may carry one optional issuer logo, the Education card the school logo) in two groups, and a closing contact box. The summary, projects and skills are **not** on this page: projects live on `/projects/` (§4.6), skills on `/skills/` (§4.8), the highlights gallery and career row on Home (§4.1), each role's highlights on its own page (§4.2.3); all of them, plus the summary, are in the PDF (§4.3).
 
 #### 4.2.0 Page structure
 
@@ -213,18 +213,19 @@ The page is a **Leadership-style index**: a hero, one grey band of white, type-o
 |---|---|---|---|
 | 1 | Local nav | §5.8 | — |
 | 2 | Hero | §5.10.1, `--bg` | `hero` |
-| 3 | Role and certification cards | One `--surface-2` section holding two card groups separated by a 1px `--border` rule | `roles` (groups `experience`, `certifications`) |
+| 3 | Role, certification and education cards | One `--surface-2` section holding three card groups separated by a 1px `--border` rule | `roles` (groups `experience`, `certifications`, `education`) |
 | 4 | Contact box | `--bg` section holding a `--surface-2` box | `contact` |
 
 - **Hero** (Layout B): eyebrow = the profile headline, **H1** *"Built for banking data."* (i18n), the positioning line as Lockup copy (`exp.hero.copy`), **Email me** (primary, `mailto:`) · **Download CV**.
-- **Card groups** (`CardGroup`): a start-aligned H2 (*"Experience."*, *"Certifications."*) over a list of cards on `--bg` (white; the band is grey), radius 28, padding 28 / 28 / 24, minimum height 180px at M and L, 20px gap; **4 up at L, 2 at M, 1 at S**, inside the 980px `--content` grid (as apple.com/leadership), not the wide width. The count is never fixed: the lists come from the `experience` and `certifications` collections.
+- **Card groups** (`CardGroup`): a start-aligned H2 (*"Experience."*, *"Certifications."*, *"Education."*) over a list of cards on `--bg` (white; the band is grey), radius 28, padding 28 / 28 / 24, minimum height 180px at M and L, 20px gap; **4 up at L, 2 at M, 1 at S**, inside the 980px `--content` grid (as apple.com/leadership), not the wide width. The count is never fixed: the lists come from the `experience`, `certifications` and `education` collections.
   - **Role card** (`id` = the role slug): eyebrow = year range (*2021–2024*, *2026–now*), **H3** = company label (a link to `/experiences/<slug>/` stretched over the whole card), role title below in `--text-2`. Newest first (§4.2.1 sort).
   - **Certification card:** an optional issuer logo (Iconify svg) above the eyebrow = *issuer · year*, **H3** = name, and a **Verify ›** chevron link when the certification has a `credentialUrl`. Newest year first.
-  - **Card H3 (both kinds):** 21px at every width with `overflow-wrap: break-word`; the "· year" in the eyebrow keeps a no-break space so it never wraps alone.
+  - **Education card:** an optional school logo (a local image via `image()`, 32px, `alt=""`, above the eyebrow, no disc or dark-mode treatment), eyebrow = `shortName`, **H3** = `name` (the English name on `/experiences/`, the Vietnamese name on `/vi/experiences/`); no link or year.
+  - **Card H3 (all kinds):** 21px at every width with `overflow-wrap: break-word`; the "· year" in the eyebrow keeps a no-break space so it never wraps alone.
   - A group renders only when its collection has entries.
 - **Contact box** (`ContactBox`, H2 *"Get in touch."*): `--surface-2`, radius 28, padding 40 / 32 / 24, `--content` wide and centred, start-aligned text; the subhead is `home.contact.text`; lines **Email** (`mailto:`), **Mobile** (`tel:`, shown as `phoneDisplay`) and **LinkedIn** (new tab). Every link is at least 44px tall.
 - **Footer:** there are no stats, so no footnotes; the last band is white and the footer has no top rule.
-- **Headings:** H1 (hero) → H2 (*Experience.*, *Certifications.*, *Get in touch.*) → H3 (one per card), no skipped levels.
+- **Headings:** H1 (hero) → H2 (*Experience.*, *Certifications.*, *Education.*, *Get in touch.*) → H3 (one per card), no skipped levels.
 - **Anchors:** each role card's `id` is the role slug, so the old `/experiences/#<role-slug>` links (STAR, search) land on the card below both bars (§5.10.6).
 - **Local nav:** title "Experiences" (a link to `/experiences/`); one link per role, newest first, labelled with the company's **short name** (`shortName`, §6.2; default the `client` if set, else `company`), adding the start year only when the same short name appears twice, linking to `/experiences/<role-slug>/`; all links fit at L and M; the small pill **Download CV**.
 - **Scripts:** only the shared local-nav helper (§5.8).
@@ -257,8 +258,9 @@ Every `experience` file is also a page at `/experiences/<slug>/` (and `/vi/exper
 **Acceptance criteria (Experiences)**
 - There is exactly one role card per `experience` file, in sort order (current first, then `start` descending), each linking to `/experiences/<slug>/`; the local-nav links have the same targets in the same order. Adding a file to `src/content/experience/` adds a card, a local-nav link and a role page with no code changes.
 - Certification cards follow the `certifications` collection, newest year first (*Amazon Web Services · 2022* after *Datadog · 2023*).
-- Cards are 4 up at 1440, 2 up at 900 and 1 up at 375; no card holds an `img`, `svg` or `picture`.
-- Headings go H1 → H2 (*Experience.*, *Certifications.*, *Get in touch.*) → H3 (one per card) with no skipped levels.
+- The Education card follows the `education` collection: the school logo above the eyebrow, eyebrow `shortName`, H3 `name` (per language), and no link or year.
+- Cards are 4 up at 1440, 2 up at 900 and 1 up at 375; role cards hold no `img`, `svg` or `picture`; certification cards hold only the issuer logo `svg`, the Education card only the school logo `img`.
+- Headings go H1 → H2 (*Experience.*, *Certifications.*, *Education.*, *Get in touch.*) → H3 (one per card) with no skipped levels.
 - No summary, skills, highlights gallery, career row, chapters, featured band, "Let's talk." section, stat strip or footnotes.
 - The old `/experiences/#<role-slug>` URLs land on the role's card below both bars, at 375 and 1440.
 - The contact box has a `mailto:` link, a `tel:+84963378831` link shown as *(+84) 963 378 831* and a LinkedIn link that opens a new tab; every contact link is at least 44px tall.
@@ -271,14 +273,15 @@ Every `experience` file is also a page at `/experiences/<slug>/` (and `/vi/exper
 ### 4.3 CV PDF (built automatically)
 
 - The web content (§4.2) is the **single source of truth**. `cv.tex` is used once to migrate the content and is not kept in sync afterwards.
-- `/experiences/print/` is a print version of the Experiences content **plus** the summary and the projects, skills and certifications collections, laid out like `cv.tex`:
+- `/experiences/print/` is a print version of the Experiences content **plus** the summary and the projects, skills, certifications and education collections, laid out like `cv.tex`:
   - **Header:** name and headline on the left; email, phone, LinkedIn and GitHub on the right.
-  - **Sections:** Summary (with a Core Stack line) → Experience → AI Engineering & Agentic Coding (personal projects, titled "… (Personal Project)") → Technical Skills → Certifications. Headings are small caps with a thin rule under each.
+  - **Sections:** Summary (with a Core Stack line) → Experience → AI Engineering & Agentic Coding (personal projects, titled "… (Personal Project)") → Technical Skills → Certifications | Education (one row, two columns). Headings are small caps with a thin rule under each.
   - **Experience entries:** company and location on one line, role and dates on the next, then the labelled bullets.
   - **Selected projects:** projects with `inPdf: true` (default: those marked `featured`), each laid out like an experience entry (title | dates, subtitle), followed by all its bullets.
   - **Technical skills:** a two-column table (group | items) with no descriptions or icons. The last row is **Languages**, from `profile.spokenLanguages`.
   - **Certifications:** one line each, *Name (Year)*.
-  - **Styling:** one column, Inter, light theme forced. The only accent is a mint rule under section headings. No nav, footer, animations or chips. Links are shown as readable text. **The print layout is not affected by the §5 web design system.**
+  - **Education:** one line each, *Name (Short name)* (no logo; the print page has no logos).
+  - **Styling:** one column (except the last row, Certifications beside Education), Inter, light theme forced. The only accent is a mint rule under section headings. No nav, footer, animations or chips. Links are shown as readable text. **The print layout is not affected by the §5 web design system.**
 - In CI, after `astro build`, `scripts/build-cv-pdf.ts`:
   1. Serves `dist/` locally.
   2. Opens `/experiences/print/` and `/vi/experiences/print/` in Playwright (Chromium).
@@ -892,6 +895,19 @@ monogram: "AWS"                 # 2–3 letters; schema-only, not rendered on th
 ```
 No body. Shown as type-only cards on `/experiences/` (§4.2, `CardGroup.astro`), with the optional `logo` above the eyebrow, and in the PDF. Home has no certifications tile.
 
+### 6.5.1 `education`
+
+`src/content/education/en/nlu.md` (and `vi/`):
+
+```yaml
+name: "Nong Lam University"      # vi/: "Trường Đại học Nông Lâm TP. Hồ Chí Minh"
+shortName: "NLU"
+logo: "../../../assets/logos/nong-lam-university.png"   # optional school logo (image()), 32px above the eyebrow, web only
+```
+No body; name and logo only by design. Shown as a card on `/experiences/` (§4.2, school logo, eyebrow `shortName`, H3 `name`, no link or year) and in the PDF (name only).
+
+The seal is the university's mark (owned by Trường Đại học Nông Lâm TP. HCM), taken from the 1200px PNG inside vi.wikipedia's `Logo_HCMUAF.svg` (tagged non-free / fair use, sourced to hcmuaf.edu.vn) and downscaled to 256px. It is used only to identify the school and shows no visible credit (owner's decision).
+
 ### 6.6 `star`
 
 `src/content/star/en/talend-to-databricks-migration.md`
@@ -1083,6 +1099,7 @@ Body: the topic intro, 2 to 4 sentences of plain text, shown on the topic page. 
 │   │   ├── skills/{en,vi}/
 │   │   ├── projects/{en,vi}/
 │   │   ├── certifications/{en,vi}/
+│   │   ├── education/{en,vi}/
 │   │   ├── star/{en,vi}/
 │   │   ├── blog/{en,vi}/
 │   │   ├── series/{en,vi}/
@@ -1317,7 +1334,7 @@ Done once by hand, or with `scripts/setup-repo.sh` (a `gh api` script added in M
 | Content validation | Astro content collections (Zod) | Required fields, dates, enums, references (`role` must match an experience slug; `series` must exist and `seriesPart` must be unique and listed), competency vocabulary |
 | Unit | Vitest | STAR section parser (valid / missing / out-of-order headings, VI headings), `formatCvDate()` (`YYYY` vs `YYYY-MM`, EN vs VI, empty `end` → Present), role sorting (current first, year-only dates, same company twice), company/client display, reading time, "Other / Personal" grouping, i18n `t()` and route helpers, VI→EN content fallback (`localize()`: VI used with no fallback; missing VI → EN with fallback true), tile subline clamp, tag slugging |
 | CV PDF | Playwright + `pdf-lib` | `dist/cv.pdf` and `dist/vi/cv.pdf` exist, are US Letter, ≤ 2 pages, contain the name, headline, every role title, every `inPdf` project title, every skill group name, "Languages" and every certification name as text, and contain `mailto:` / `tel:` link annotations |
-| E2E | Playwright | **Site frame (§5):** light default with no saved preference, theme cycles Light → Dark → System and survives reload with no flash; language switch keeps the page; global nav heights, `space-between` row and `aria-current`; search panel (⌘K, `/`, Quick links, results, Esc restores focus); mobile menu (open/close/focus trap/scroll lock/JS-off row); local nav on every inner page (links, small pill, dropdown at 375px with its close rules and JS-off `<details>`); footer breadcrumbs, directory and accordions; anchors land below both bars with eyebrows visible; type sizes at 1440 / 900 / 375; no horizontal scroll and 44px targets at 320 / 375 / 430; motion rules (§5.11) with and without reduced motion. **Home (§4.1):** section order, touching bands, one H1 that is the gradient headline (one `.text-gradient`, inside it), no hero eyebrow, hero stat strip (3 stats, numeric, footnote refs resolve), local nav (Overview · Experiences · Skills, PDF pill, `/vi/` prefix), peek rule at 1440 × 900 and 375 × 812, hero H1 not animated, no horizontal scroll at 320px, JS off, heading ids land below the nav. **Experiences (§4.2):** the Layout B hero, no summary/skills/chapters, one role card per role in sort order linking to its page (local-nav links match), certification cards newest first, 4 / 2 / 1-up columns with no image (only certification cards carry an issuer logo svg), the contact box (mailto, tel, LinkedIn, 44px links), white last band with no footer rule, `#<role-slug>` anchors landing on the card, peek rule, search sub-result into a role page, 320px, JS off. **Role pages (§4.2.3):** one page per role, local nav (title links to `/experiences/`), cards, tech marks and chips, no Current chip, STAR pill, sticky storytelling at 1440 and stacked at 900. **Skills (§4.8):** one row per group, certifications and languages, two columns at L, no icons or chips. **Projects (§4.6):** nav order, `?kind=` filter + Back/Forward, empty state, lineup tile (one primary, laptop-framed cover), `/projects/#<slug>` deep link, product page link. **Project page (§4.6.1):** bands, frame ratio and cover alt, stats (2 / 0 / 286, en and vi labels) and footnotes, design diagram (role=img, title, six-item text alternative, unique ids, text at least 14px from 320 to 1440, en and vi labels fit their boxes and lanes on both axes at 320 / 375 / 768 / 1024 / 1440), highlight cards and the approach band, workflow steps, terminal motion / reduced / no-JS. **STAR (§4.4):** groups, filter + `?c=` (empty groups hidden, empty state), card expand/collapse, four-panel grid layout, Expand all, story page. **Blog (§4.5):** TOC, copy button skips `$`, series box and prev/next skip unpublished parts, "1 of 5 published", diagrams switch layout between S and M, RSS valid XML. **Other:** CV PDF link returns 200 + `application/pdf`; 404 page with its site index. Mobile runs use the `iPhone 13` (WebKit) and `Pixel 7` (Chromium) device profiles plus a 320px viewport |
+| E2E | Playwright | **Site frame (§5):** light default with no saved preference, theme cycles Light → Dark → System and survives reload with no flash; language switch keeps the page; global nav heights, `space-between` row and `aria-current`; search panel (⌘K, `/`, Quick links, results, Esc restores focus); mobile menu (open/close/focus trap/scroll lock/JS-off row); local nav on every inner page (links, small pill, dropdown at 375px with its close rules and JS-off `<details>`); footer breadcrumbs, directory and accordions; anchors land below both bars with eyebrows visible; type sizes at 1440 / 900 / 375; no horizontal scroll and 44px targets at 320 / 375 / 430; motion rules (§5.11) with and without reduced motion. **Home (§4.1):** section order, touching bands, one H1 that is the gradient headline (one `.text-gradient`, inside it), no hero eyebrow, hero stat strip (3 stats, numeric, footnote refs resolve), local nav (Overview · Experiences · Skills, PDF pill, `/vi/` prefix), peek rule at 1440 × 900 and 375 × 812, hero H1 not animated, no horizontal scroll at 320px, JS off, heading ids land below the nav. **Experiences (§4.2):** the Layout B hero, no summary/skills/chapters, one role card per role in sort order linking to its page (local-nav links match), certification cards newest first, 4 / 2 / 1-up columns with no image (only certification cards carry an issuer logo svg and the Education card the school logo img), education card per locale (name, NLU, logo, no year or link), the contact box (mailto, tel, LinkedIn, 44px links), white last band with no footer rule, `#<role-slug>` anchors landing on the card, peek rule, search sub-result into a role page, 320px, JS off. **Role pages (§4.2.3):** one page per role, local nav (title links to `/experiences/`), cards, tech marks and chips, no Current chip, STAR pill, sticky storytelling at 1440 and stacked at 900. **Skills (§4.8):** one row per group, certifications and languages, two columns at L, no icons or chips. **Projects (§4.6):** nav order, `?kind=` filter + Back/Forward, empty state, lineup tile (one primary, laptop-framed cover), `/projects/#<slug>` deep link, product page link. **Project page (§4.6.1):** bands, frame ratio and cover alt, stats (2 / 0 / 286, en and vi labels) and footnotes, design diagram (role=img, title, six-item text alternative, unique ids, text at least 14px from 320 to 1440, en and vi labels fit their boxes and lanes on both axes at 320 / 375 / 768 / 1024 / 1440), highlight cards and the approach band, workflow steps, terminal motion / reduced / no-JS. **STAR (§4.4):** groups, filter + `?c=` (empty groups hidden, empty state), card expand/collapse, four-panel grid layout, Expand all, story page. **Blog (§4.5):** TOC, copy button skips `$`, series box and prev/next skip unpublished parts, "1 of 5 published", diagrams switch layout between S and M, RSS valid XML. **Other:** CV PDF link returns 200 + `application/pdf`; 404 page with its site index. Mobile runs use the `iPhone 13` (WebKit) and `Pixel 7` (Chromium) device profiles plus a 320px viewport |
 | Accessibility | `@axe-core/playwright` | Every route type in light **and** dark, EN **and** VI. Zero serious/critical violations |
 | Visual (optional) | Playwright screenshots | Home, Experiences, Projects, STAR, post at 375 / 900 / 1440 widths (S / M / L) in both themes |
 | Performance | Lighthouse CI | Budgets from §9; fails the PR if a score drops below 95 |
@@ -1497,7 +1514,7 @@ Shown on Home and in the PDF, not on `/experiences/`.
 
 ### A.6 Not migrated
 
-- **Education** (commented out in `cv.tex`): left out by choice.
+- **Education** (commented out in `cv.tex`): only the school name is migrated (English name *Nong Lam University*, Vietnamese name in `vi/`); the `cv.tex` degree and dates are not carried over. The school logo was added on the web.
 
 ---
 
@@ -1624,6 +1641,8 @@ init.lua ──▶ vim.loader.enable()
 | v6.0 | no black | Light theme has no black: Home closer-look band and stat cards go white; band tones derived by `bandTones`; project approach band; `section--dark` / `unit--dark` removed. |
 | v6.0 | — | Highlight-card values take position colours (`--hl-1…4`); card 3 drops the `--link` value. |
 | v6.0 | — | Neovim series rewritten as a self-contained step-by-step guide (files shown in full, `lua/config/` namespace, no link to a config repo). |
+| v6.0 | — | Education card group (NLU, name only) on Experiences and in the PDF. |
+| v6.0 | — | Education card carries the NLU seal (web only); English name "Nong Lam University". |
 
 ---
 

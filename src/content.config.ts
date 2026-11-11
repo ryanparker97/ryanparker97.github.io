@@ -133,6 +133,18 @@ const certifications = defineCollection({
     }),
 });
 
+const education = defineCollection({
+  loader: loader('education'),
+  schema: ({ image }) =>
+    z.object({
+      name: z.string(),
+      /** Short name shown as the card eyebrow, e.g. "NLU". */
+      shortName: z.string(),
+      /** School logo (local image), shown 32px above the eyebrow on the Education card on /experiences/; not in the PDF. */
+      logo: image().optional(),
+    }),
+});
+
 const metric = z.object({
   /** Short caption above the value: "Cut", "Led" (spec §5.10.5). */
   prefix: optionalText,
@@ -215,6 +227,7 @@ export const collections = {
   skills,
   projects,
   certifications,
+  education,
   star,
   blog,
   series,
