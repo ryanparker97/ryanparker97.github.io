@@ -2,19 +2,22 @@
 /**
  * Card group (spec §4.2): a titled grid of white, type-only cards, as on apple.com/leadership.
  * Cards are 4 / 2 / 1 up. A card with an `href` is one big link (stretched `::after`); a card with
- * a `link` carries a chevron link. An optional `logo` (an Iconify issuer logo or a local school logo image) sits above the eyebrow.
+ * a `link` carries a chevron link. An optional `logo` (an Iconify issuer logo or a local school logo image, or a themed company logo on role cards) sits above the eyebrow.
  */
 import { Image } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { Icon } from 'astro-icon/components';
 import ChevronLink from '~/components/ui/ChevronLink.astro';
 import SectionHeader from '~/components/tile/SectionHeader.astro';
+import CompanyLogo from './CompanyLogo.astro';
+
+type ThemedLogo = { light: ImageMetadata; dark?: ImageMetadata };
 
 interface Item {
   id?: string;
   eyebrow: string;
   /** String = Iconify name (certification issuers); image = local file (school). */
-  logo?: string | ImageMetadata;
+  logo?: string | ImageMetadata | ThemedLogo;
   title: string;
   href?: string;
   text?: string;
@@ -43,6 +46,12 @@ const { id, title, items, rule = false } = Astro.props;
         {item.logo &&
           (typeof item.logo === 'string' ? (
             <Icon name={item.logo} class="group-card__logo" size={32} aria-hidden="true" />
+          ) : 'light' in item.logo ? (
+            <CompanyLogo
+              logo={item.logo.light}
+              logoDark={item.logo.dark}
+              class="group-card__logo"
+            />
           ) : (
             <Image
               src={item.logo}

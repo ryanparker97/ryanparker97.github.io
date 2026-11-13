@@ -11,6 +11,8 @@ metrics:
     note: "On the bank's AWS data platform (Datum / Security Bank); pipeline performance stayed the same."
   - label: 'pipeline performance'
     value: 'unchanged'
+image: '../../../assets/star/emr-cost-optimization.svg'
+imageAlt: 'Diagram: an Airflow DAG checks the running EMR clusters first and sends its work to an idle one; a new cluster starts only when none is free, and a cluster idle for 15 minutes shuts down.'
 featured: true
 ---
 

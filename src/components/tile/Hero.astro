@@ -1,7 +1,8 @@
 ---
 /**
  * Page hero (spec §5.10.1): eyebrow (page name), the page's only H1, one subhead, up to two
- * actions. The load animation never touches the H1 (it is the LCP element).
+ * actions. The load animation never touches the H1 (it is the LCP element). An optional `logo`
+ * slot (a company logo) sits centred above the eyebrow.
  */
 import Lockup from './Lockup.astro';
 
@@ -27,10 +28,13 @@ const {
   tight = false,
   gradient = false,
 } = Astro.props;
+// A conditional `logo` child still registers the slot, so test the rendered markup.
+const logoHtml = Astro.slots.has('logo') ? (await Astro.slots.render('logo')).trim() : '';
 ---
 
 <section class:list={['hero', { 'hero--tight': tight }]} id={id} aria-labelledby={`${id}-title`}>
   <div class="hero-inner" data-hero>
+    {logoHtml && <div class="hero-logo intro" style="--i:0" set:html={logoHtml} />}
     <Lockup
       id={`${id}-title`}
       level={1}

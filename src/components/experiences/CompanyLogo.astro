@@ -1,0 +1,76 @@
+---
+/**
+ * Company logo (spec §4.2): a 32px-high image, decorative (`alt=""`) because the company label sits
+ * next to it. With `logoDark` the dark file replaces the light one in dark theme; without it the logo
+ * sits on a white plate in dark theme (drawn outside the box, so nothing shifts between themes).
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  logo: ImageMetadata;
+  logoDark?: ImageMetadata;
+  class?: string;
+}
+const { logo, logoDark, class: cls, ...rest } = Astro.props;
+---
+
+<Image
+  {...rest}
+  src={logo}
+  alt=""
+  height={32}
+  densities={[1, 2]}
+  loading="lazy"
+  class:list={[cls, 'company-logo', logoDark ? 'company-logo--light' : 'company-logo--plate']}
+/>
+{logoDark && (
+  <Image
+    {...rest}
+    src={logoDark}
+    alt=""
+    height={32}
+    densities={[1, 2]}
+    loading="lazy"
+    class:list={[cls, 'company-logo', 'company-logo--dark']}
+  />
+)}
+
+<style is:global>
+  img.company-logo {
+    width: auto;
+    height: 32px;
+    max-width: 100%;
+    object-fit: contain;
+    object-position: left center;
+  }
+  img.company-logo.company-logo--dark {
+    display: none;
+  }
+  @media screen {
+    :root[data-theme='dark'] img.company-logo.company-logo--light {
+      display: none;
+    }
+    :root[data-theme='dark'] img.company-logo.company-logo--dark {
+      display: block;
+    }
+    :root[data-theme='dark'] img.company-logo.company-logo--plate {
+      background: #fff;
+      border-radius: 4px;
+      box-shadow: 0 0 0 4px #fff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root[data-pref='system'] img.company-logo.company-logo--light {
+        display: none;
+      }
+      :root[data-pref='system'] img.company-logo.company-logo--dark {
+        display: block;
+      }
+      :root[data-pref='system'] img.company-logo.company-logo--plate {
+        background: #fff;
+        border-radius: 4px;
+        box-shadow: 0 0 0 4px #fff;
+      }
+    }
+  }
+</style>

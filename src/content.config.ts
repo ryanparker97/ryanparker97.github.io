@@ -4,6 +4,7 @@ import { z } from 'astro/zod';
 import { competencyKeys } from './content/competencies';
 import { CV_DATE_RE } from './lib/cv';
 import { skillSchema } from './lib/schemas';
+import { isSvgImage } from './lib/star';
 
 const loader = (base: string, pattern = '**/*.md') =>
   glob({ pattern, base: `./src/content/${base}` });
@@ -51,19 +52,26 @@ const profile = defineCollection({
 const experience = defineCollection({
   loader: loader('experience'),
   schema: ({ image }) =>
-    z.object({
-      company: z.string(),
-      client: optionalText,
-      shortName: optionalText,
-      role: z.string(),
-      location: z.string(),
-      start: cvDate,
-      end: optionalDate,
-      logo: image().optional(),
-      tech: z.array(z.string()).default([]),
-      /** Which bullet (1-based) feeds the "Get the highlights." card (spec §4.2.0). */
-      highlight: z.preprocess(emptyToUndefined, z.number().int().min(1).optional()),
-    }),
+    z
+      .object({
+        company: z.string(),
+        client: optionalText,
+        shortName: optionalText,
+        role: z.string(),
+        location: z.string(),
+        start: cvDate,
+        end: optionalDate,
+        logo: image().optional(),
+        /** Logo for dark backgrounds (e.g. a white wordmark); without it the logo sits on a white plate in dark theme. */
+        logoDark: image().optional(),
+        tech: z.array(z.string()).default([]),
+        /** Which bullet (1-based) feeds the "Get the highlights." card (spec §4.2.0). */
+        highlight: z.preprocess(emptyToUndefined, z.number().int().min(1).optional()),
+      })
+      .refine((d) => !d.logoDark || !!d.logo, {
+        message: 'logoDark needs logo',
+        path: ['logoDark'],
+      }),
 });
 
 const skills = defineCollection({ loader: loader('skills'), schema: skillSchema });
@@ -162,17 +170,30 @@ const metric = z.object({
 
 const star = defineCollection({
   loader: loader('star'),
-  schema: z.object({
-    title: z.string(),
-    question: z.string(),
-    role: optionalText,
-    competencies: z.array(z.enum(competencyKeys)).min(1),
-    date: z.coerce.date(),
-    metrics: z.array(metric).default([]),
-    featured: z.boolean().default(false),
-    /** Placeholder content to replace before publishing; shows a "Sample" marker. */
-    sample: z.boolean().default(false),
-  }),
+  schema: ({ image }) =>
+    z
+      .object({
+        title: z.string(),
+        question: z.string(),
+        role: optionalText,
+        competencies: z.array(z.enum(competencyKeys)).min(1),
+        date: z.coerce.date(),
+        metrics: z.array(metric).default([]),
+        featured: z.boolean().default(false),
+        /** Placeholder content to replace before publishing; shows a "Sample" marker. */
+        sample: z.boolean().default(false),
+        /** Optional diagram (SVG, rendered inline) on the gallery card and the story page. */
+        image: image().optional(),
+        imageAlt: optionalText,
+      })
+      .refine((d) => !d.image || !!d.imageAlt?.trim(), {
+        message: 'imageAlt is required when image is set',
+        path: ['imageAlt'],
+      })
+      .refine((d) => !d.image || isSvgImage(d.image), {
+        message: 'a story image must be an SVG (spec §4.4)',
+        path: ['image'],
+      }),
 });
 
 const blog = defineCollection({

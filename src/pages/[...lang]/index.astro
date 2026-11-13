@@ -20,7 +20,10 @@ import { bandTones } from '~/lib/bands';
 import { numberNotes } from '~/lib/footnotes';
 import { homeNav } from '~/lib/localnav';
 import { formatCvDate, parseHighlights, sortProjects, sortRoles } from '~/lib/cv';
-import { headlineStat } from '~/lib/star';
+import YearsArt from '~/assets/highlights/years.svg';
+import TeamArt from '~/assets/highlights/team.svg';
+import AgentsArt from '~/assets/highlights/agents.svg';
+import { headlineStat, storyImage } from '~/lib/star';
 import { personLd } from '~/lib/jsonld';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
 import { useT } from '~/i18n';
@@ -35,6 +38,7 @@ const { items: allStories } = await getLocalized('star', lang);
 const { rows, fallback: f5 } = await getPostRows(lang);
 const story = pickStory(allStories);
 const storyStat = story && headlineStat(story.data.metrics);
+const storyImg = story && storyImage(story.data);
 const { items: allRoles, fallback: f4 } = await getLocalized('experience', lang);
 const sortedRoles = sortRoles(
   allRoles.map((r) => ({ ...r, start: r.data.start, end: r.data.end })),
@@ -55,6 +59,8 @@ const raw = [
           headline: t('exp.hl.years', { years: p.yearsOfExperience }),
           value: p.yearsOfExperience,
           caption: uniqueCompanies([...roles].reverse().map((r) => r.data)).join(', '),
+          image: YearsArt,
+          imageAlt: t('exp.hl.yearsAlt'),
         },
       ]
     : []),
@@ -63,6 +69,8 @@ const raw = [
         {
           headline: t('exp.hl.team', { n: p.headlineMetric.value, label: p.headlineMetric.label }),
           value: p.headlineMetric.value,
+          image: TeamArt,
+          imageAlt: t('exp.hl.teamAlt'),
           caption: t('exp.hl.teamCap', {
             role: cur.data.role,
             company: cur.data.company,
@@ -81,6 +89,7 @@ const raw = [
           href: localePath(`/star/${story.slug}/`, lang),
           linkLabel: t('home.stories.read'),
           linkName: `${t('home.stories.read')}: ${story.data.title}`,
+          ...(storyImg && { image: storyImg.Svg, imageAlt: storyImg.alt }),
         },
       ]
     : []),
@@ -90,6 +99,8 @@ const raw = [
           headline: t('exp.hl.agents'),
           lines: project.data.tech.slice(0, 3),
           caption: t('exp.hl.agentsCap'),
+          image: AgentsArt,
+          imageAlt: t('exp.hl.agentsAlt'),
           href: localePath(`/projects/${project.slug}/`, lang),
           linkLabel: t('projects.view'),
           linkName: `${t('projects.view')}: ${project.data.title}`,

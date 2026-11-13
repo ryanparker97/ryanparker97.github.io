@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320" width="640" height="320">
+  <g style="fill:none;stroke:var(--text-2)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M40 280H600M584 266L600 280L584 294M100 268V292M200 268V292M300 268V292M400 268V292M500 268V292"/>
+    <rect x="48" y="196" width="40" height="40" rx="14" style="fill:none;stroke:var(--text-2)"/>
+    <path d="M88 216H108"/>
+    <rect x="108" y="196" width="40" height="40" rx="14" style="fill:none;stroke:var(--text-2)"/>
+    <rect x="188" y="132" width="40" height="40" rx="14" style="fill:none;stroke:var(--text-2)"/>
+    <path d="M228 152H248"/>
+    <rect x="248" y="132" width="40" height="40" rx="14" style="fill:none;stroke:var(--text-2)"/>
+    <path d="M288 152H308"/>
+    <rect x="308" y="132" width="40" height="40" rx="14" style="fill:none;stroke:var(--text-2)"/>
+    <rect x="372" y="68" width="40" height="40" rx="14" style="fill:none;stroke:var(--text-2)"/>
+    <path d="M412 88H432"/>
+    <rect x="432" y="68" width="40" height="40" rx="14" style="fill:none;stroke:var(--text-2)"/>
+    <path d="M472 88H492"/>
+    <rect x="492" y="68" width="40" height="40" rx="14" style="fill:none;stroke:var(--text-2)"/>
+    <path d="M532 88H552"/>
+    <rect x="552" y="68" width="40" height="40" rx="14" style="fill:var(--link);stroke:var(--link)"/>
+  </g>
+</svg>

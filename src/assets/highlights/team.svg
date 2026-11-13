@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320" width="640" height="320">
+  <g style="fill:none;stroke:var(--text-2)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M320 122V170M80 170H560"/>
+    <path d="M80 170V212M54 290A26 24 0 0 1 106 290"/>
+    <circle cx="80" cy="232" r="16"/>
+    <path d="M160 170V212M134 290A26 24 0 0 1 186 290"/>
+    <circle cx="160" cy="232" r="16"/>
+    <path d="M240 170V212M214 290A26 24 0 0 1 266 290"/>
+    <circle cx="240" cy="232" r="16"/>
+    <path d="M320 170V212M294 290A26 24 0 0 1 346 290"/>
+    <circle cx="320" cy="232" r="16"/>
+    <path d="M400 170V212M374 290A26 24 0 0 1 426 290"/>
+    <circle cx="400" cy="232" r="16"/>
+    <path d="M480 170V212M454 290A26 24 0 0 1 506 290"/>
+    <circle cx="480" cy="232" r="16"/>
+    <path d="M560 170V212M534 290A26 24 0 0 1 586 290"/>
+    <circle cx="560" cy="232" r="16"/>
+  </g>
+  <g style="fill:var(--link);stroke:var(--link)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="320" cy="58" r="22"/>
+    <path d="M278 118A42 32 0 0 1 362 118Z"/>
+  </g>
+</svg>

@@ -3,7 +3,6 @@
  * One role chapter (spec §4.2.1): header, highlight cards, tech chips and the STAR link. With one
  * or more cards, the header, chips and pill form a sticky left column at L (sticky storytelling).
  */
-import { Image } from 'astro:assets';
 import type { Localized } from '~/lib/content';
 import HighlightCards from '~/components/tile/HighlightCards.astro';
 import SectionHeader from '~/components/tile/SectionHeader.astro';
@@ -54,9 +53,6 @@ const fold = foldChips(d.tech);
 >
   <div class="chapter-grid">
     <div class="chapter-side">
-      {d.logo && !heading && (
-        <Image src={d.logo} alt="" height={32} class="company-logo" loading="lazy" />
-      )}
       <SectionHeader
         id={`${role.slug}-title`}
         title={heading ? heading.title : d.role}
@@ -99,13 +95,3 @@ const fold = foldChips(d.tech);
     </div>
   </div>
 </section>
-
-<style>
-  .company-logo {
-    display: block;
-    width: auto;
-    height: 32px;
-    margin-bottom: 16px;
-    border-radius: 4px;
-  }
-</style>

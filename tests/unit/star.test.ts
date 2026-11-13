@@ -5,8 +5,10 @@ import { readFileSync } from 'node:fs';
 import {
   actionSteps,
   groupStories,
+  isSvgImage,
   headlineMetric,
   splitStarHtml,
+  storyImage,
   stripFirstList,
 } from '../../src/lib/star';
 
@@ -134,5 +136,30 @@ describe('actionSteps', () => {
 describe('stripFirstList', () => {
   it('removes the first list and trims', () => {
     expect(stripFirstList('<p>a</p><ul><li>x</li></ul><p>b</p>')).toBe('<p>a</p><p>b</p>');
+  });
+});
+
+describe('storyImage', () => {
+  const Svg = () => null;
+  it('is undefined without an image or with a blank alt', () => {
+    expect(storyImage({})).toBeUndefined();
+    expect(storyImage({ imageAlt: 'x' })).toBeUndefined();
+    expect(storyImage({ image: Svg })).toBeUndefined();
+    expect(storyImage({ image: Svg, imageAlt: '  ' })).toBeUndefined();
+  });
+  it('returns the component and trimmed alt otherwise', () => {
+    expect(storyImage({ image: Svg, imageAlt: ' A flow ' })).toEqual({ Svg, alt: 'A flow' });
+  });
+});
+
+describe('isSvgImage', () => {
+  it('accepts the unresolved placeholder of an svg and resolved svg metadata', () => {
+    expect(isSvgImage('__ASTRO_IMAGE_../../../assets/star/a.svg')).toBe(true);
+    expect(isSvgImage({ format: 'svg' })).toBe(true);
+  });
+  it('rejects a png placeholder, png metadata and nothing', () => {
+    expect(isSvgImage('__ASTRO_IMAGE_../../../assets/star/a.png')).toBe(false);
+    expect(isSvgImage({ format: 'png' })).toBe(false);
+    expect(isSvgImage(undefined)).toBe(false);
   });
 });

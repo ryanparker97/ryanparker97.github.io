@@ -101,6 +101,14 @@
 .hero-extra {
   margin-top: 24px;
 }
+.hero-logo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.hero-logo img.company-logo {
+  object-position: center;
+}
 
 /* Section header (§5.10.4): centred, or start-aligned with the CTA on the baseline. */
 .section-header {

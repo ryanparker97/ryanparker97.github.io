@@ -2,7 +2,9 @@
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import StarArt from '~/assets/art/star-steps.svg';
-import StarGroup from '~/components/star/StarGroup.astro';
+import StoryCard from '~/components/star/StoryCard.astro';
+import Gallery from '~/components/tile/Gallery.astro';
+import SectionHeader from '~/components/tile/SectionHeader.astro';
 import CompetencyFilter from '~/components/star/CompetencyFilter.astro';
 import Hero from '~/components/tile/Hero.astro';
 import { getLocalized } from '~/lib/content';
@@ -21,6 +23,9 @@ const { items: roles, fallback: rolesFallback } = await getLocalized('experience
 const sortedRoles = sortRoles(roles.map((r) => ({ ...r, start: r.data.start, end: r.data.end })));
 const groups = groupStories(stories, sortedRoles);
 const present = competencyKeys.filter((c) => stories.some((s) => s.data.competencies.includes(c)));
+const labelFor = (g: (typeof groups)[number]) =>
+  g.role ? companyLabel(g.role.data.company, g.role.data.client) : t('star.other');
+const cards = groups.flatMap((g) => g.stories.map((st, i) => ({ st, g, anchor: i === 0 })));
 const n = stories.length;
 const m = groups.length;
 const subline = t('star.subline', {
@@ -38,7 +43,7 @@ const subline = t('star.subline', {
     title: t('star.title'),
     links: groups.map((g) => ({
       href: `#${g.id}`,
-      label: g.role ? companyLabel(g.role.data.company, g.role.data.client) : t('star.other'),
+      label: labelFor(g),
     })),
   }}
 >
@@ -46,18 +51,30 @@ const subline = t('star.subline', {
     <StarArt class="page-art page-art--steps" role="img" aria-label={t('star.art')} />
     <CompetencyFilter {lang} {present} />
   </Hero>
-  {groups.map((g, i) => (
-    <StarGroup
-      id={g.id}
-      role={g.role}
-      stories={g.stories}
+  <section class="section section--surface star-stories" id="stories">
+    <div class="section-inner section-inner--wide">
+      <SectionHeader id="stories-title" align="start" title={t('star.gallery')} />
+    </div>
+    <Gallery
       {lang}
-      tone={i % 2 === 0 ? 'surface' : 'bg'}
-      first={i === 0}
-    />
-  ))}
-  <section id="star-empty" class="section section--tight" hidden>
-    <div class="section-inner empty">
+      labelledby="stories-title"
+      id="stories-list"
+      few={cards.length <= 3}
+      prevLabel={t('gallery.prevStories')}
+      nextLabel={t('gallery.nextStories')}
+    >
+      {cards.map((c, i) => (
+        <StoryCard
+          story={c.st}
+          {lang}
+          role={c.g.role}
+          roleId={c.g.id}
+          anchor={c.anchor}
+          index={i}
+        />
+      ))}
+    </Gallery>
+    <div class="section-inner section-inner--wide empty" id="star-empty" hidden>
       <p class="t-subhead">{t('star.empty')}</p>
       <button type="button" class="btn btn-secondary" data-reset>
         {t('star.reset')}
@@ -67,6 +84,9 @@ const subline = t('star.subline', {
 </BaseLayout>
 
 <style>
+  .star-stories :global(.gallery) {
+    background: transparent;
+  }
   .empty {
     text-align: center;
   }

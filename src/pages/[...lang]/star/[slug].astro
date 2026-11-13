@@ -11,7 +11,7 @@ import ChevronLink from '~/components/ui/ChevronLink.astro';
 import { getLocalized, render } from '~/lib/content';
 import { isFallback } from '~/lib/localize';
 import { companyLabel } from '~/lib/cv';
-import { actionSteps, headlineStat, splitStarHtml, stripFirstList } from '~/lib/star';
+import { actionSteps, headlineStat, splitStarHtml, storyImage, stripFirstList } from '~/lib/star';
 import { singleNav } from '~/lib/localnav';
 import { getLang, langStaticPaths, localePath, switchTarget } from '~/i18n/routes';
 import { useT } from '~/i18n';
@@ -38,6 +38,8 @@ if (d.role && !role)
   throw new Error(`STAR story "${story.slug}" references unknown role "${d.role}".`);
 const steps = actionSteps(story.body ?? '');
 const stat = headlineStat(d.metrics);
+const img = storyImage(d);
+const Figure = img?.Svg;
 const eyebrow = role
   ? `${role.data.role} · ${companyLabel(role.data.company, role.data.client)}`
   : t('star.other');
@@ -77,6 +79,11 @@ const eyebrow = role
     <h2 id="story-steps-title" class="sr-only">
       {t('star.steps')}
     </h2>
+    {Figure && img && (
+      <div class="story-figure">
+        <Figure role="img" aria-label={img.alt} />
+      </div>
+    )}
     {lead && <div class="lead" set:html={lead} />}
     {steps.length >= 2 ? (
       <StarPanels {html} metrics={d.metrics} {lang} level={3} only={['s', 't']} />
@@ -131,6 +138,21 @@ const eyebrow = role
     :global(.hero .t-hero) {
       font-size: 5rem;
     }
+  }
+  .story-figure {
+    max-inline-size: 640px;
+    margin: 0 auto 32px;
+  }
+  @media (max-width: 734px) {
+    .story-figure {
+      margin-bottom: 24px;
+    }
+  }
+  .story-figure :global(svg) {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    aspect-ratio: 2 / 1;
   }
   .story-lead {
     margin-top: 28px;

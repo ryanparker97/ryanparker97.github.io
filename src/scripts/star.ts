@@ -1,30 +1,38 @@
-// STAR page: competency filter (?c=) that hides empty chapters and their local-nav links, and
-// Expand all / Collapse all.
+// STAR page: competency filter (?c=) that hides story cards (the gallery follows the `hidden`
+// attribute), moves each role's anchor to its first visible card, and hides a role's local-nav
+// link when it has no visible card.
 const stories = [...document.querySelectorAll<HTMLElement>('[data-story]')];
-const groups = [...document.querySelectorAll<HTMLElement>('[data-star-group]')];
+const gallery = stories[0]?.closest<HTMLElement>('[data-gallery]');
+const roles = [...new Set(stories.map((s) => s.dataset.role ?? ''))];
 const buttons = [
   ...document.querySelectorAll<HTMLButtonElement>('[data-competency-filter] [data-c]'),
 ];
 const empty = document.getElementById('star-empty');
-const toggle = document.querySelector<HTMLButtonElement>('[data-expand=toggle]');
 
 const current = () => new URLSearchParams(location.search).get('c') ?? 'all';
 
 function apply(c: string) {
   let shown = 0;
+  const first = new Map<string, HTMLElement>();
   for (const s of stories) {
     const match = c === 'all' || (s.dataset.competencies ?? '').split(' ').includes(c);
     s.hidden = !match;
-    if (match) shown++;
+    if (match) {
+      shown++;
+      if (!first.has(s.dataset.role!)) first.set(s.dataset.role!, s);
+    }
+    if (s.id === s.dataset.role) s.removeAttribute('id');
   }
-  for (const g of groups) {
-    const any = !!g.querySelector('[data-story]:not([hidden])');
-    g.hidden = !any;
-    // A chapter with no match disappears from the local nav too (links and the dropdown).
+  for (const r of roles) {
+    const f = first.get(r);
+    if (f) f.id = r;
+    // A role with no match disappears from the local nav too (links and the dropdown).
     document
-      .querySelectorAll<HTMLElement>(`[data-local-nav] a[href="#${g.id}"]`)
-      .forEach((a) => ((a.closest('li') ?? a).hidden = !any));
+      .querySelectorAll<HTMLElement>(`[data-local-nav] a[href="#${r}"]`)
+      .forEach((a) => ((a.closest('li') ?? a).hidden = !f));
   }
+  gallery?.classList.toggle('gallery--few', shown <= 3);
+  if (gallery) gallery.hidden = shown === 0;
   buttons.forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.c === c)));
   if (empty) empty.hidden = shown > 0;
 }
@@ -40,15 +48,6 @@ buttons.forEach((b) =>
   }),
 );
 addEventListener('popstate', () => apply(current()));
-toggle?.addEventListener('click', () => {
-  const open = toggle.getAttribute('aria-expanded') !== 'true';
-  toggle.setAttribute('aria-expanded', String(open));
-  toggle.querySelector<HTMLElement>('[data-label-open]')!.hidden = open;
-  toggle.querySelector<HTMLElement>('[data-label-close]')!.hidden = !open;
-  stories
-    .filter((s) => !s.hidden)
-    .forEach((s) => s.querySelector(':scope > .more')?.toggleAttribute('open', open));
-});
 document.querySelector('[data-reset]')?.addEventListener('click', () => {
   const url = new URL(location.href);
   url.searchParams.delete('c');

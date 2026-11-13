@@ -552,6 +552,120 @@ test.describe('Home highlights gallery', () => {
     const chapter = (await page.locator('#highlights').boundingBox())!;
     expect(812 - chapter.y).toBeGreaterThanOrEqual(64);
   });
+
+  test('every highlight card shows its diagram', async ({ page }) => {
+    for (const { path, label, story } of [
+      { path: '/', label: /^Diagram: /, story: 'en' },
+      { path: '/vi/', label: /^Sơ đồ: /, story: 'vi' },
+    ]) {
+      const emrAlt = /^imageAlt: '(.+)'$/m.exec(
+        readFileSync(`src/content/star/${story}/emr-cost-optimization.md`, 'utf8'),
+      )![1];
+      for (const width of [1440, 375]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(path);
+        const cards = page.locator('#highlights .stat-card');
+        await expect(cards).toHaveCount(4);
+        const labels: string[] = [];
+        const heights: number[] = [];
+        for (let i = 0; i < 4; i++) {
+          const card = cards.nth(i);
+          await card.scrollIntoViewIfNeeded();
+          await expect(card.locator('.stat-card__media')).toHaveCount(1);
+          const svg = card.locator('.stat-card__media svg[role="img"]');
+          await expect(svg).toHaveCount(1);
+          await expect(svg).toHaveAttribute('aria-label', label);
+          await expect(svg).toHaveAttribute('width', '640');
+          await expect(svg).toHaveAttribute('height', '320');
+          labels.push((await svg.getAttribute('aria-label'))!);
+          const m = await card.evaluate((c) => {
+            const media = c.querySelector('.stat-card__media')!;
+            const h3 = c.querySelector('h3')!;
+            const val = c.querySelector('.stat-card__value')!;
+            const mr = media.getBoundingClientRect();
+            const cr = c.getBoundingClientRect();
+            return {
+              ratio: mr.width / mr.height,
+              order:
+                !!(h3.compareDocumentPosition(media) & Node.DOCUMENT_POSITION_FOLLOWING) &&
+                !!(media.compareDocumentPosition(val) & Node.DOCUMENT_POSITION_FOLLOWING),
+              inside: mr.right <= cr.right + 0.5,
+              height: cr.height,
+            };
+          });
+          expect(m.ratio).toBeGreaterThan(1.97);
+          expect(m.ratio).toBeLessThan(2.03);
+          expect(m.order).toBe(true);
+          expect(m.inside).toBe(true);
+          heights.push(m.height);
+        }
+        expect(new Set(labels).size).toBe(4);
+        expect(labels[2]).toBe(emrAlt);
+        expect(Math.max(...heights) - Math.min(...heights)).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+
+  test('highlight diagrams follow the theme; the story card stays light', async ({ page }) => {
+    await page.goto('/');
+    const fill = (n: number) =>
+      page.evaluate(
+        (i) =>
+          getComputedStyle(
+            document.querySelector(
+              `#highlights .stat-card:nth-child(${i}) svg [style*="fill:var(--link)"]`,
+            )!,
+          ).fill,
+        n,
+      );
+    expect(await fill(1)).toBe('rgb(0, 80, 159)');
+    expect(await fill(3)).toBe('rgb(0, 80, 159)');
+    await page.evaluate(() => {
+      document.documentElement.dataset.theme = 'dark';
+    });
+    expect(await fill(1)).toBe('rgb(92, 176, 255)');
+    expect(await fill(3)).toBe('rgb(0, 80, 159)');
+  });
+
+  test('highlights cause no layout shift', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'layout-shift entries are Chromium only');
+    await page.addInitScript(() => {
+      const w = window as unknown as { __cls: number; __shifts: Node[][] };
+      w.__cls = 0;
+      w.__shifts = [];
+      new PerformanceObserver((list) => {
+        for (const e of list.getEntries() as unknown as {
+          value: number;
+          hadRecentInput: boolean;
+          sources?: { node?: Node }[];
+        }[]) {
+          if (e.hadRecentInput) continue;
+          w.__cls += e.value;
+          w.__shifts.push((e.sources ?? []).map((s) => s.node).filter((n): n is Node => !!n));
+        }
+      }).observe({ type: 'layout-shift', buffered: true });
+    });
+    for (const size of [
+      { width: 1440, height: 900 },
+      { width: 375, height: 812 },
+    ]) {
+      await page.setViewportSize(size);
+      await page.goto('/');
+      await page.locator('#highlights').scrollIntoViewIfNeeded();
+      await page.waitForTimeout(1500); // observation window for late shifts, not a readiness wait
+      const r = await page.evaluate(() => {
+        const w = window as unknown as { __cls: number; __shifts: Node[][] };
+        return {
+          cls: w.__cls,
+          fromMedia: w.__shifts
+            .flat()
+            .filter((n) => !!n.parentElement?.closest('.stat-card__media')).length,
+        };
+      });
+      expect(r.cls).toBeLessThan(0.05);
+      expect(r.fromMedia).toBe(0);
+    }
+  });
 });
 
 test('Vietnamese highlight cards', async ({ page }) => {
