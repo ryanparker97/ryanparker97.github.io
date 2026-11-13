@@ -94,6 +94,16 @@
 .hero--tight {
   padding-bottom: var(--section-pad-tight);
 }
+.hero--compact .t-hero {
+  /* Role titles run to ~50 characters; at 96px (Inter) the longest wraps to 4 lines and pushes the
+     chapter below the peek rule (§5.10.1). Step L down to the M size. */
+  font-size: 4rem;
+}
+@media (max-width: 734px) {
+  .hero--compact .t-hero {
+    font-size: 2.5rem;
+  }
+}
 .hero-inner {
   width: var(--content);
   margin-inline: auto;

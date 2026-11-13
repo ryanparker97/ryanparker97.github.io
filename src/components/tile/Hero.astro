@@ -15,6 +15,8 @@ interface Props {
   id?: string;
   /** A grid or chapter follows: 80 / 64 / 48px below instead of the section padding. */
   tight?: boolean;
+  /** A long headline (a role title): the L headline steps down to the M size so it wraps in fewer lines. */
+  compact?: boolean;
   /** Headline in the page's one gradient span. */
   gradient?: boolean;
 }
@@ -26,13 +28,18 @@ const {
   long,
   id = 'hero',
   tight = false,
+  compact = false,
   gradient = false,
 } = Astro.props;
 // A conditional `logo` child still registers the slot, so test the rendered markup.
 const logoHtml = Astro.slots.has('logo') ? (await Astro.slots.render('logo')).trim() : '';
 ---
 
-<section class:list={['hero', { 'hero--tight': tight }]} id={id} aria-labelledby={`${id}-title`}>
+<section
+  class:list={['hero', { 'hero--tight': tight, 'hero--compact': compact }]}
+  id={id}
+  aria-labelledby={`${id}-title`}
+>
   <div class="hero-inner" data-hero>
     {logoHtml && <div class="hero-logo intro" style="--i:0" set:html={logoHtml} />}
     <Lockup

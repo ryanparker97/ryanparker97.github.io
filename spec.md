@@ -253,7 +253,7 @@ One full section per role, sorted with the current role first, then `start` desc
 
 #### 4.2.3 Role page (`/experiences/<slug>/`)
 
-Every `experience` file is also a page at `/experiences/<slug>/` (and `/vi/experiences/<slug>/`); `print` is reserved. Local nav: title "Experiences" (→ `/experiences/`), one link per role (newest first, labelled as in §4.2.0) to its page with `aria-current` on the open one, and the **Download CV** pill. A tight hero (§5.10.1): the company logo (as on the role card), eyebrow = company label, **H1** = role, subhead = date range · location. Then one `--surface-2` chapter (§4.2.1) with the H2 *"Highlights."* in place of the role header (no dates, no Current chip), cards, tech chips and the STAR pill in the sticky left column at L. No closing section; the chapter is the last band, so the footer has a top rule. Description: `exp.role.description`. Indexed by search as Experiences (`searchType="cv"`).
+Every `experience` file is also a page at `/experiences/<slug>/` (and `/vi/experiences/<slug>/`); `print` is reserved. Local nav: title "Experiences" (→ `/experiences/`), one link per role (newest first, labelled as in §4.2.0) to its page with `aria-current` on the open one, and the **Download CV** pill. A tight, compact hero (§5.10.1, 64px H1 at L): the company logo (as on the role card), eyebrow = company label, **H1** = role, subhead = date range · location. Then one `--surface-2` chapter (§4.2.1) with the H2 *"Highlights."* in place of the role header (no dates, no Current chip), cards, tech chips and the STAR pill in the sticky left column at L. No closing section; the chapter is the last band, so the footer has a top rule. Description: `exp.role.description`. Indexed by search as Experiences (`searchType="cv"`). Acceptance: on every role page the peek rule (App. D.0) holds at 1440×900 and 375×812.
 
 **Acceptance criteria (Experiences)**
 - There is exactly one role card per `experience` file, in sort order (current first, then `start` descending), each linking to `/experiences/<slug>/`; the local-nav links have the same targets in the same order. Adding a file to `src/content/experience/` adds a card, a local-nav link and a role page with no code changes.
@@ -470,7 +470,7 @@ The default theme is **light (white)**, whatever the system setting (§5.12).
 
 - **Font stack** everywhere, including blog bodies: `-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", "Inter Variable", "Inter Fallback", Helvetica, Arial, sans-serif`. "Inter Fallback" is Arial scaled to Inter's metrics, so the swap does not shift the layout. Apple devices render SF Pro (Text below 20px, Display at 20px and up†) with no download. Self-hosted Inter (Latin + Vietnamese subsets, `font-display: swap`) is the fallback elsewhere and is **not preloaded**, so Apple devices never fetch it. Newsreader is removed. No third-party font requests.
 - `-webkit-font-smoothing: antialiased; font-synthesis: none`†. The root font size stays 100% (Apple's 106.25% root is not copied, so Tailwind spacing stays predictable); sizes below are in px for clarity and written in rem in CSS.
-- **Apple sizes (v5.0):** every size is apple.com's, so the v4.x +2px and the larger M/L headlines are reverted. The one exception is the page hero, which is **96px at L** as in Layout A (64 / 40 at M / S). At S the headlines stay 40 / 32 / 32 / 32, so 320px with 200% text reflows. Display headlines track slightly tighter at M and L (Hero -0.022em, Unit -0.012em, Section -0.009em, Promo -0.005em); S keeps Apple's tracking. STAR story titles stay 80 / 64 (§D.4). Local-nav links between 834px and 1068px keep a 10px gap (24px elsewhere). Compact-chrome sizes are unchanged (local-nav title 19px, small pill 12px, solo link 17px).
+- **Apple sizes (v5.0):** every size is apple.com's, so the v4.x +2px and the larger M/L headlines are reverted. The one exception is the page hero, which is **96px at L** as in Layout A (64 / 40 at M / S). Role-page titles (§4.2.3) use the M hero size at L too (64 / 64 / 40, `Hero compact`), so long role titles keep the peek rule. At S the headlines stay 40 / 32 / 32 / 32, so 320px with 200% text reflows. Display headlines track slightly tighter at M and L (Hero -0.022em, Unit -0.012em, Section -0.009em, Promo -0.005em); S keeps Apple's tracking. STAR story titles stay 80 / 64 (§D.4). Local-nav links between 834px and 1068px keep a 10px gap (24px elsewhere). Compact-chrome sizes are unchanged (local-nav title 19px, small pill 12px, solo link 17px).
 - **Code:** `ui-monospace, "SF Mono", Menlo, monospace`, 0.9em.
 
 | Role | L | M | S | Line-height | Tracking | Weight |
@@ -596,7 +596,7 @@ Every page uses the same skeleton:
 
 1. **Global nav** (§5.7).
 2. **Local nav** (§5.8), on inner pages.
-3. **Hero** (all pages except Experiences): a `--bg` section with centred content in `--content`: eyebrow (the page name), **H1** in Hero size, one subhead (at most 120 characters), and at most two actions. Hero padding as §5.5. The blog post uses its Newsroom header instead (§4.5). Role pages (§4.2.3) add an optional `logo` slot: a 32px `CompanyLogo` centred above the lockup (`.hero-logo`).
+3. **Hero** (all pages except Experiences): a `--bg` section with centred content in `--content`: eyebrow (the page name), **H1** in Hero size, one subhead (at most 120 characters), and at most two actions. Hero padding as §5.5. The blog post uses its Newsroom header instead (§4.5). Role pages (§4.2.3) add an optional `logo` slot: a 32px `CompanyLogo` centred above the lockup (`.hero-logo`). Hero takes an optional `compact` flag (`hero--compact`) that steps the H1 down from 96px to the M size (64px) at L, for long titles; role pages set it, so the first viewport still shows 64px of the chapter when a title wraps to four lines.
 4. **Content:** full sections (inner pages) or units and tile grids (Home, and the grids on Projects and Blog).
 5. Optional **closing section**: H2 in Section headline size, subhead, at most two actions.
 6. **Footer** (§5.9), flush.
@@ -1649,6 +1649,7 @@ init.lua ──▶ vim.loader.enable()
 | v6.1 | star-display-v2 | STAR index becomes one story gallery (§5.10.7): a stat card per story (company, title, question, headline result, Read the story); role rows removed; a role link lands on its first card; gallery.ts skips hidden cards. |
 | v6.2 | star-images | STAR stories take an optional SVG diagram (image + imageAlt): on the story card and above the story panels; both stories get one. |
 | v6.3 | highlights-images | Every Home highlight card shows a diagram: three new token SVGs (years, team, agents) and the featured story's own; alt from i18n / the story. |
+| v6.4 | role-hero-compact | Role pages use a compact hero (64px H1 at L, `Hero compact`; §4.2.3, §5.4, §5.10.1) so the longest role title keeps the 64px peek rule. |
 
 ---
 
