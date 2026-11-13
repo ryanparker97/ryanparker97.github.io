@@ -77,8 +77,11 @@ test.describe('Experiences index (Leadership cards)', () => {
     expect(await perRow()).toBe(Math.min(2, order.length));
     await page.setViewportSize({ width: 375, height: 812 });
     expect(await perRow()).toBe(1);
-    // Type only, except the issuer logo svg on certification cards and the school logo img on the education card.
-    await expect(page.locator('#experience .group-card :is(img, picture)')).toHaveCount(0);
+    // Role cards carry only the company logo img; certification cards the issuer svg; the education card the school img.
+    await expect(page.locator('#experience .group-card picture')).toHaveCount(0);
+    await expect(
+      page.locator('#experience .group-card img:not(.group-card__logo.company-logo)'),
+    ).toHaveCount(0);
     await expect(page.locator('#certifications .group-card :is(img, picture)')).toHaveCount(0);
     await expect(page.locator('.group-card :is(img, picture):not(.group-card__logo)')).toHaveCount(
       0,
@@ -88,6 +91,75 @@ test.describe('Experiences index (Leadership cards)', () => {
     await expect(page.locator('.group-card svg.group-card__logo')).toHaveCount(
       await page.locator('#certifications .group-card svg').count(),
     );
+  });
+
+  test('every role has a logo, EN and VI', () => {
+    for (const loc of ['en', 'vi']) {
+      for (const slug of SLUGS) {
+        const src = readFileSync(`src/content/experience/${loc}/${slug}.md`, 'utf8');
+        expect(/^logo: /m.test(src), `${loc}/${slug}`).toBe(true);
+      }
+    }
+  });
+
+  test('role cards show the company logo in both themes, EN and VI', async ({ browser }) => {
+    const fmIn = (loc: string, slug: string, key: string) =>
+      new RegExp(`^${key}: ?(.+)$`, 'm').exec(
+        readFileSync(`src/content/experience/${loc}/${slug}.md`, 'utf8'),
+      )?.[1];
+    const pos: Record<string, number[]> = {};
+    for (const theme of ['light', 'dark']) {
+      const context = await browser.newContext({
+        viewport: { width: 1440, height: 900 },
+        reducedMotion: 'reduce',
+      });
+      await context.addInitScript((t) => localStorage.setItem('theme', t), theme);
+      const page = await context.newPage();
+      for (const prefix of ['', '/vi']) {
+        await page.goto(`${prefix}/experiences/`);
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+        const fm = (slug: string, key: string) => fmIn(prefix ? 'vi' : 'en', slug, key);
+        for (const slug of SLUGS) {
+          const card = page.locator(`#${slug}`);
+          const visible = card.locator('img.group-card__logo:visible');
+          if (!fm(slug, 'logo')) {
+            await expect(card.locator('img')).toHaveCount(0);
+            continue;
+          }
+          await expect(visible).toHaveCount(1);
+          await expect(visible).toHaveAttribute('alt', '');
+          await expect(visible).toHaveCSS('height', '32px');
+          await expect(visible).toHaveAttribute('width', /\d+/);
+          await expect(visible).toHaveAttribute('height', /\d+/);
+          await visible.scrollIntoViewIfNeeded();
+          await expect
+            .poll(() => visible.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0))
+            .toBe(true);
+          const box = (await visible.boundingBox())!;
+          const eyebrow = (await card.locator('.group-card__eyebrow').boundingBox())!;
+          const cardBox = (await card.boundingBox())!;
+          expect(Math.round(eyebrow.y - (box.y + box.height))).toBe(12);
+          const h3 = (await card.locator('h3').boundingBox())!;
+          const key = `${prefix}${slug}`;
+          const here = [eyebrow.y - cardBox.y, h3.y - cardBox.y];
+          if (theme === 'light') pos[key] = here;
+          else expect(here).toEqual(pos[key]);
+          expect(box.x + box.width).toBeLessThanOrEqual(cardBox.x + cardBox.width - 27);
+          const cls = (await visible.getAttribute('class')) ?? '';
+          const bg = await visible.evaluate((i) => getComputedStyle(i).backgroundColor);
+          if (theme === 'dark' && fm(slug, 'logoDark')) {
+            expect(cls).toContain('company-logo--dark');
+          } else if (theme === 'dark') {
+            expect(cls).toContain('company-logo--plate');
+            expect(bg).toBe('rgb(255, 255, 255)');
+          } else {
+            expect(cls).not.toContain('company-logo--dark');
+            expect(bg).toBe('rgba(0, 0, 0, 0)');
+          }
+        }
+      }
+      await context.close();
+    }
   });
 
   test('certifications are listed newest first', async ({ page }) => {

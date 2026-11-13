@@ -1,6 +1,8 @@
 ---
 company: 'Datum'
 client: 'TymeX'
+logo: '../../../assets/logos/tymex.png'
+logoDark: '../../../assets/logos/tymex-white.png'
 role: 'Platform Engineer (Datadog Observability Platform)'
 location: 'Thành phố Hồ Chí Minh, Việt Nam'
 start: '2021'

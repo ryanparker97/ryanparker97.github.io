@@ -56,6 +56,7 @@ const jsonLd = personLd(profile, new URL(localePath('/experiences/', lang), Astr
         items={roles.map((r) => ({
           id: r.slug,
           eyebrow: range(r),
+          logo: r.data.logo ? { light: r.data.logo, dark: r.data.logoDark } : undefined,
           title: companyLabel(r.data.company, r.data.client),
           href: localePath(`/experiences/${r.slug}/`, lang),
           text: r.data.role,

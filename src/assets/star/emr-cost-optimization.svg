@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320" width="640" height="320">
+  <g style="fill:none;stroke:var(--text-2)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="32" y="142" width="36" height="36" rx="14"/>
+    <rect x="84" y="142" width="36" height="36" rx="14"/>
+    <rect x="136" y="142" width="36" height="36" rx="14"/>
+    <path d="M68 160H84M120 160H136M178 160H208M200 152L210 160L200 168"/>
+    <path d="M250 126L284 160L250 194L216 160Z"/>
+    <path d="M284 160H328M328 76V244M328 76H356M328 160H356M328 244H356"/>
+    <path d="M250 194V244" style="stroke:var(--text-2)" stroke-dasharray="2 10" stroke-opacity=".6"/>
+    <rect x="222" y="244" width="56" height="48" rx="14" stroke-dasharray="2 10" style="fill:none;stroke:var(--text-2)"/>
+    <path d="M250 258V278M240 268H260"/>
+    <g style="stroke:var(--border)">
+      <path d="M32 224H172M32 248H172M32 272H172"/>
+    </g>
+    <g style="fill:var(--text-2);stroke:none">
+      <circle cx="70" cy="224" r="7"/><circle cx="132" cy="248" r="7"/><circle cx="100" cy="272" r="7"/>
+    </g>
+    <rect x="360" y="40" width="120" height="72" rx="18" style="fill:var(--link);stroke:var(--link)"/>
+    <rect x="360" y="124" width="120" height="72" rx="18" style="fill:var(--fill);stroke:var(--text-2)"/>
+    <rect x="360" y="208" width="120" height="72" rx="18" stroke-dasharray="10 10" style="fill:none;stroke:var(--text-2)"/>
+    <g style="fill:var(--bg);stroke:none">
+      <circle cx="384" cy="76" r="6"/><circle cx="408" cy="76" r="6"/><circle cx="432" cy="76" r="6"/><circle cx="456" cy="76" r="6"/>
+    </g>
+    <g style="fill:var(--text-2);stroke:none">
+      <circle cx="384" cy="160" r="6"/><circle cx="408" cy="160" r="6"/><circle cx="432" cy="160" r="6"/><circle cx="456" cy="160" r="6"/>
+      <circle cx="384" cy="244" r="6" fill-opacity=".4"/><circle cx="408" cy="244" r="6" fill-opacity=".4"/><circle cx="432" cy="244" r="6" fill-opacity=".4"/><circle cx="456" cy="244" r="6" fill-opacity=".4"/>
+    </g>
+    <circle cx="552" cy="244" r="24"/>
+    <path d="M552 230V244L562 252M480 244H520"/>
+  </g>
+</svg>

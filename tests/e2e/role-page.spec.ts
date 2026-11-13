@@ -104,15 +104,81 @@ test.describe('role pages', () => {
     }
   });
 
+  test('every role has a logo, EN and VI', () => {
+    for (const loc of ['en', 'vi']) {
+      for (const slug of SLUGS) {
+        const src = readFileSync(`src/content/experience/${loc}/${slug}.md`, 'utf8');
+        expect(/^logo: /m.test(src), `${loc}/${slug}`).toBe(true);
+      }
+    }
+  });
+
+  test('role page header shows the company logo in both themes, EN and VI', async ({ browser }) => {
+    for (const theme of ['light', 'dark']) {
+      const context = await browser.newContext({
+        viewport: { width: 1440, height: 900 },
+        reducedMotion: 'reduce',
+      });
+      await context.addInitScript((t) => localStorage.setItem('theme', t), theme);
+      const page = await context.newPage();
+      for (const prefix of ['', '/vi']) {
+        const loc = prefix ? 'vi' : 'en';
+        for (const slug of SLUGS) {
+          const src = readFileSync(`src/content/experience/${loc}/${slug}.md`, 'utf8');
+          const has = (key: string) => new RegExp(`^${key}: `, 'm').test(src);
+          await page.goto(`${prefix}/experiences/${slug}/`);
+          await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+          if (!has('logo')) {
+            await expect(page.locator('.hero-logo'), slug).toHaveCount(0);
+            continue;
+          }
+          const logo = page.locator('.hero .hero-logo img:visible');
+          await expect(logo, slug).toHaveCount(1);
+          await expect(logo).toHaveAttribute('alt', '');
+          await expect(logo).toHaveCSS('height', '32px');
+          await expect(logo).toHaveAttribute('width', /\d+/);
+          await expect(logo).toHaveAttribute('height', /\d+/);
+          await logo.scrollIntoViewIfNeeded();
+          await expect
+            .poll(() => logo.evaluate((i: HTMLImageElement) => i.complete && i.naturalWidth > 0))
+            .toBe(true);
+          const box = (await logo.boundingBox())!;
+          const eyebrow = (await page.locator('.hero .t-eyebrow').boundingBox())!;
+          const h1 = (await page.locator('h1').boundingBox())!;
+          expect(box.y + box.height, slug).toBeLessThanOrEqual(eyebrow.y);
+          expect(Math.abs(box.x + box.width / 2 - (h1.x + h1.width / 2)), slug).toBeLessThanOrEqual(
+            1,
+          );
+          const cls = (await logo.getAttribute('class')) ?? '';
+          const bg = await logo.evaluate((i) => getComputedStyle(i).backgroundColor);
+          if (theme === 'dark' && has('logoDark')) {
+            expect(cls).toContain('company-logo--dark');
+            expect(bg).toBe('rgba(0, 0, 0, 0)');
+          } else if (theme === 'dark') {
+            expect(cls).toContain('company-logo--plate');
+            expect(bg).toBe('rgb(255, 255, 255)');
+          } else {
+            expect(cls).not.toContain('company-logo--dark');
+            expect(bg).toBe('rgba(0, 0, 0, 0)');
+          }
+        }
+      }
+      await context.close();
+    }
+  });
+
   for (const [w, h] of [
     [1440, 900],
     [375, 812],
   ] as const) {
     test(`peek rule at ${w}x${h}`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: h });
-      await page.goto(`/experiences/${DSB}/`);
-      const chapter = (await page.locator('.chapter').boundingBox())!;
-      expect(h - chapter.y).toBeGreaterThanOrEqual(64);
+      // Every role, so the pages that carry a header logo are measured too.
+      for (const slug of SLUGS) {
+        await page.goto(`/experiences/${slug}/`);
+        const chapter = (await page.locator('.chapter').boundingBox())!;
+        expect(h - chapter.y, slug).toBeGreaterThanOrEqual(64);
+      }
     });
   }
 

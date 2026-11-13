@@ -37,6 +37,11 @@ test.describe('Experiences', () => {
     await expect(
       page.getByRole('heading', { name: 'AI Engineering & Agentic Coding' }),
     ).toBeVisible();
+    // The print page (and so the PDF CV) carries no logos.
+    for (const path of ['/experiences/print/', '/vi/experiences/print/']) {
+      await page.goto(path);
+      await expect(page.locator('img, picture')).toHaveCount(0);
+    }
   });
 });
 

@@ -11,6 +11,8 @@ metrics:
     note: 'Trên nền tảng dữ liệu AWS của ngân hàng (Datum / Security Bank); hiệu năng pipeline không đổi.'
   - label: 'hiệu năng pipeline'
     value: 'không đổi'
+image: '../../../assets/star/emr-cost-optimization.svg'
+imageAlt: 'Sơ đồ: DAG Airflow kiểm tra các cụm EMR đang chạy trước và gửi công việc tới một cụm đang rảnh; chỉ tạo cụm mới khi không còn cụm nào trống, và cụm rảnh 15 phút sẽ tự tắt.'
 featured: true
 ---
 

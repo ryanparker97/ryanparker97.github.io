@@ -9,6 +9,7 @@ describe('viPageHasContent', () => {
     '/vi/blog/series/neovim-setup-guide/',
     '/vi/blog/topics/developer-tools/',
     '/vi/star/emr-cost-optimization/',
+    '/vi/star/talend-databricks-migration/',
     '/vi/experiences/',
     '/vi/experiences/datum-security-bank-data-engineer/',
     '/vi/projects/',

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320" width="640" height="320">
+  <g style="fill:none;stroke:var(--text-2)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M32 126a14 14 0 0 1 14-14H80L104 136V194a14 14 0 0 1-14 14H46a14 14 0 0 1-14-14ZM80 112V136H104"/>
+    <path d="M56 148L46 160L56 172M80 148L90 160L80 172M72 146L64 174"/>
+    <path d="M114 160H168M160 152L170 160L160 168"/>
+    <rect x="180" y="112" width="72" height="96" rx="14"/>
+    <path d="M196 140H236M196 160H236M196 180H220"/>
+    <path d="M260 160H304M296 152L306 160L296 168"/>
+    <path d="M452 160H500M492 152L502 160L492 168"/>
+    <path d="M512 100V220a40 14 0 0 0 80 0V100M512 140a40 14 0 0 0 80 0M512 180a40 14 0 0 0 80 0" />
+    <ellipse cx="552" cy="100" rx="40" ry="14" style="fill:var(--fill);stroke:var(--text-2)"/>
+    <g style="stroke:var(--link)">
+      <rect x="320" y="56" width="120" height="56" rx="14" style="fill:var(--link);stroke:var(--link)" fill-opacity=".3"/>
+      <rect x="320" y="132" width="120" height="56" rx="14" style="fill:var(--link);stroke:var(--link)" fill-opacity=".6"/>
+      <rect x="320" y="208" width="120" height="56" rx="14" style="fill:var(--link);stroke:var(--link)"/>
+    </g>
+  </g>
+  <path d="M216 62L220 74L232 78L220 82L216 94L212 82L200 78L212 74Z" style="fill:var(--accent)"/>
+  <circle cx="584" cy="236" r="22" stroke-width="4" style="fill:var(--link);stroke:var(--bg)"/>
+  <path d="M574 236L581 244L594 229" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="fill:none;stroke:var(--bg)"/>
+</svg>

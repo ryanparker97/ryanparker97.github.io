@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 320" width="640" height="320">
+  <g style="fill:none;stroke:var(--text-2)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M40 200H548"/>
+    <rect x="128" y="156" width="16" height="88" rx="8" style="fill:var(--bg);stroke:var(--link)"/>
+    <rect x="256" y="156" width="16" height="88" rx="8" style="fill:var(--bg);stroke:var(--link)"/>
+    <rect x="384" y="156" width="16" height="88" rx="8" style="fill:var(--bg);stroke:var(--link)"/>
+    <rect x="512" y="156" width="16" height="88" rx="8" style="fill:var(--bg);stroke:var(--link)"/>
+    <rect x="172" y="180" width="56" height="40" rx="14" style="fill:var(--fill);stroke:var(--text-2)"/>
+    <rect x="300" y="180" width="56" height="40" rx="14" style="fill:var(--link);stroke:var(--link)"/>
+    <rect x="428" y="180" width="56" height="40" rx="14" style="fill:var(--fill);stroke:var(--text-2)"/>
+    <path d="M136 122V152M110 116A26 24 0 0 1 162 116"/>
+    <circle cx="136" cy="68" r="16"/>
+    <path d="M520 122V152M494 116A26 24 0 0 1 546 116"/>
+    <circle cx="520" cy="68" r="16"/>
+  </g>
+  <g style="fill:var(--text-2);stroke:none">
+    <circle cx="186" cy="200" r="4"/>
+    <circle cx="200" cy="200" r="4"/>
+    <circle cx="214" cy="200" r="4"/>
+    <circle cx="442" cy="200" r="4"/>
+    <circle cx="456" cy="200" r="4"/>
+    <circle cx="470" cy="200" r="4"/>
+  </g>
+  <g style="fill:var(--bg);stroke:none">
+    <circle cx="314" cy="200" r="4"/>
+    <circle cx="328" cy="200" r="4"/>
+    <circle cx="342" cy="200" r="4"/>
+  </g>
+  <g style="fill:var(--link);stroke:var(--bg)" stroke-width="4">
+    <circle cx="166" cy="104" r="16"/>
+    <circle cx="550" cy="104" r="16"/>
+    <circle cx="580" cy="200" r="28" style="fill:var(--link);stroke:var(--link)"/>
+  </g>
+  <g style="fill:none;stroke:var(--bg)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M160 104L165 109L173 99"/>
+    <path d="M544 104L549 109L557 99"/>
+    <path d="M570.4 200L578.4 208L591.2 192"/>
+  </g>
+</svg>

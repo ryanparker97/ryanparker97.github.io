@@ -23,27 +23,25 @@ test.describe('Part A: review r3 fixes', () => {
     }
   });
 
-  test('the STAR chapter eyebrow is the dates, and the header sits 48px above the cards (M1)', async ({
-    page,
-  }) => {
+  test("each STAR card eyebrow starts with its role's local-nav label (M1)", async ({ page }) => {
     await page.goto('/star/');
-    const chapter = page.locator('.chapter-star').first();
-    await expect(chapter.locator('.t-eyebrow')).toHaveText(
-      /^(\w{3} )?\d{4} – ((\w{3} )?\d{4}|Present)$/,
-    );
-    const gap = await chapter.evaluate((c) => {
-      const header = c.querySelector('.section-header')!.getBoundingClientRect();
-      const cards = c.querySelector('.cards')!.getBoundingClientRect();
-      return cards.top - header.bottom;
-    });
-    expect(gap).toBeGreaterThanOrEqual(46);
-    expect(gap).toBeLessThanOrEqual(50);
+    const cards = await page.locator('[data-story]').all();
+    expect(cards.length).toBeGreaterThan(0);
+    for (const card of cards) {
+      const role = (await card.getAttribute('data-role'))!;
+      const label = (
+        await page.locator(`[data-local-nav] .links a[href="#${role}"]`).innerText()
+      ).trim();
+      await expect(card.locator('.stat-card__eyebrow')).toHaveText(
+        new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
+      );
+    }
   });
 
   for (const path of [
-    '/star/',
     '/blog/tags/',
     '/blog/series/',
+    '/star/',
     '/vi/star/',
     '/experiences/datum-security-bank-data-engineer/',
   ]) {
@@ -138,14 +136,6 @@ test.describe('Part A: review r3 fixes', () => {
     await expect(page.locator('#writing .chip-mint')).toHaveCount(0);
     await page.goto('/blog/');
     await expect(page.locator('.post-rows .hl-meta').first()).toHaveText(/\d{4} · \d+ min read/);
-  });
-
-  test('"Permalink ›" has no underline at rest (B5)', async ({ page }) => {
-    await page.goto('/star/');
-    await expect(page.locator('.card.story .link-chevron').first()).toHaveCSS(
-      'text-decoration-line',
-      'none',
-    );
   });
 
   test('successive reveal steps differ: the subhead follows the headline (minor 9)', async ({
@@ -279,21 +269,6 @@ test.describe('Part B: Home composition (R2, R3, R5)', () => {
 
 test.describe('Part B: Experiences, STAR, Projects, Blog (R6, R8)', () => {
   test.use({ viewport: { width: 1440, height: 900 } });
-
-  test('STAR Expand all ends at the story card edge, 12px above it (R8)', async ({ page }) => {
-    // Measured without the reveal animation: its translate moves the cards while we measure.
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    await page.goto('/star/');
-    const m = await page.evaluate(() => {
-      const b = document.querySelector('[data-expand=toggle]')!.getBoundingClientRect();
-      const card = document.querySelector('.card.story')!.getBoundingClientRect();
-      const cards = document.querySelectorAll('[data-story]').length;
-      return { right: b.right, card: card.right, gap: card.top - b.bottom, cards };
-    });
-    if (m.cards === 1) expect(Math.abs(m.right - m.card)).toBeLessThanOrEqual(10);
-    expect(m.gap).toBeGreaterThanOrEqual(8);
-    expect(m.gap).toBeLessThanOrEqual(16);
-  });
 
   test('topic page parts-list shows every part published, with no Coming soon chips (R8)', async ({
     page,

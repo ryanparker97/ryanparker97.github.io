@@ -1,6 +1,7 @@
 ---
 company: 'Datum'
 client: 'Security Bank'
+logo: '../../../assets/logos/security-bank.png'
 role: 'Data Engineer (Data & Platform)'
 location: 'Ho Chi Minh City, Vietnam'
 start: '2024'

@@ -4,40 +4,22 @@ import { expect, test } from '@playwright/test';
 test.use({ reducedMotion: 'reduce' });
 
 test.describe('STAR', () => {
-  for (const [w, pad] of [
-    [1440, 28],
-    [900, 28],
-    [375, 24],
+  for (const [w, pad, minH] of [
+    [1440, 32, 640],
+    [900, 28, 560],
+    [375, 24, 520],
   ] as const) {
-    test(`card padding is ${pad}px at ${w}px`, async ({ page }) => {
+    test(`story card padding is ${pad}px and min-height ${minH}px at ${w}px`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: 900 });
       await page.goto('/star/');
       const v = await page
-        .locator('.card.story')
+        .locator('[data-story]')
         .first()
-        .evaluate((e) => getComputedStyle(e).paddingLeft);
-      expect(v).toBe(`${pad}px`);
-    });
-  }
-
-  for (const [w, gap] of [
-    [1440, 16],
-    [900, 13],
-    [375, 13],
-  ] as const) {
-    test(`"more" disclosure sits ${gap}px from the card corner at ${w}px`, async ({ page }) => {
-      await page.setViewportSize({ width: w, height: 900 });
-      await page.goto('/star/');
-      const g = await page
-        .locator('.card.story')
-        .first()
-        .evaluate((card) => {
-          const s = card.querySelector('.more summary')!.getBoundingClientRect();
-          const c = card.getBoundingClientRect();
-          return { right: c.right - s.right, bottom: c.bottom - s.bottom };
+        .evaluate((e) => {
+          const s = getComputedStyle(e);
+          return { pad: s.paddingLeft, minH: s.minHeight };
         });
-      expect(Math.abs(g.right - gap)).toBeLessThanOrEqual(0.5);
-      expect(Math.abs(g.bottom - gap)).toBeLessThanOrEqual(0.5);
+      expect(v).toEqual({ pad: `${pad}px`, minH: `${minH}px` });
     });
   }
 
@@ -80,6 +62,10 @@ test.describe('footer rule', () => {
       expect(v).toBe('0px');
     });
   }
+  test('/star/ ends on the grey story band and has a 1px rule', async ({ page }) => {
+    await page.goto('/star/');
+    await expect(page.locator('.site-footer')).toHaveCSS('border-top-width', '1px');
+  });
   for (const p of ['/', '/vi/']) {
     test(`${p} ends on the grey footnotes and has a 1px rule`, async ({ page }) => {
       await page.goto(p);
@@ -90,13 +76,6 @@ test.describe('footer rule', () => {
       expect(v).toBe('1px');
     });
   }
-  test('/star/ ends on a grey band and has a 1px rule', async ({ page }) => {
-    await page.goto('/star/');
-    const v = await page
-      .locator('.site-footer')
-      .evaluate((e) => getComputedStyle(e).borderTopWidth);
-    expect(v).toBe('1px');
-  });
 });
 
 test.describe('experiences footer rule', () => {

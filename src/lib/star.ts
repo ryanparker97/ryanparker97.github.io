@@ -1,3 +1,4 @@
+import type { SvgComponent } from 'astro/types';
 import { parseHighlights, type Highlight } from './cv';
 
 export interface StoryLike {
@@ -98,4 +99,27 @@ export function actionSteps(body: string): Highlight[] {
 /** Removes the first list from rendered HTML (the stage shows the Action's bullets as cards). */
 export function stripFirstList(html: string): string {
   return html.replace(/<ul\b[^>]*>[\s\S]*?<\/ul>/i, '').trim();
+}
+
+/**
+ * The story's diagram and alt text, or undefined when either is missing. The content `image()`
+ * is typed `ImageMetadata`, but Astro converts an SVG content image to an inline component at
+ * runtime, so this is the one place that casts it.
+ */
+export function storyImage(d: {
+  image?: unknown;
+  imageAlt?: string;
+}): { Svg: SvgComponent; alt: string } | undefined {
+  const alt = d.imageAlt?.trim();
+  if (!d.image || !alt) return undefined;
+  return { Svg: d.image as unknown as SvgComponent, alt };
+}
+
+/**
+ * True when a content `image()` value is an SVG. During schema validation Astro still passes the
+ * placeholder string (`__ASTRO_IMAGE_<path>`); after resolution it is `ImageMetadata`.
+ */
+export function isSvgImage(image: unknown): boolean {
+  if (typeof image === 'string') return /\.svg$/i.test(image);
+  return (image as { format?: string } | undefined)?.format === 'svg';
 }

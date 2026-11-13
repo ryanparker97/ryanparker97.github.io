@@ -1,0 +1,52 @@
+---
+/**
+ * One STAR story as a stat card in the story gallery (spec §4.4): company eyebrow, story title,
+ * the interview question, the first result as the big value, and the Read the story link.
+ */
+import StatCard from '~/components/tile/StatCard.astro';
+import { storyImage } from '~/lib/star';
+import type { Localized } from '~/lib/content';
+import { companyLabel } from '~/lib/cv';
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+
+interface Props {
+  story: Localized<'star'>;
+  lang: Lang;
+  role?: Localized<'experience'>;
+  roleId: string;
+  /** First card of its role: carries the role slug as its id (local-nav target). */
+  anchor: boolean;
+  index: number;
+}
+const { story, lang, role, roleId, anchor, index } = Astro.props;
+const t = useT(lang);
+const d = story.data;
+const company = role ? companyLabel(role.data.company, role.data.client) : t('star.other');
+const eyebrow = d.sample ? `${company} · ${t('star.sample')}` : company;
+const m = d.metrics[0];
+const numeric = m ? /\d/.test(m.value) : false;
+const caption = m ? [m.prefix, m.label].filter(Boolean).join(' ') : undefined;
+const img = storyImage(d);
+const read = t('home.stories.read');
+---
+
+<StatCard
+  headline={d.title}
+  body={d.question}
+  {eyebrow}
+  value={m && numeric ? m.value : undefined}
+  lines={m && !numeric ? [m.value] : undefined}
+  {caption}
+  href={localePath(`/star/${story.slug}/`, lang)}
+  linkLabel={read}
+  linkName={`${read}: ${d.title}`}
+  {index}
+  image={img?.Svg}
+  imageAlt={img?.alt}
+  id={anchor ? roleId : undefined}
+  data-story=""
+  data-slug={story.slug}
+  data-role={roleId}
+  data-competencies={d.competencies.join(' ')}
+/>

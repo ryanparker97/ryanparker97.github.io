@@ -3,6 +3,7 @@ import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
 import Chapter from '~/components/experiences/Chapter.astro';
 import Hero from '~/components/tile/Hero.astro';
+import CompanyLogo from '~/components/experiences/CompanyLogo.astro';
 import { getLocalized } from '~/lib/content';
 import { companyLabel, formatDateRange, sortRoles } from '~/lib/cv';
 import { isFallback } from '~/lib/localize';
@@ -48,10 +49,13 @@ const company = companyLabel(d.company, d.client);
 >
   <Hero
     tight
+    compact
     eyebrow={company}
     title={d.role}
     subline={`${formatDateRange(d.start, d.end, lang)} · ${d.location}`}
-  />
+  >
+    {d.logo && <CompanyLogo slot="logo" logo={d.logo} logoDark={d.logoDark} />}
+  </Hero>
   <Chapter
     {role}
     {lang}
