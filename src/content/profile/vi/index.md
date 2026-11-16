@@ -2,6 +2,7 @@
 name: 'Ryan Parker'
 realName: 'Tran Thanh Hai'
 headline: 'Senior Data Engineer & Team Lead'
+avatar: '../../../assets/profile/avatar.jpg'
 tagline: 'DBT, Airflow, PySpark, AWS & GitLab CI/CD'
 location: 'Thành phố Hồ Chí Minh, Việt Nam'
 email: 'ryanparker.p.97@gmail.com'
