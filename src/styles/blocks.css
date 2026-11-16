@@ -1,17 +1,11 @@
 /* Page building blocks (spec §5.10) and motion (§5.11): Section, Hero, Lockup, Unit, TileGrid,
    GridTile, NewsTile, SectionHeader, Card, Stat, Gallery, Quote, GraphBars, SiteIndex.
-   Every anchor target clears the stuck bar (§5.10.6). */
-.section,
-.hero,
-.unit,
-.grid-tile {
-  scroll-margin-top: calc(var(--sticky-h) + 16px);
-}
+   The stuck-bar offset comes from html scroll-padding-top (global.css, §5.10.6); headings add only the eyebrow room. */
 .section :is(h1, h2, h3)[id],
 .hero :is(h1, h2, h3)[id],
 .unit :is(h1, h2, h3)[id],
 .grid-tile :is(h1, h2, h3)[id] {
-  scroll-margin-top: calc(var(--sticky-h) + 16px + var(--eyebrow-room));
+  scroll-margin-top: var(--eyebrow-room);
 }
 
 .section {

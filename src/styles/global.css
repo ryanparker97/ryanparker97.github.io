@@ -34,10 +34,9 @@
   html {
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: transparent;
-  }
-  /* Every anchor target clears both sticky bars (spec §5.10.6). */
-  [id] {
-    scroll-margin-top: calc(var(--sticky-h) + 16px);
+    /* The one rule that keeps anchor targets and keyboard focus clear of the sticky bar (spec §5.10.6,
+       WCAG 2.4.11). Elements add only their own extra room (--eyebrow-room) via scroll-margin-top. */
+    scroll-padding-top: calc(var(--sticky-h) + 16px);
   }
   body {
     background: var(--bg);
