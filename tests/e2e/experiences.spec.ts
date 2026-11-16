@@ -42,6 +42,7 @@ test.describe('Experiences index (Leadership cards)', () => {
       'Experience.',
       'Certifications.',
       'Education.',
+      'Next.',
       'Get in touch.',
     ]);
     const cards = await page.locator('.group-card').count();
@@ -334,6 +335,7 @@ test('Vietnamese hero and translated group headings', async ({ page }) => {
     'Kinh nghiệm.',
     'Chứng chỉ.',
     'Học vấn.',
+    'Tiếp theo.',
     'Liên hệ với tôi.',
   ]);
 });

@@ -10,6 +10,7 @@ import { companyLabel, sortRoles, startYear } from '~/lib/cv';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
 import { personLd } from '~/lib/jsonld';
 import { experiencesNav } from '~/lib/localnav';
+import { NEXT_STEPS, nextHref } from '~/lib/career-next';
 import { useT } from '~/i18n';
 
 export const getStaticPaths = (() => langStaticPaths()) satisfies GetStaticPaths;
@@ -94,6 +95,18 @@ const jsonLd = personLd(profile, new URL(localePath('/experiences/', lang), Astr
         }))}
       />
     )}
+    <CardGroup
+      id="next"
+      rule
+      title={t('exp.next.title')}
+      items={NEXT_STEPS.map((s) => ({
+        id: `next-${s.id}`,
+        eyebrow: t(s.eyebrow),
+        title: t(s.title),
+        text: t(s.text),
+        link: { href: nextHref(s, lang), label: t(s.link), name: `${t(s.link)} (${t(s.title)})` },
+      }))}
+    />
   </Section>
   <Section id="contact" labelledby="contact-title">
     <ContactBox {lang} profile={p} />
