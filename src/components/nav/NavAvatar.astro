@@ -1,0 +1,42 @@
+---
+/**
+ * Nav brand photo: the owner's round portrait inside GlassNav's brand link, replacing the visible name.
+ * Decorative (alt=""): the link's aria-label ("Ryan Parker, home") already names it, so it is not read twice.
+ * Width and height are fixed so the box is reserved before the file arrives (no layout shift). Not focusable,
+ * not a link itself; the focus ring is drawn on this image by GlassNav's `.logo:focus-visible` rule.
+ * The style is global but keyed to `img.nav-avatar` alone.
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  src: ImageMetadata;
+}
+const { src } = Astro.props;
+---
+
+<Image
+  src={src}
+  alt=""
+  width={28}
+  height={28}
+  densities={[1, 2]}
+  loading="eager"
+  decoding="async"
+  class="nav-avatar"
+/>
+
+<style is:global>
+  img.nav-avatar {
+    display: block;
+    flex: none;
+    width: 28px;
+    height: 28px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    object-fit: cover;
+    outline: 1px solid var(--keyline);
+    outline-offset: -1px;
+    background: var(--surface-2);
+  }
+</style>
