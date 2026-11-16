@@ -1,0 +1,125 @@
+---
+/**
+ * Home identity column (spec §4.1.2): the owner's portrait (alt = profile name), the page's one H1
+ * (the role, in the one `.text-gradient`), the subline, Download CV and Email me, then location and
+ * languages. Not a Hero: it is
+ * start-aligned, has no hero exit fade, and keeps the `#top` / `top-title` contract.
+ *
+ * At L (1069px and up) the page places it beside the board (`.home-split` in the Home page) and it
+ * pins under the stuck bars, but only with JS on, no reduced motion and a viewport at least the
+ * gate height tall; otherwise it scrolls with the page, as the Experiences chapters do (§5.11
+ * effect 4). Below L it sits above the board.
+ */
+import type { CollectionEntry } from 'astro:content';
+import { Image } from 'astro:assets';
+import Lockup from '~/components/tile/Lockup.astro';
+import { localePath } from '~/i18n/routes';
+import { useT, type Lang } from '~/i18n';
+
+export interface Props {
+  lang: Lang;
+  profile: CollectionEntry<'profile'>['data'];
+}
+const { lang, profile: p } = Astro.props;
+const t = useT(lang);
+---
+
+<section id="top" class="home-id" aria-labelledby="top-title">
+  {p.avatar && (
+    <Image
+      src={p.avatar}
+      alt={p.name}
+      width={240}
+      height={240}
+      densities={[1, 2]}
+      loading="eager"
+      decoding="async"
+      class="home-portrait intro"
+      style="--i:0"
+    />
+  )}
+  <Lockup
+    id="top-title"
+    level={1}
+    size="unit"
+    start
+    gradient
+    intro
+    title={p.headline}
+    subline={t('home.hero.subline')}
+  >
+    <Fragment slot="actions">
+      <a href={localePath('/cv.pdf', lang)} download="Ryan-Parker-CV.pdf" class="btn btn-primary">
+        {t('common.download')}
+      </a>
+      <a href={`mailto:${p.email}`} class="btn btn-secondary">
+        {t('home.contact.email')}
+      </a>
+    </Fragment>
+  </Lockup>
+  <ul class="id-facts intro" style="--i:4" role="list" data-facts>
+    <li>{p.location}</li>
+    {p.spokenLanguages.map((l) => (
+      <li>
+        {l.language} — {l.proficiency}
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .home-id {
+    background: var(--bg);
+    color: var(--text);
+    padding-bottom: var(--section-pad-tight);
+  }
+  /* Portrait: a reserved square box (no shift), 240px at 1280px and up, 144px below. */
+  .home-id :global(img.home-portrait) {
+    display: block;
+    width: 240px;
+    height: 240px;
+    aspect-ratio: 1;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    margin-bottom: 24px;
+    background: var(--surface-2);
+  }
+  @media (max-width: 1279px) {
+    .home-id :global(img.home-portrait) {
+      width: 144px;
+      height: 144px;
+    }
+  }
+  .id-facts {
+    display: grid;
+    gap: 2px;
+    margin: 24px 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    line-height: 1.4286;
+    overflow-wrap: anywhere;
+  }
+
+  @media screen and (min-width: 1069px) {
+    .home-id {
+      align-self: start;
+      padding-bottom: 0;
+    }
+  }
+  /* Narrow L: the column is about 373-450px wide, so the H1 steps down to the M size. */
+  @media screen and (min-width: 1069px) and (max-width: 1279px) {
+    .home-id :global(.t-unit) {
+      font-size: 3rem;
+    }
+  }
+  /* Pinned only with JS on, no reduced motion, and a viewport at least the gate tall. */
+  /* gate: tallest #top 641px (1069-1440, EN/VI, Verdana) + 100 */
+  @media screen and (min-width: 1069px) and (min-height: 47em) and (prefers-reduced-motion: no-preference) {
+    :global(html.js) .home-id {
+      position: sticky;
+      top: calc(var(--sticky-h) + 32px);
+    }
+  }
+</style>

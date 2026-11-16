@@ -217,7 +217,7 @@ test.describe('Part B: reveal (R1)', () => {
     });
     await page.goto('/');
     await expect(page.locator('html')).not.toHaveClass(/\breveal\b/);
-    await expect(page.locator('#story h2')).toHaveCSS('opacity', '1');
+    await expect(page.locator('#more h2')).toHaveCSS('opacity', '1');
   });
 });
 

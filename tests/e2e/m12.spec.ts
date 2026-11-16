@@ -166,7 +166,7 @@ test('Vietnamese pages use the new strings', async ({ page }) => {
   await page.goto('/vi/blog/');
   await expect(page.locator('h1')).toHaveText('Ghi chú về dữ liệu và công cụ.');
   await page.goto('/vi/');
-  await expect(page.locator('#highlights h2')).toHaveText('Những điểm nổi bật.');
+  await expect(page.locator('#career h2')).toHaveText('Kinh nghiệm.');
 });
 
 test.describe('secondary button hover contrast', () => {

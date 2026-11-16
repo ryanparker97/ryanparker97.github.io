@@ -1,0 +1,490 @@
+---
+/**
+ * The Home board (spec §4.1): one section holding a grid of rounded tiles (BentoTile), beside the
+ * identity column at L (`.home-split` in the Home page) and below it at M and S. 2 columns at M and
+ * L, 1 at S. Ten tiles in this order: two number tiles (years, team), project, the image-only
+ * STAR tile (result), skills, tools (brand marks, `brandTools`), career, goals ("Next.", from
+ * NEXT_STEPS), writing and the full-width "Let's talk." tile (`#more`).
+ * Location and languages live in the identity column; `#more` keeps only the legal-name line.
+ * Diagrams (years, team, result, skills, career) are inline SVGs outside each tile's link.
+ *
+ * Number tiles: `numbers` already went through `numberNotes()` in the page, so each carries its
+ * footnote `ref`; the Stat renders the superscript link and the page renders the Footnotes band.
+ * Every number tile is a whole-tile link to `href`. Values take `--hl-1..2` by position.
+ */
+import type { CollectionEntry } from 'astro:content';
+import { Image } from 'astro:assets';
+import { Icon } from 'astro-icon/components';
+import BentoTile from '~/components/home/BentoTile.astro';
+import Lockup from '~/components/tile/Lockup.astro';
+import YearsArt from '~/assets/highlights/years.svg';
+import TeamArt from '~/assets/highlights/team.svg';
+import SkillsArt from '~/assets/highlights/skills.svg';
+import CareerArt from '~/assets/highlights/career.svg';
+import StoriesArt from '~/assets/highlights/stories.svg';
+import Stat from '~/components/tile/Stat.astro';
+import ChevronLink from '~/components/ui/ChevronLink.astro';
+import type { Localized } from '~/lib/content';
+import { NEXT_STEPS } from '~/lib/career-next';
+import type { PostRow } from '~/lib/topics';
+import { companyLabel, formatCvDate, startYear } from '~/lib/cv';
+import { localePath } from '~/i18n/routes';
+import { externalAttrs } from '~/lib/links';
+import { useT, type Lang } from '~/i18n';
+
+export interface Props {
+  lang: Lang;
+  profile: CollectionEntry<'profile'>['data'];
+  numbers: {
+    id: 'years' | 'team';
+    /** The tile's H2 (a sentence). */
+    title: string;
+    eyebrow?: string;
+    href: string;
+    value: string;
+    above?: string;
+    below?: string;
+    ref?: { n: number; label: string };
+  }[];
+  /** Featured project; its tile is left out when missing. */
+  project?: Localized<'projects'>;
+  /** Whether any STAR story exists; the image-only STAR tile needs one. */
+  hasStories: boolean;
+  /** Roles, newest first. */
+  roles: Localized<'experience'>[];
+  /** Blog rows, newest first. */
+  rows: PostRow[];
+  /** Brand marks for the tools tile (`brandTools`); the tile is left out when empty. */
+  tools?: { name: string; icon: string; plate: boolean }[];
+}
+const { lang, profile: p, numbers, project, hasStories, roles, rows, tools = [] } = Astro.props;
+const t = useT(lang);
+const range = (r: Localized<'experience'>) =>
+  `${startYear(r.data.start)}–${r.data.end ? r.data.end.slice(0, 4) : t('home.rail.now')}`;
+---
+
+<section id="board" class="section bento-band" aria-label={t('home.highlights')}>
+  <div class="section-inner section-inner--wide">
+    <ul class="bento" role="list">
+      {numbers.map((n, i) => (
+        <BentoTile
+          id={n.id}
+          title={n.title}
+          eyebrow={n.eyebrow}
+          href={n.href}
+          span="half"
+          index={i}
+        >
+          {n.id === 'years' && (
+            <div class="tile-art">
+              <YearsArt role="img" aria-label={t('exp.hl.yearsAlt')} />
+            </div>
+          )}
+          {n.id === 'team' && (
+            <div class="tile-art">
+              <TeamArt role="img" aria-label={t('exp.hl.teamAlt')} />
+            </div>
+          )}
+          <div class={`num num--${i + 1}`}>
+            <Stat value={n.value} above={n.above} below={n.below} ref={n.ref} />
+          </div>
+        </BentoTile>
+      ))}
+      {project && (
+        <BentoTile
+          id="project"
+          span="full"
+          index={3}
+          eyebrow={t('home.project.eyebrow')}
+          title={project.data.title}
+          href={localePath(`/projects/${project.slug}/`, lang)}
+        >
+          <p class="t-intro tile-text">{project.data.summary}</p>
+          {project.data.image && (
+            <Image
+              class="tile-img"
+              src={project.data.image}
+              alt={project.data.imageAlt ?? ''}
+              width={1280}
+              height={720}
+              loading="lazy"
+            />
+          )}
+        </BentoTile>
+      )}
+      {hasStories && (
+        <BentoTile
+          id="result"
+          span="half"
+          index={2}
+          title={t('star.title')}
+          href={localePath('/star/', lang)}
+        >
+          <div class="tile-art tile-art--end">
+            <StoriesArt role="img" aria-label={t('exp.hl.storiesAlt')} />
+          </div>
+        </BentoTile>
+      )}
+      <BentoTile
+        id="skills"
+        span="half"
+        index={3}
+        eyebrow={t('skills.title')}
+        title={t('home.skills.title')}
+        href={localePath('/skills/', lang)}
+      >
+        <p class="t-intro tile-text">{p.tagline}</p>
+        <div class="tile-art tile-art--end">
+          <SkillsArt role="img" aria-label={t('exp.hl.skillsAlt')} />
+        </div>
+      </BentoTile>
+      {tools.length > 0 && (
+        <BentoTile
+          id="tools"
+          span="full"
+          index={3}
+          eyebrow={t('home.tools.eyebrow')}
+          title={t('home.tools.title')}
+        >
+          <ul class="tools" role="list">
+            {tools.map((x) => (
+              <li class="tool">
+                <Icon
+                  name={x.icon}
+                  size={24}
+                  aria-hidden="true"
+                  class:list={['tool-icon', x.plate && 'tool-icon--plate']}
+                />
+                <span>{x.name}</span>
+              </li>
+            ))}
+          </ul>
+          <p class="tools-note">{t('skills.logosNote')}</p>
+          <ChevronLink class="tile-more" href={localePath('/skills/', lang)}>
+            {t('home.certs.cta')}
+          </ChevronLink>
+        </BentoTile>
+      )}
+      {roles.length > 0 && (
+        <BentoTile
+          id="career"
+          span="full"
+          index={3}
+          eyebrow={t('home.experience.eyebrow')}
+          title={t('exp.career.title')}
+        >
+          <p class="t-intro tile-text">
+            {t('exp.career.subline', {
+              role: roles[0].data.role,
+              company: roles[0].data.company,
+              date: formatCvDate(roles[0].data.start, lang),
+            })}
+          </p>
+          <div class="tile-art">
+            <CareerArt role="img" aria-label={t('exp.hl.careerAlt')} />
+          </div>
+          <ol class="rows" data-career>
+            {roles.map((r) => (
+              <li>
+                <a class="row-link" href={localePath(`/experiences/${r.slug}/`, lang)}>
+                  <span class="row-main">{companyLabel(r.data.company, r.data.client)}</span>
+                  <span class="row-sub">
+                    {r.data.role} · {range(r)}
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ol>
+          <ChevronLink class="tile-more" href={localePath('/experiences/', lang)}>
+            {t('home.experience.cta')}
+          </ChevronLink>
+        </BentoTile>
+      )}
+      <BentoTile
+        id="goals"
+        span="full"
+        index={3}
+        title={t('exp.next.title')}
+        href={`${localePath('/experiences/', lang)}#next`}
+        linkLabel={t('home.next.link')}
+      >
+        <ul class="goals" role="list">
+          {NEXT_STEPS.map((s) => (
+            <li>
+              <p class="t-eyebrow">{t(s.eyebrow)}</p>
+              <p class="goal-title">{t(s.title)}</p>
+            </li>
+          ))}
+        </ul>
+      </BentoTile>
+      {rows.length > 0 && (
+        <BentoTile
+          id="writing"
+          span="full"
+          index={3}
+          eyebrow={t('home.writing.eyebrow')}
+          title={t('blog.hero')}
+        >
+          <ol class="rows" data-posts>
+            {rows.map((row) => (
+              <li>
+                <a class="row-link" href={localePath(`/blog/${row.post.slug}/`, lang)}>
+                  <span class="row-sub row-kicker">
+                    {row.part
+                      ? `${t('series.part', { n: row.part })} · ${row.seriesTitle}`
+                      : t('blog.article')}
+                  </span>
+                  <span class="row-main">{row.partTitle ?? row.post.title}</span>
+                </a>
+              </li>
+            ))}
+          </ol>
+          <ChevronLink class="tile-more" href={localePath('/blog/', lang)}>
+            {t('home.posts.all')}
+          </ChevronLink>
+        </BentoTile>
+      )}
+      <BentoTile id="more" span="full" labelledby="more-title" reveal={false}>
+        <Lockup
+          id="more-title"
+          level={2}
+          size="section"
+          reveal
+          title={t('home.contact.title')}
+          subline={t('home.contact.text')}
+        >
+          <Fragment slot="actions">
+            <a href={`mailto:${p.email}`} class="btn btn-primary">
+              {t('home.contact.email')}
+            </a>
+            <a
+              href={p.socials.linkedin}
+              {...externalAttrs(p.socials.linkedin)}
+              class="btn btn-secondary"
+            >
+              {t('cv.linkedin')}
+            </a>
+          </Fragment>
+        </Lockup>
+        {p.realName && (
+          <ul class="facts" data-facts>
+            <li data-real-name>{t('home.contact.realName', { name: p.realName })}</li>
+          </ul>
+        )}
+      </BentoTile>
+    </ul>
+  </div>
+</section>
+
+<style>
+  /* The split wrapper above already provides the gap. */
+  .bento-band {
+    padding-block: 0;
+  }
+  /* The split wrapper sets the width (--content-wide), so the inner fills it. */
+  .bento-band > .section-inner {
+    width: 100%;
+  }
+  .bento {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 735px) {
+    .bento {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+  }
+  @media (min-width: 1069px) {
+    .bento {
+      gap: 20px;
+    }
+  }
+
+  /* Number tiles: value 72 / 56 / 48 at the bottom of the tile, start-aligned. */
+  .num {
+    margin-top: auto;
+    padding-top: 24px;
+  }
+  .num :global(.stat) {
+    align-items: flex-start;
+    text-align: start;
+  }
+  .num :global(.stat-value) {
+    font-size: 3rem;
+    font-weight: 600;
+    line-height: 1;
+  }
+  @media (min-width: 735px) {
+    .num :global(.stat-value) {
+      font-size: 3.5rem;
+    }
+  }
+  @media (min-width: 1069px) {
+    .num :global(.stat-value) {
+      font-size: 4.5rem;
+    }
+  }
+  .num--1 :global(.stat-value) {
+    color: var(--hl-1);
+  }
+  .num--2 :global(.stat-value) {
+    color: var(--hl-2);
+  }
+
+  .tile-art {
+    margin-top: 24px;
+  }
+  .tile-art--end {
+    margin-top: auto;
+    padding-top: 24px;
+  }
+  .tile-art :global(svg) {
+    display: block;
+    inline-size: 100%;
+    max-inline-size: 400px;
+    block-size: auto;
+    aspect-ratio: 2 / 1;
+  }
+
+  .tile-text {
+    margin-top: 12px;
+    color: var(--text-2);
+  }
+  .tile-img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 240px;
+    margin-top: auto;
+    border-radius: var(--radius-md);
+    object-fit: cover;
+  }
+  .tile-text + .tile-img {
+    margin-top: 24px;
+  }
+  .tile-more {
+    margin-top: 16px;
+    align-self: flex-start;
+  }
+  .rows {
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .rows li + li {
+    border-top: 1px solid var(--border);
+  }
+  .row-link {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    min-height: 44px;
+    padding-block: 10px;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .row-link:hover .row-main {
+    text-decoration: underline;
+  }
+  .row-main,
+  .row-sub,
+  .tile-text {
+    overflow-wrap: anywhere;
+  }
+  .row-main {
+    font-weight: 600;
+  }
+  .row-sub {
+    color: var(--text-2);
+    font-size: 0.875rem;
+    line-height: 1.2858;
+  }
+
+  /* Tools tile: brand marks with their names, then the disclaimer. Plate rule as on /skills/. */
+  .tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .tool {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.2353;
+  }
+  .tool span {
+    overflow-wrap: anywhere;
+  }
+  /* 24px mark in a 28px slot in both themes, so the dark plate causes no shift. */
+  .tool-icon {
+    flex: none;
+    box-sizing: content-box;
+    padding: 2px;
+    border-radius: 6px;
+    --mark-plate: #fff;
+  }
+  .tools-note {
+    margin: 16px 0 0;
+    color: var(--text-2);
+    font-size: 0.75rem;
+    line-height: 1.3334;
+    overflow-wrap: anywhere;
+  }
+  @media screen {
+    :global(:root[data-theme='dark']) .tool-icon--plate {
+      background: var(--mark-plate);
+    }
+    @media (prefers-color-scheme: dark) {
+      :global(:root[data-pref='system']) .tool-icon--plate {
+        background: var(--mark-plate);
+      }
+    }
+  }
+
+  /* Goals tile: two goals (year eyebrow, then title) side by side from 735px. */
+  .goals {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 735px) {
+    .goals {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px;
+    }
+  }
+  .goal-title {
+    margin: 4px 0 0;
+    font-size: 1.3125rem;
+    font-weight: 600;
+    line-height: 1.2381;
+    overflow-wrap: anywhere;
+  }
+
+  .facts {
+    display: grid;
+    gap: 2px;
+    margin: 32px 0 0;
+    padding: 0;
+    list-style: none;
+    color: var(--text-2);
+    font-size: 0.75rem;
+    line-height: 1.3334;
+    text-align: center;
+  }
+</style>

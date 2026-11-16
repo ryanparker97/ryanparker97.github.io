@@ -44,11 +44,11 @@ const FONTS = {
 } as const;
 for (const [name, css] of Object.entries(FONTS)) {
   for (const path of ['/', '/vi/']) {
-    test(`compact stat one line ${name} ${path}`, async ({ page }) => {
+    test(`board stat one line ${name} ${path}`, async ({ page }) => {
       await page.goto(path);
       if (css) await page.addStyleTag({ content: css });
       await page.evaluate(() => document.fonts.ready.then(() => undefined));
-      const rows = await page.locator('.stat-strip--compact .stat-value').evaluateAll((els) =>
+      const rows = await page.locator('#board .stat-value').evaluateAll((els) =>
         els.map((e) => ({
           h: e.getBoundingClientRect().height,
           lh: parseFloat(getComputedStyle(e).lineHeight),
