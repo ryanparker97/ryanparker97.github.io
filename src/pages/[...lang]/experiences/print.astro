@@ -5,6 +5,7 @@ import PrintSkillsTable from '~/components/cv/PrintSkillsTable.astro';
 import { getLocalized, getProfile, render } from '~/lib/content';
 import { companyLabel, displayUrl, formatDateRange, sortProjects, sortRoles } from '~/lib/cv';
 import { getLang, langStaticPaths } from '~/i18n/routes';
+import { certWhen, sortCerts } from '~/lib/certs';
 import { useT } from '~/i18n';
 import { externalAttrs } from '~/lib/links';
 
@@ -27,7 +28,7 @@ const projects = sortProjects(
     .filter((x) => x.data.inPdf)
     .map((x) => ({ ...x, start: x.data.start, end: x.data.end, featured: x.data.featured })),
 );
-const sortedCerts = [...certs].sort((a, b) => b.data.year.localeCompare(a.data.year));
+const sortedCerts = sortCerts(certs);
 const bodies = new Map(
   await Promise.all(
     [...experience, ...projects].map(async (e) => [e.id, (await render(e)).Content] as const),
@@ -139,7 +140,7 @@ const bodies = new Map(
         <ul class="certs">
           {sortedCerts.map((c) => (
             <li>
-              <strong>{c.data.name}</strong> ({c.data.year})
+              <strong>{c.data.name}</strong> ({certWhen(c.data, lang)})
             </li>
           ))}
         </ul>

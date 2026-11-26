@@ -32,8 +32,8 @@ const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
   }
   details {
     margin-top: 16px;
-    padding: 0 20px;
-    border-radius: 18px;
+    padding: 0 28px;
+    border-radius: var(--radius-lg);
     background: var(--surface-2);
   }
   summary {
@@ -67,11 +67,15 @@ const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
   .toc-side {
     display: none;
     /* Spans the header down to the body, so it starts level with the category eyebrow. */
-    grid-column: 3;
     grid-row: 1 / 5;
     align-self: start;
     position: sticky;
     top: calc(var(--sticky-h) + 24px);
+  }
+  @media (max-width: 734px) {
+    details {
+      padding: 0 24px;
+    }
   }
   @media (min-width: 1280px) {
     .toc-narrow {
@@ -79,9 +83,9 @@ const items = headings.filter((h) => h.depth === 2 || h.depth === 3);
     }
     .toc-side {
       display: block;
-      justify-self: start;
-      width: 248px;
-      margin-inline-start: 56px;
+      /* The fourth track of the post grid, the column's last 248px (PostLayout.astro). */
+      grid-column: 4;
+      justify-self: stretch;
       margin-top: var(--section-pad-tight);
       font-size: 0.75rem;
       line-height: 1.3334;

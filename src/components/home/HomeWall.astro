@@ -1,0 +1,427 @@
+---
+/**
+ * Home `#top` (spec §4.1): the Wall. A full-width wall of twelve real captures of the site's own pages,
+ * tilted in 3D with one static CSS transform and faded into the page with a mask; under it one row: the
+ * owner cut out of the grey backdrop directly on the wall (owner, avatar-title: no fill behind it), in a frame as tall as the intro beside it, the name as the page's one H1 (ink, no greeting) with the role line directly under it (owner, title-below-name),
+ * the first-person sentence, four "›" links and Download CV / Email me.
+ *
+ * The wall is decorative for screen readers (`aria-hidden`, every `alt` empty) but clickable for a
+ * pointer: each tile is a link with `tabindex="-1"`. Its destinations are named and reachable by keyboard
+ * through the links in the row, the nav and the footer. The H1 is the first thing a screen reader meets.
+ * Each capture is committed twice (light, dark) per language; both are in the markup and the theme rules
+ * below show only the one that matches (the CompanyLogo pattern), so a light visit never fetches a dark
+ * file. Tiles 1-6 are the two rows inside the 300px clip at S: eager, with a high fetch priority on 2 and 5.
+ * The H1 is never animated and the tilt never moves (only the page's load intro touches the text).
+ */
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import ChevronLink from '~/components/ui/ChevronLink.astro';
+import photo from '~/assets/profile/photo-cutout.png';
+import { boldHtml } from '~/lib/home';
+import { WALL_SHOTS, wallFile, wallHref } from '~/lib/wall';
+import { localePath } from '~/i18n/routes';
+import { useT, type Lang } from '~/i18n';
+
+interface Props {
+  lang: Lang;
+  name: string;
+  headline: string;
+  email: string;
+  /** Slug of the featured project; the "See the project" link is left out without it. */
+  projectSlug?: string;
+  /** Any STAR story exists. */
+  stories: boolean;
+  /** Any post exists. */
+  posts: boolean;
+}
+const { lang, name, email, projectSlug, stories, posts } = Astro.props;
+const t = useT(lang);
+
+const files = import.meta.glob<{ default: ImageMetadata }>('../../assets/wall/*.png', {
+  eager: true,
+});
+function pic(id: string, theme: 'light' | 'dark'): ImageMetadata {
+  const file = wallFile(id, lang, theme);
+  const found = files[`../../assets/wall/${file}`];
+  if (!found) throw new Error(`HomeWall: missing capture ${file}`);
+  return found.default;
+}
+
+// 512w is the step the S slot (292px at 1.75x) picks; the sizes are the tile widths at S, M and L.
+const WIDTHS = [320, 480, 512, 640, 960];
+const SIZES = '(max-width: 734px) 292px, (max-width: 1068px) 363px, 474px';
+
+const links = [
+  { href: localePath('/experiences/', lang), label: t('home.experience.cta') },
+  ...(projectSlug
+    ? [{ href: localePath(`/projects/${projectSlug}/`, lang), label: t('projects.view') }]
+    : []),
+  ...(stories ? [{ href: localePath('/star/', lang), label: t('star.all') }] : []),
+  ...(posts ? [{ href: localePath('/blog/', lang), label: t('home.posts.all') }] : []),
+];
+---
+
+<section id="top" class="wall" aria-labelledby="top-title">
+  <div class="w-clip" aria-hidden="true">
+    <div class="w-wall">
+      {WALL_SHOTS.map((s, i) => (
+        <a class="w-tile" href={wallHref(s.path, lang)} tabindex="-1">
+          <Image
+            src={pic(s.id, 'light')}
+            alt=""
+            format="webp"
+            quality={75}
+            widths={WIDTHS}
+            sizes={SIZES}
+            loading={i < 6 ? 'eager' : 'lazy'}
+            fetchpriority={i === 1 || i === 4 ? 'high' : undefined}
+            decoding="async"
+            class="w-shot w-shot--light"
+          />
+          <Image
+            src={pic(s.id, 'dark')}
+            alt=""
+            format="webp"
+            quality={75}
+            widths={WIDTHS}
+            sizes={SIZES}
+            loading="lazy"
+            decoding="async"
+            class="w-shot w-shot--dark"
+          />
+        </a>
+      ))}
+    </div>
+  </div>
+  <div class="w-id container-wide">
+    <span class="pop">
+      <Image
+        src={photo}
+        alt=""
+        format="webp"
+        widths={[320, 400, 480, 600]}
+        sizes="(max-width: 734px) 160px, (max-width: 1068px) 253px, 303px"
+        loading="eager"
+        decoding="async"
+      />
+    </span>
+    <div class="w-text">
+      <h1 id="top-title" class="w-name">
+        {name}
+      </h1>
+      <p class="w-role intro" style="--i:1">
+        <span class="w-title">{t('home.role')}</span>{' '}
+        <span class="w-areas">{t('home.roleAreas')}</span>
+      </p>
+      <p class="w-say intro" style="--i:2" set:html={boldHtml(t('home.intro'))} />
+      <p class="w-links intro" style="--i:3">
+        {links.map((l) => (
+          <ChevronLink href={l.href}>{l.label}</ChevronLink>
+        ))}
+      </p>
+    </div>
+    <div class="actions home-acts intro" style="--i:4">
+      <a href={localePath('/cv.pdf', lang)} download="Ryan-Parker-CV.pdf" class="btn btn-primary">
+        {t('common.download')}
+      </a>
+      <a href={`mailto:${email}`} class="btn btn-secondary">
+        {t('home.contact.email')}
+      </a>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* The clip: full-bleed, a fixed height, the containing block of the absolute wall. */
+  .w-clip {
+    position: relative;
+    height: 300px;
+    overflow: clip;
+    -webkit-mask-image: linear-gradient(180deg, black 48%, transparent 90%);
+    mask-image: linear-gradient(180deg, black 48%, transparent 90%);
+  }
+  /* The tilt is the only transform in this file, and it is static. */
+  .w-wall {
+    position: absolute;
+    left: 50%;
+    top: -70px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    width: 900px;
+    margin-left: -450px;
+    transform: perspective(2400px) rotateX(28deg) rotateZ(-8deg);
+    transform-origin: 50% 40%;
+  }
+  .w-tile {
+    display: block;
+    overflow: hidden;
+    border-radius: 9px;
+    background: var(--surface-2);
+    outline: 1px solid var(--keyline);
+    outline-offset: -1px;
+  }
+  .w-shot {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  /* One capture per theme is shown (the CompanyLogo swap rules, system preference included). */
+  .w-shot--dark {
+    display: none;
+  }
+  @media screen {
+    :global(:root[data-theme='dark']) .w-shot--light {
+      display: none;
+    }
+    :global(:root[data-theme='dark']) .w-shot--dark {
+      display: block;
+    }
+    @media (prefers-color-scheme: dark) {
+      :global(:root[data-pref='system']) .w-shot--light {
+        display: none;
+      }
+      :global(:root[data-pref='system']) .w-shot--dark {
+        display: block;
+      }
+    }
+  }
+
+  /* The identity row paints over the fade. */
+  .w-id {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    align-items: center;
+    margin-top: -163px;
+    padding-bottom: 48px;
+  }
+  .w-text {
+    min-width: 0;
+  }
+
+  /* The photo (owner, photo-align-cutout; was profile-image-full: the whole photo on its grey backdrop at its
+     own ratio): the owner cut out of the backdrop (photo-cutout.png, alpha) directly on the wall (owner, avatar-title: no fill behind it), in a frame
+     --home-photo wide (288 / 216 / 160px). From M the frame has no height of its own: the grid stretches it
+     to the intro beside it, so its top and bottom are the intro's whatever its length. The picture is
+     drawn `contain` and anchored to the bottom, so nothing is cropped and the shirt meets the frame's
+     bottom edge (from M it is drawn at the frame's height instead, see the owner, photo-layout rule below); the img is absolute, so its size never sizes the row (and loading shifts nothing). At S
+     the frame is stacked above the text at the photo's own ratio. The margin-top below (-163 / -113 /
+     -170px; owner, title-below-name: +10 / +11 / +15px, the bigger title less the H1's dropped 6px, so the intro, links
+     and pills stay where they were; avatar-title: each 18 / 21 / 21px more than before, the role line's second line). */
+  .pop {
+    --pop: var(--home-photo);
+    position: relative;
+    display: block;
+    flex: none;
+    width: var(--pop);
+    aspect-ratio: 600 / 894;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+  }
+  .pop img {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: 50% 100%;
+  }
+
+  /* Two lines (owner, avatar-title): the title, then the areas; each its own line. */
+  .w-title,
+  .w-areas {
+    display: block;
+  }
+  /* Hierarchy (owner, title-black: was --accent, "just keep it in black"): the title in the name's --text (owner, title-below-name: bigger,
+     24 / 28 / 32px, and directly under the name), plain text: no underline, no hover. The areas
+     line is lighter (500) in --text-2. Sizes follow the O4 ladder (owner, home-type-ladder): title 24 / 28 / 32,
+     intro 19 / 21 / 24, areas and links 17 at every width. */
+  .w-title {
+    color: var(--text);
+    font-size: 1.5rem;
+    line-height: 1.1667;
+    letter-spacing: 0.009em;
+  }
+  .w-areas {
+    font-weight: 500;
+  }
+  .w-role {
+    margin: 6px 0 0;
+    font-size: 1.0625rem;
+    line-height: 1.2353;
+    font-weight: 600;
+    letter-spacing: -0.022em;
+    color: var(--text-2);
+  }
+  /* 19vw caps the name at 200% text so it wraps only between words (spec §4.1). */
+  .w-name {
+    margin: 0;
+    font-size: min(2.75rem, 19vw);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .w-say {
+    max-width: 720px;
+    margin: 12px 0 0;
+    font-size: 1.1875rem;
+    line-height: 1.2632;
+    letter-spacing: 0.007em;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  .w-say :global(strong) {
+    font-weight: 600;
+    color: var(--text);
+  }
+  /* The four links are a 2 x 2 grid at every width (lead decision after review, photo-logos "everything
+     aligned"): two columns, left edges aligned, so none is ragged or orphaned. Below L the columns
+     size to their labels (equal 1fr columns would wrap "Tất cả câu chuyện ›" at 375 and push the pills
+     off the first screen); L makes them equal. A 22px row gap keeps two stacked 44px link targets from
+     overlapping. */
+  .w-links {
+    display: grid;
+    grid-template-columns: repeat(2, auto);
+    justify-content: start;
+    justify-items: start;
+    /* A wrapped label (VI at 320) keeps its own height; its row partner does not stretch to match. */
+    align-items: start;
+    gap: 22px 28px;
+    margin: 18px 0 0;
+    font-size: 1.0625rem;
+  }
+  /* The link flows as text, so a wrapped label keeps the › after its last word. The 11px block
+     padding gives one line a 44px target; the equal negative margin keeps the mock's rhythm. */
+  .w-links :global(.link-chevron) {
+    display: inline-block;
+    min-height: 0;
+    padding-block: 11px;
+    margin-block: -11px;
+  }
+
+  /* The global .actions row is centred with a 17px gap; here it starts at the edge. */
+  .actions.home-acts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 12px 14px;
+  }
+
+  @media (min-width: 735px) {
+    .w-clip {
+      height: 400px;
+    }
+    .w-wall {
+      top: -120px;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      width: 1500px;
+      margin-left: -750px;
+    }
+    .w-tile {
+      border-radius: 14px;
+    }
+    .w-id {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: var(--home-photo-gap);
+      margin-top: -113px;
+      padding-bottom: 80px;
+    }
+    .pop {
+      aspect-ratio: auto;
+      align-self: stretch;
+      overflow: visible;
+      display: flex;
+      justify-content: center;
+      border-radius: var(--radius-md);
+    }
+    /* Owner, photo-layout (O1): the picture is drawn at the frame's height, not its width, so the head is level
+       with the name and no empty band sits above it. Width follows the ratio, centred on the frame (the frame is a flex row, so the absolute img's static position is centred; auto margins would not centre an overflowing img); only its
+       transparent side margins pass the column. The cap (the person is 78.5% of the picture, so it fills the
+       column at column / 0.785 wide) keeps the arms off the text when the frame doubles at 200% text. */
+    .pop img {
+      inset: auto auto 0 auto;
+      width: auto;
+      max-width: none;
+      pointer-events: none;
+      height: min(100%, calc(var(--pop) / 0.785 * 894 / 600));
+    }
+    .actions.home-acts {
+      grid-column: 1 / -1;
+    }
+    .w-title {
+      font-size: 1.75rem;
+      line-height: 1.1429;
+      letter-spacing: 0.007em;
+    }
+    .w-name {
+      font-size: min(3.5rem, 19vw);
+      line-height: 1.0715;
+      letter-spacing: -0.005em;
+    }
+    .w-say {
+      font-size: 1.3125rem;
+      line-height: 1.2381;
+    }
+  }
+  @media (min-width: 1069px) {
+    .w-clip {
+      height: 560px;
+    }
+    .w-wall {
+      top: -150px;
+      gap: 22px;
+      width: 1960px;
+      margin-left: -980px;
+    }
+    /* The photo spans the text and the pills under it, so .w-text ends on the column's right edge, where
+       .next-path ends (owner, photo-tall; was a flex row with the pills stacked on the right). */
+    /* Both rows size to their content and the photo stretches over them (owner, photo-align-cutout; was
+       rows 1fr auto with the photo at the end), so its top is the text's top (the name's, owner, title-below-name) and its bottom is the pills'
+       bottom whatever the intro's length. The margin keeps the text where it was. */
+    .w-id {
+      gap: 16px var(--home-photo-gap);
+      margin-top: -170px;
+    }
+    .w-text {
+      align-self: start;
+    }
+    /* The global heading rule breaks anywhere; here the name breaks only between words (200% text). */
+    .w-name {
+      overflow-wrap: normal;
+    }
+    .pop {
+      grid-row: 1 / 3;
+      align-self: stretch;
+    }
+    .w-title {
+      font-size: 2rem;
+      line-height: 1.125;
+      letter-spacing: -0.01em;
+    }
+    .w-say {
+      font-size: 1.5rem;
+      line-height: 1.25;
+    }
+    .w-links {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .actions.home-acts {
+      grid-area: 2 / 2;
+    }
+    .w-name {
+      font-size: min(4.5rem, 19vw);
+      line-height: 1.05;
+      letter-spacing: -0.015em;
+    }
+  }
+  @media print {
+    .w-clip {
+      display: none;
+    }
+  }
+</style>

@@ -38,7 +38,6 @@ const t = useT(lang);
 
 <style>
   .contact-box {
-    max-width: var(--content);
     margin-inline: auto;
     padding: 40px;
     border-radius: 28px;
@@ -70,6 +69,11 @@ const t = useT(lang);
     padding-block: 12px;
     font-size: 1.0625rem;
     overflow-wrap: anywhere;
+  }
+  /* The last link's 12px of block padding is a 44px touch target, not space: pull it into the box's
+     own padding so the text sits the same 40/32/24 above the edge as the heading sits below the top. */
+  .contact-lines li:last-child a {
+    margin-block-end: -12px;
   }
   @media (max-width: 1068px) {
     .contact-box {

@@ -2,6 +2,7 @@ import { defineCollection } from 'astro:content';
 import { glob } from 'astro/loaders';
 import { z } from 'astro/zod';
 import { competencyKeys } from './content/competencies';
+import { certProblems, PLANNED_RE } from './lib/certs';
 import { CV_DATE_RE } from './lib/cv';
 import { skillSchema } from './lib/schemas';
 import { isSvgImage } from './lib/star';
@@ -126,19 +127,29 @@ const projects = defineCollection({
 const certifications = defineCollection({
   loader: loader('certifications'),
   schema: ({ image }) =>
-    z.object({
-      name: z.string(),
-      issuer: z.string(),
-      year: z.string().regex(/^\d{4}$/),
-      credentialUrl: optionalUrl,
-      badge: image().optional(),
-      /** Iconify name of the issuer's logo, e.g. `logos:aws`; the issuer logo shown above the eyebrow on certification cards on /experiences/. */
-      logo: z
-        .string()
-        .regex(/^[a-z0-9-]+:[a-z0-9-]+$/)
-        .optional(),
-      monogram: z.string().min(2).max(3),
-    }),
+    z
+      .object({
+        name: z.string(),
+        issuer: z.string(),
+        /** Year earned. Exactly one of `year` and `planned`. */
+        year: z
+          .string()
+          .regex(/^\d{4}$/)
+          .optional(),
+        /** Target month (`YYYY-MM`) of a certification not yet earned; rendered "Planned · <date>", never as earned. */
+        planned: z.string().regex(PLANNED_RE, 'Use YYYY-MM').optional(),
+        credentialUrl: optionalUrl,
+        badge: image().optional(),
+        /** Iconify name of the certification's logo, e.g. `logos:aws`: the issuer's, or a product mark where the owner chose one (the planned Claude Certified Architect has the Claude mark, not Anthropic's; owner, photo-logos). Shown on the certification row on /skills/ and above the eyebrow on certification cards on /experiences/. */
+        logo: z
+          .string()
+          .regex(/^[a-z0-9-]+:[a-z0-9-]+$/)
+          .optional(),
+        monogram: z.string().min(2).max(3),
+      })
+      .superRefine((d, ctx) =>
+        certProblems(d).forEach((message) => ctx.addIssue({ code: 'custom', message })),
+      ),
 });
 
 const education = defineCollection({

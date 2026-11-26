@@ -1,7 +1,7 @@
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it } from 'vitest';
 import PostList from '../../src/components/blog/PostList.astro';
-import PostRows from '../../src/components/blog/PostRows.astro';
+import PostCards from '../../src/components/blog/PostCards.astro';
 import TopicSections from '../../src/components/blog/TopicSections.astro';
 import type { ListItem, ListPost, PostRow, TopicGroup } from '../../src/lib/topics';
 
@@ -101,7 +101,7 @@ describe('TopicSections', () => {
   });
 });
 
-describe('PostRows', () => {
+describe('PostCards', () => {
   const rows: PostRow[] = [
     {
       post: post('g-1', { series: 'g', seriesPart: 1 }),
@@ -113,13 +113,21 @@ describe('PostRows', () => {
     { post: post('a') },
   ];
   const noNested = (html: string) => expect(html).not.toMatch(/<a\b[^>]*>(?:(?!<\/a>)[\s\S])*<a\b/);
+  const props = (lang: string, r: PostRow[] = rows) => ({
+    lang,
+    id: 'more',
+    title: 'More',
+    rows: r,
+  });
 
-  it('renders one link per row with kicker, short title, meta and covers in English', async () => {
-    const html = await render(PostRows as never, { lang: 'en', rows });
-    expect(html.match(/class="hl-row post-row/g)).toHaveLength(2);
+  it('renders one card per row with kicker, short title, meta and covers in English', async () => {
+    const html = await render(PostCards as never, props('en'));
+    expect(html.match(/class="group-card /g)).toHaveLength(2);
+    expect(html).toContain('group-cards--posts');
+    expect(html).toMatch(/<h2[^>]*>[\s\S]*More[\s\S]*<\/h2>/);
     expect(html).toContain('href="/blog/g-1/"');
     expect(html).toContain('href="/blog/a/"');
-    const t = text(html);
+    const t = text(html).replace(/\u00a0/g, ' ');
     expect(t).toContain('Part 1 · Guide');
     expect(t).toContain('First');
     expect(t).not.toContain('Title g-1');
@@ -131,7 +139,7 @@ describe('PostRows', () => {
     noNested(html);
   });
   it('localises links and meta in Vietnamese', async () => {
-    const html = await render(PostRows as never, { lang: 'vi', rows });
+    const html = await render(PostCards as never, props('vi'));
     expect(html).toContain('href="/vi/blog/g-1/"');
     expect(html).toContain('href="/vi/blog/a/"');
     const t = text(html);
@@ -141,20 +149,17 @@ describe('PostRows', () => {
   });
   it('uses the title initial as the cover glyph for a standalone post', async () => {
     for (const lang of ['en', 'vi']) {
-      const html = await render(PostRows as never, {
-        lang,
-        rows: [{ post: post('z', { title: 'Zed notes' }) }],
-      });
+      const html = await render(
+        PostCards as never,
+        props(lang, [{ post: post('z', { title: 'Zed notes' }) }]),
+      );
       expect(html).toMatch(/post-cover__num[^>]*>\s*Z\s*</);
       expect(html).not.toMatch(/post-cover__num[^>]*>\s*(A|B)\s*</);
     }
   });
   it('renders heroImage as a decorative img instead of a generated cover', async () => {
     const image = { src: '/x.png', width: 800, height: 600, format: 'png' } as const;
-    const html = await render(PostRows as never, {
-      lang: 'en',
-      rows: [{ post: post('a', { image }) }],
-    });
+    const html = await render(PostCards as never, props('en', [{ post: post('a', { image }) }]));
     expect(html).toContain('<img');
     expect(html).toMatch(/<img[^>]* alt(?:="")?[ >]/);
     expect(html).not.toContain('post-cover--gen');

@@ -1,0 +1,43 @@
+---
+/** Blog post cards (spec §4.5): one `CardGroup` of the `posts` variant, a card per post. */
+import CardGroup from '~/components/experiences/CardGroup.astro';
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+import { formatDate } from '~/lib/format';
+import type { PostRow } from '~/lib/topics';
+
+interface Props {
+  lang: Lang;
+  id: string;
+  title: string;
+  rows: PostRow[];
+  /** Hairline above the group (between two groups). */
+  rule?: boolean;
+}
+const { lang, id, title, rows, rule = false } = Astro.props;
+const t = useT(lang);
+---
+
+<CardGroup
+  {id}
+  {title}
+  {rule}
+  variant="posts"
+  items={rows.map((row) => {
+    const { post, part, seriesTitle } = row;
+    return {
+      id: `post-${post.slug}`,
+      eyebrow: part ? `${t('series.part', { n: part })} · ${seriesTitle}` : t('blog.article'),
+      title: row.partTitle ?? post.title,
+      href: localePath(`/blog/${post.slug}/`, lang),
+      text: post.description,
+      meta: `${formatDate(post.pubDate, lang)} · ${t('blog.readingTime', { n: post.minutes })}`,
+      cover: {
+        image: post.image,
+        label: seriesTitle ?? t('blog.article'),
+        part,
+        glyph: post.title.charAt(0).toUpperCase(),
+      },
+    };
+  })}
+/>

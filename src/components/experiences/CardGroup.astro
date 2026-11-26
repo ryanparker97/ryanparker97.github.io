@@ -9,19 +9,28 @@ import type { ImageMetadata } from 'astro';
 import { Icon } from 'astro-icon/components';
 import ChevronLink from '~/components/ui/ChevronLink.astro';
 import SectionHeader from '~/components/tile/SectionHeader.astro';
+import { iconPlate } from '~/lib/tool-icons';
+import type { StackTool } from '~/lib/tech-stack';
 import CompanyLogo from './CompanyLogo.astro';
+import PostCover from '~/components/blog/PostCover.astro';
 
 type ThemedLogo = { light: ImageMetadata; dark?: ImageMetadata };
 
 interface Item {
   id?: string;
-  eyebrow: string;
+  eyebrow?: string;
   /** String = Iconify name (certification issuers); image = local file (school). */
   logo?: string | ImageMetadata | ThemedLogo;
   title: string;
   href?: string;
   text?: string;
   link?: { href: string; label: string; name: string };
+  /** Tech stack variant: brand mark + name rows (spec §4.2.0). */
+  tools?: readonly StackTool[];
+  /** Blog `posts` variant: the post cover in the logo slot (decorative). */
+  cover?: { image?: ImageMetadata; label: string; part?: number; glyph?: string };
+  /** Blog `posts` variant: the date and reading-time line under the text. */
+  meta?: string;
 }
 interface Props {
   id: string;
@@ -29,13 +38,32 @@ interface Props {
   items: Item[];
   /** Hairline above the group (between two groups). */
   rule?: boolean;
+  /** `tools`: the Tech stack group (two cards up, a grid of mark + name rows; not searchable).
+   *  `posts`: the blog's post cards (three up, cover in the logo slot, meta line). */
+  variant?: 'tools' | 'posts';
 }
-const { id, title, items, rule = false } = Astro.props;
+const { id, title, items, rule = false, variant } = Astro.props;
 ---
 
-<div class:list={['card-group', { 'card-group--rule': rule }]} id={id}>
+<div
+  class:list={['card-group', { 'card-group--rule': rule }]}
+  id={id}
+  data-pagefind-ignore={variant === 'tools' ? '' : undefined}
+>
   <SectionHeader id={`${id}-title`} align="start" {title} />
-  <ul class="group-cards" data-reveal-group>
+  {Astro.slots.has('default') && (
+    <div class="group-lead">
+      <slot />
+    </div>
+  )}
+  <ul
+    class:list={[
+      'group-cards',
+      variant === 'tools' && 'group-cards--tools',
+      variant === 'posts' && 'group-cards--posts',
+    ]}
+    data-reveal-group
+  >
     {items.map((item, i) => (
       <li
         id={item.id}
@@ -45,7 +73,12 @@ const { id, title, items, rule = false } = Astro.props;
       >
         {item.logo &&
           (typeof item.logo === 'string' ? (
-            <Icon name={item.logo} class="group-card__logo" size={32} aria-hidden="true" />
+            <Icon
+              name={item.logo}
+              size={32}
+              aria-hidden="true"
+              class:list={['group-card__logo', iconPlate(item.logo) && 'group-card__logo--plate']}
+            />
           ) : 'light' in item.logo ? (
             <CompanyLogo
               logo={item.logo.light}
@@ -62,9 +95,41 @@ const { id, title, items, rule = false } = Astro.props;
               loading="lazy"
             />
           ))}
-        <p class="group-card__eyebrow">{item.eyebrow.replace(/ · (?=[^ ]+$)/, ' ·\u00A0')}</p>
+        {item.cover && (
+          <div class="group-card__logo">
+            <PostCover
+              image={item.cover.image}
+              alt=""
+              label={item.cover.label}
+              part={item.cover.part}
+              glyph={item.cover.glyph}
+            />
+          </div>
+        )}
+        {item.eyebrow && (
+          <p class="group-card__eyebrow">{item.eyebrow.replace(/ · (?=[^ ]+$)/, ' ·\u00A0')}</p>
+        )}
         <h3 class="t-card">{item.href ? <a href={item.href}>{item.title}</a> : item.title}</h3>
+        {item.tools && item.tools.length > 0 && (
+          <ul class="group-card__tools" role="list" data-stack-tools>
+            {item.tools.map((tool) => (
+              <li class="group-card__tool">
+                <Icon
+                  name={tool.icon}
+                  size={20}
+                  aria-hidden="true"
+                  class:list={[
+                    'group-card__tool-mark',
+                    tool.plate && 'group-card__tool-mark--plate',
+                  ]}
+                />
+                {tool.name}
+              </li>
+            ))}
+          </ul>
+        )}
         {item.text && <p class="group-card__text">{item.text}</p>}
+        {item.meta && <p class="group-card__meta">{item.meta}</p>}
         {item.link && (
           <ChevronLink href={item.link.href} label={item.link.name}>
             {item.link.label}
@@ -81,6 +146,9 @@ const { id, title, items, rule = false } = Astro.props;
     padding-top: 48px;
     border-top: 1px solid var(--border);
   }
+  .group-lead {
+    margin: 0 0 20px;
+  }
   .group-cards {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -90,13 +158,21 @@ const { id, title, items, rule = false } = Astro.props;
     list-style: none;
     text-align: start;
   }
+  /* Tech stack (spec §4.2.0): two cards up at L and M, one at S; must follow .group-cards and precede
+     the media queries so the S rule still wins. */
+  .group-cards--tools {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  /* Blog posts (spec §4.5): three cards up at L, two at M, one at S (the M and S rules below still win). */
+  .group-cards--posts {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
   .group-card {
     position: relative;
     min-height: 180px;
     padding: 28px;
     border-radius: 28px;
     background: var(--bg);
-    scroll-margin-top: calc(var(--sticky-h) + 16px);
   }
   .group-card__logo {
     display: block;
@@ -106,12 +182,84 @@ const { id, title, items, rule = false } = Astro.props;
     width: auto;
     height: 32px;
   }
-  .group-card__eyebrow {
+  svg.group-card__logo {
+    border-radius: 4px;
+  }
+  /* Tool rows: the §4.8 tool mark box (B 24 = 20 + 2 x 2, gap 8), centred on the name's first line. */
+  /* Filled down the columns (two from 2 x 176px + 24px, one below), so an odd count ends as a shorter
+     second column, never a lone tile: 4 is 2 + 2, 3 is 2 + 1. Each item keeps 10px of bottom padding
+     (the row gap; padding, not margin, because WebKit carries a margin across the column break). Every item has it,
+     the last too: a shorter last item would make the balancer put 3 in the first column and 4 in the
+     second. */
+  .group-card__tools {
+    columns: 2 176px;
+    column-gap: 24px;
+    margin: 16px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 1.0625rem;
+    line-height: 1.4706;
+    font-weight: 600;
+  }
+  .group-card__tool {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    min-width: 0;
+    padding-block-end: 10px;
+    break-inside: avoid;
+    overflow-wrap: anywhere;
+  }
+  .group-card__tool-mark {
+    --box: 24px;
+    flex: none;
+    box-sizing: content-box;
+    padding: 2px;
+    border-radius: 6px;
+    margin-block-start: calc((1lh - var(--box)) / 2);
+  }
+  /* Optical centring, as on /skills/ (14 of 346 and 12 of 291 viewBox units: 0.8px and 0.7px at 20px). */
+  .group-card__tool-mark[data-icon='logos:java'] :global(use) {
+    transform: translateX(-14px);
+  }
+  .group-card__tool-mark[data-icon='logos:terraform-icon'] :global(use) {
+    transform: translateY(-12px);
+  }
+  @media screen {
+    :global(:root[data-theme='dark']) .group-card__tool-mark--plate {
+      background: var(--mark-plate);
+    }
+    @media (prefers-color-scheme: dark) {
+      :global(:root[data-pref='system']) .group-card__tool-mark--plate {
+        background: var(--mark-plate);
+      }
+    }
+  }
+  /* A mark that fails 3:1 on the dark card (AWS and Datadog) sits on the one white plate, drawn as a 4px ring
+     outside its 32px box exactly like CompanyLogo's (the existing exception to "no shadows"), so
+     the ink stays on the eyebrow edge and nothing shifts between themes. */
+  @media screen {
+    :global(:root[data-theme='dark']) .group-card__logo--plate {
+      background: var(--mark-plate);
+      box-shadow: 0 0 0 4px var(--mark-plate);
+    }
+    @media (prefers-color-scheme: dark) {
+      :global(:root[data-pref='system']) .group-card__logo--plate {
+        background: var(--mark-plate);
+        box-shadow: 0 0 0 4px var(--mark-plate);
+      }
+    }
+  }
+  .group-card__eyebrow,
+  .group-card__meta {
     margin: 0 0 8px;
     color: var(--text-2);
     font-size: 0.875rem;
     font-weight: 600;
     line-height: 1.3334;
+  }
+  .group-card__meta {
+    margin: 12px 0 0;
   }
   .group-card :is(h3) {
     margin: 0;
@@ -143,6 +291,23 @@ const { id, title, items, rule = false } = Astro.props;
     font-size: 1.0625rem;
     line-height: 1.4706;
   }
+  .group-cards--posts .group-card__text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    overflow: hidden;
+  }
+  /* A long word at 200% text breaks instead of widening the card (the h3 link is inline-block). */
+  .group-cards--posts .group-card,
+  .group-cards--posts .group-card h3 {
+    overflow-wrap: anywhere;
+  }
+  .group-cards--posts .group-card h3 a {
+    display: inline-block;
+    margin-block: -10px;
+    padding-block: 10px;
+  }
   .group-card :global(.link-chevron) {
     display: inline-block;
     margin-top: 12px;
@@ -150,7 +315,7 @@ const { id, title, items, rule = false } = Astro.props;
     margin-block: 0 -12px;
   }
   @media (min-width: 735px) and (max-width: 1068px) {
-    .group-cards {
+    .group-cards:not(.group-cards--tools) {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .card-group--rule {

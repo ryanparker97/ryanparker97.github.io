@@ -1,29 +1,18 @@
 ---
+/**
+ * Home (spec §4.1): the Wall. One global nav row, no local nav. `#top` is `HomeWall` (a wall of twelve
+ * real page captures fading into one row: the cut-out photo, the name as the page's one H1, the line,
+ * four links, Download CV and Email me), then "Next." and "Let's talk.". Each optional link renders
+ * only with its content.
+ */
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
+import HomeWall from '~/components/home/HomeWall.astro';
+import HomeNext from '~/components/home/HomeNext.astro';
 import LetsTalk from '~/components/home/LetsTalk.astro';
-import CareerRow from '~/components/experiences/CareerRow.astro';
-import StoryChapter from '~/components/home/StoryChapter.astro';
-import WritingShelf from '~/components/home/WritingShelf.astro';
-import HighlightsGallery from '~/components/experiences/HighlightsGallery.astro';
-import Section from '~/components/tile/Section.astro';
-import SectionHeader from '~/components/tile/SectionHeader.astro';
-import CloserLook from '~/components/tile/CloserLook.astro';
-import ChevronLink from '~/components/ui/ChevronLink.astro';
-import Hero from '~/components/tile/Hero.astro';
-import StatStrip from '~/components/tile/StatStrip.astro';
-import Footnotes from '~/components/tile/Footnotes.astro';
 import { getLocalized, getProfile } from '~/lib/content';
 import { getPostRows } from '~/lib/blog-content';
-import { hasDigit, highlightStats, pickStory, uniqueCompanies } from '~/lib/home';
-import { bandTones } from '~/lib/bands';
-import { numberNotes } from '~/lib/footnotes';
-import { homeNav } from '~/lib/localnav';
-import { formatCvDate, parseHighlights, sortProjects, sortRoles } from '~/lib/cv';
-import YearsArt from '~/assets/highlights/years.svg';
-import TeamArt from '~/assets/highlights/team.svg';
-import AgentsArt from '~/assets/highlights/agents.svg';
-import { headlineStat, storyImage } from '~/lib/star';
+import { sortProjects } from '~/lib/cv';
 import { personLd } from '~/lib/jsonld';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
 import { useT } from '~/i18n';
@@ -34,159 +23,38 @@ const lang = getLang(Astro.params.lang);
 const t = useT(lang);
 const { data: p, fallback: f1 } = await getProfile(lang);
 const { items: allStories } = await getLocalized('star', lang);
-
 const { rows, fallback: f5 } = await getPostRows(lang);
-const story = pickStory(allStories);
-const storyStat = story && headlineStat(story.data.metrics);
-const storyImg = story && storyImage(story.data);
-const { items: allRoles, fallback: f4 } = await getLocalized('experience', lang);
-const sortedRoles = sortRoles(
-  allRoles.map((r) => ({ ...r, start: r.data.start, end: r.data.end })),
-);
-const roles = sortedRoles;
-const cur = roles[0];
 const { items: allProjects } = await getLocalized('projects', lang);
 const project = sortProjects(
   allProjects
     .filter((x) => x.data.featured)
     .map((x) => ({ ...x, start: x.data.start, end: x.data.end, featured: true })),
 )[0];
-const look = project ? parseHighlights(project.body ?? '').filter((h) => h.label) : [];
-const raw = [
-  ...(hasDigit(p.yearsOfExperience)
-    ? [
-        {
-          headline: t('exp.hl.years', { years: p.yearsOfExperience }),
-          value: p.yearsOfExperience,
-          caption: uniqueCompanies([...roles].reverse().map((r) => r.data)).join(', '),
-          image: YearsArt,
-          imageAlt: t('exp.hl.yearsAlt'),
-        },
-      ]
-    : []),
-  ...(p.headlineMetric && cur
-    ? [
-        {
-          headline: t('exp.hl.team', { n: p.headlineMetric.value, label: p.headlineMetric.label }),
-          value: p.headlineMetric.value,
-          image: TeamArt,
-          imageAlt: t('exp.hl.teamAlt'),
-          caption: t('exp.hl.teamCap', {
-            role: cur.data.role,
-            company: cur.data.company,
-            date: formatCvDate(cur.data.start, lang),
-          }),
-        },
-      ]
-    : []),
-  ...(story && storyStat
-    ? [
-        {
-          headline: story.data.title,
-          value: storyStat.value,
-          caption: [storyStat.prefix, storyStat.label].filter(Boolean).join(' '),
-          light: true,
-          href: localePath(`/star/${story.slug}/`, lang),
-          linkLabel: t('home.stories.read'),
-          linkName: `${t('home.stories.read')}: ${story.data.title}`,
-          ...(storyImg && { image: storyImg.Svg, imageAlt: storyImg.alt }),
-        },
-      ]
-    : []),
-  ...(project
-    ? [
-        {
-          headline: t('exp.hl.agents'),
-          lines: project.data.tech.slice(0, 3),
-          caption: t('exp.hl.agentsCap'),
-          image: AgentsArt,
-          imageAlt: t('exp.hl.agentsAlt'),
-          href: localePath(`/projects/${project.slug}/`, lang),
-          linkLabel: t('projects.view'),
-          linkName: `${t('projects.view')}: ${project.data.title}`,
-        },
-      ]
-    : []),
-];
-
-// Band tones follow what is rendered: touching bands alternate from the white hero (spec §4.1.0).
-const shown = [
-  raw.length > 0 && 'highlights',
-  !!project && look.length >= 2 && 'closer',
-  !!story && 'story',
-  sortedRoles.length > 0 && 'career',
-  rows.length > 0 && 'writing',
-  'more',
-].filter((x): x is string => !!x);
-const tones = bandTones(shown);
-
-const stats = highlightStats({
-  years: p.yearsOfExperience,
-  yearsNote: p.yearsOfExperienceNote,
-  yearsLabel: t('home.years'),
-  metric: p.headlineMetric,
-  metricPrefix: p.headlineMetricPrefix,
-  story: storyStat && { ...storyStat, note: story?.data.metrics[0]?.note },
-});
-const { items: refStats, notes } = numberNotes(stats, (n) => t('fn.ref', { n }));
 // Banner only when something shown on the page is really untranslated.
-const fallback =
-  f1 || f4 || (rows.length > 0 && f5) || (lang !== 'en' && !!story && story.contentLang !== lang);
+const fallback = f1 || (rows.length > 0 && f5);
 const jsonLd = personLd(p, new URL(localePath('/', lang), Astro.site).href, lang);
 ---
 
-<BaseLayout
-  title={t('home.title')}
-  description={t('home.description')}
-  {lang}
-  {fallback}
-  localNav={homeNav(lang)}
-  {jsonLd}
->
-  <Hero id="top" tight title={p.headline} gradient subline={t('home.hero.subline')}>
-    <Fragment slot="actions">
-      <a href={localePath('/experiences/', lang)} class="btn btn-primary">
-        {t('common.learnMore')}
-        <span class="sr-only"> {t('home.experienceSuffix')}</span>
-      </a>
-      <a href={localePath('/cv.pdf', lang)} download="Ryan-Parker-CV.pdf" class="btn btn-secondary">
-        {t('common.download')}
-      </a>
-    </Fragment>
-    {refStats.length > 0 && (
-      <StatStrip stats={refStats} label={t('home.highlights')} variant="big" />
-    )}
-  </Hero>
-  {raw.length > 0 && <HighlightsGallery {lang} cards={raw} />}
-  {project && look.length >= 2 && (
-    <Section id="closer-look" tone={tones.closer} wide labelledby="closer-look-title">
-      <SectionHeader
-        id="closer-look-title"
-        align="start"
-        eyebrow={project.data.title}
-        title={t('closer.title')}
-        subline={project.data.summary}
-      >
-        <ChevronLink
-          slot="cta"
-          href={localePath(`/projects/${project.slug}/`, lang)}
-          label={`${t('projects.view')}: ${project.data.title}`}
-        >
-          {t('projects.view')}
-        </ChevronLink>
-      </SectionHeader>
-      <CloserLook
-        id="closer"
-        items={look}
-        labelledby="closer-look-title"
-        image={project.data.image}
-        imageAlt={project.data.imageAlt}
-      />
-    </Section>
-  )}
-  {story && <StoryChapter {lang} {story} tone={tones.story} />}
-  <CareerRow {lang} roles={sortedRoles} tone={tones.career} />
-  {rows.length > 0 && <WritingShelf {lang} {rows} tone={tones.writing} />}
-  <LetsTalk {lang} profile={p} tone={tones.more} />
-  <Footnotes {notes} title={t('fn.title')} back={(n) => t('fn.back', { n })} />
+<BaseLayout title={t('home.title')} description={t('home.description')} {lang} {fallback} {jsonLd}>
+  <HomeWall
+    {lang}
+    name={p.name}
+    headline={p.headline}
+    email={p.email}
+    projectSlug={project?.slug}
+    stories={allStories.length > 0}
+    posts={rows.length > 0}
+  />
+  <HomeNext {lang} />
+  <LetsTalk {lang} profile={p} />
 </BaseLayout>
+
+<style>
+  /* Home has no footer breadcrumbs, so the footer directory would sit on the grey band's top edge.
+     Home-only room above it (the compact footer below 834px is an accordion and needs none). */
+  @media (min-width: 834px) {
+    :global(html:has(main > #top.wall) .site-footer) {
+      padding-top: 24px;
+    }
+  }
+</style>

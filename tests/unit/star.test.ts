@@ -3,13 +3,14 @@ import { remark } from 'remark';
 import { checkStarHeadings, remarkStarSections } from '../../src/lib/remark-star-sections';
 import { readFileSync } from 'node:fs';
 import {
-  actionSteps,
+  byNewest,
+  deskAnchors,
+  deskSlots,
   groupStories,
   isSvgImage,
   headlineMetric,
   splitStarHtml,
   storyImage,
-  stripFirstList,
 } from '../../src/lib/star';
 
 describe('checkStarHeadings', () => {
@@ -110,35 +111,6 @@ describe('splitStarHtml lead', () => {
   });
 });
 
-describe('actionSteps', () => {
-  const body = (lang: string) =>
-    readFileSync(`src/content/star/${lang}/emr-cost-optimization.md`, 'utf8');
-  it('returns the labelled Action bullets of the EMR story', () => {
-    expect(actionSteps(body('en')).map((h) => h.label)).toEqual([
-      'Reuse before create',
-      'Idle shutdown',
-      'Configurable sizing',
-    ]);
-  });
-  it('returns three steps for the VI twin', () => {
-    const steps = actionSteps(body('vi'));
-    expect(steps).toHaveLength(3);
-    expect(steps[0].label).toMatch(/^Tái sử dụng trước khi tạo mới/);
-  });
-  it('is empty when the Action is prose only or has one labelled bullet', () => {
-    const md = (a: string) =>
-      `## Situation\n\ns\n\n## Task\n\nt\n\n## Action\n\n${a}\n\n## Result\n\nr`;
-    expect(actionSteps(md('Just prose.'))).toEqual([]);
-    expect(actionSteps(md('- **One:** only'))).toEqual([]);
-  });
-});
-
-describe('stripFirstList', () => {
-  it('removes the first list and trims', () => {
-    expect(stripFirstList('<p>a</p><ul><li>x</li></ul><p>b</p>')).toBe('<p>a</p><p>b</p>');
-  });
-});
-
 describe('storyImage', () => {
   const Svg = () => null;
   it('is undefined without an image or with a blank alt', () => {
@@ -161,5 +133,71 @@ describe('isSvgImage', () => {
     expect(isSvgImage('__ASTRO_IMAGE_../../../assets/star/a.png')).toBe(false);
     expect(isSvgImage({ format: 'png' })).toBe(false);
     expect(isSvgImage(undefined)).toBe(false);
+  });
+});
+
+describe('byNewest', () => {
+  const s = (slug: string, date: string) => ({ slug, data: { date: new Date(date) } });
+  it('orders by date, newest first, and returns a new array', () => {
+    const input = [s('old', '2025-06-01'), s('new', '2026-10-01'), s('mid', '2026-01-01')];
+    const out = byNewest(input);
+    expect(out.map((x) => x.slug)).toEqual(['new', 'mid', 'old']);
+    expect(out).not.toBe(input);
+    expect(input.map((x) => x.slug)).toEqual(['old', 'new', 'mid']);
+  });
+  it('breaks ties by slug, A to Z', () => {
+    const out = byNewest([s('b', '2026-01-01'), s('c', '2026-01-01'), s('a', '2026-01-01')]);
+    expect(out.map((x) => x.slug)).toEqual(['a', 'b', 'c']);
+  });
+  it('leads with the Talend story over the EMR story, as the real dates say', () => {
+    const date = (slug: string) =>
+      new Date(
+        /^date: (.+)$/m.exec(readFileSync(`src/content/star/en/${slug}.md`, 'utf8'))![1].trim(),
+      );
+    const out = byNewest(
+      ['emr-cost-optimization', 'talend-databricks-migration'].map((slug) => ({
+        slug,
+        data: { date: date(slug) },
+      })),
+    );
+    expect(out.map((x) => x.slug)).toEqual([
+      'talend-databricks-migration',
+      'emr-cost-optimization',
+    ]);
+  });
+});
+
+describe('deskSlots', () => {
+  const n = (count: number) => Array.from({ length: count }, (_, i) => i);
+  it.each([
+    [0, 0, 0, 0],
+    [1, 1, 0, 0],
+    [2, 1, 1, 0],
+    [3, 1, 2, 0],
+    [4, 1, 2, 1],
+    [7, 1, 2, 4],
+  ])('%i stories: lead %i, tiles %i, list %i', (count, lead, tiles, list) => {
+    const slots = deskSlots(n(count));
+    expect(slots.lead === undefined ? 0 : 1).toBe(lead);
+    expect(slots.tiles).toHaveLength(tiles);
+    expect(slots.list).toHaveLength(list);
+  });
+  it('takes the lead first, then the tiles, then the list, in order', () => {
+    expect(deskSlots(n(7))).toEqual({ lead: 0, tiles: [1, 2], list: [3, 4, 5, 6] });
+  });
+});
+
+describe('deskAnchors', () => {
+  const s = (slug: string, role?: string) => ({ slug, data: { role } });
+  it('maps only the first story of each role to its role id', () => {
+    const map = deskAnchors([s('a', 'r1'), s('b', 'r1'), s('c', 'r2'), s('d')]);
+    expect([...map]).toEqual([
+      ['a', 'r1'],
+      ['c', 'r2'],
+      ['d', 'other'],
+    ]);
+  });
+  it('is empty without stories', () => {
+    expect(deskAnchors([]).size).toBe(0);
   });
 });

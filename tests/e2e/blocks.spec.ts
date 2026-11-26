@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test.describe('hover lift', () => {
   test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: 'no-preference' });
   for (const [path, sel] of [
-    ['/', '.gallery-card.lift'],
+    ['/experiences/', '.group-card.lift'],
     ['/blog/series/', '.news-tile.lift'],
   ]) {
     test(`${path} ${sel} scales on hover after the reveal`, async ({ page }) => {
@@ -21,8 +21,8 @@ test.describe('hover lift', () => {
 test.describe('hover lift under reduced motion', () => {
   test.use({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
   test('a hovered card does not scale', async ({ page }) => {
-    await page.goto('/');
-    const card = page.locator('.gallery-card.lift').first();
+    await page.goto('/experiences/');
+    const card = page.locator('.group-card.lift').first();
     await card.scrollIntoViewIfNeeded();
     await page.waitForTimeout(500);
     await card.hover();

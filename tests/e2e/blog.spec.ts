@@ -16,18 +16,19 @@ const expectPartCovers = async (
   page: import('@playwright/test').Page,
   request: import('@playwright/test').APIRequestContext,
 ) => {
-  const covers = page.locator('.post-rows img.post-cover');
-  await expect(covers).toHaveCount(5);
+  // owner, blog-like-experiences: .post-rows / .lead-card covers -> covers in the card logo slot (6 cards)
+  const covers = page.locator('.group-card img.post-cover');
+  await expect(covers).toHaveCount(6);
   await expect(page.locator('.post-cover--gen')).toHaveCount(0);
-  await expect(page.locator('.lead-card img.lead-card__cover')).toHaveCount(1);
-  await expect(page.locator('.lead-card')).not.toHaveClass(/lead-card--plain/);
   await expect(page.locator('.post-cover__num')).toHaveCount(0);
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 6; i++) {
     await expect(covers.nth(i)).toHaveAttribute('alt', '');
     await expect(covers.nth(i)).toHaveAttribute('width', '240');
     await expect(covers.nth(i)).toHaveAttribute('height', '240');
   }
-  const srcs = await covers.evaluateAll((els) => els.map((e) => e.getAttribute('src')!));
+  const srcs = await page
+    .locator('#more .group-card img.post-cover')
+    .evaluateAll((els) => els.map((e) => e.getAttribute('src')!));
   expect(srcs.map((s) => /\/part-(\d)\.[^/]*svg$/.exec(s)?.[1])).toEqual(['5', '4', '3', '2', '1']);
   for (const src of srcs) {
     const res = await request.get(src);
@@ -37,109 +38,127 @@ const expectPartCovers = async (
 };
 
 test.describe('blog', () => {
+  // The cards carry data-reveal (fade and rise on scroll); geometry is measured settled.
+  test.use({ reducedMotion: 'reduce' });
+
   const geom = (page: import('@playwright/test').Page) =>
-    page.locator('.post-rows > li').evaluateAll((lis) =>
+    page.locator('#more .group-card').evaluateAll((lis) =>
       lis.map((li) => {
+        const box = li.getBoundingClientRect();
         const c = li.querySelector('.post-cover')!.getBoundingClientRect();
-        const t = li.querySelector('.hl-title')!.getBoundingClientRect();
+        const e = li.querySelector('.group-card__eyebrow')!.getBoundingClientRect();
+        const a = li.querySelector('h3 a')!.getBoundingClientRect();
         return {
           cw: c.width,
           ch: c.height,
-          coverRight: c.right,
-          titleLeft: t.left,
-          titleTop: t.top,
-          coverTop: c.top,
           coverBottom: c.bottom,
-          rowH: li.getBoundingClientRect().height,
+          eyebrowTop: e.top,
+          linkH: a.height,
+          boxH: box.height,
+          boxLeft: box.left,
         };
       }),
     );
 
-  test('index at 1440: hero, lead card = newest post, then five rows in two columns', async ({
+  test('index at 1440: hero, then one grey band: Latest. and More posts. as white cards', async ({
     page,
     request,
   }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/blog/');
+    // owner, blog-like-experiences: lead card + two-column hairline rows -> Experiences hero, grey band, card groups
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Notes on data and tools.');
-    for (const sel of ['#feature', '.news-band', '.news-tile', '.topic-group', '.topic-jump']) {
+    await expect(page.locator('#hero .t-eyebrow')).toHaveText('Blog');
+    for (const sel of [
+      '#feature',
+      '.news-band',
+      '.news-tile',
+      '.topic-group',
+      '.topic-jump',
+      '.lead-card',
+      '.post-rows',
+    ]) {
       await expect(page.locator(sel)).toHaveCount(0);
     }
-    const lead = page.locator('.lead-card');
+    await expect(page.locator('section#posts.section--surface')).toHaveCount(1);
+    await expect(page.getByRole('heading', { level: 2 }).filter({ hasNotText: /^$/ })).toHaveText([
+      'Latest.',
+      'More posts.',
+    ]);
+    const lead = page.locator('#latest .group-card');
     await expect(lead).toHaveCount(1);
-    await expect(lead.locator('h2 a')).toHaveAttribute('href', GIT);
+    await expect(lead.locator('h3 a')).toHaveAttribute('href', GIT);
     await expect(lead).toContainText('Article');
     await expect(lead).toContainText(GIT_TITLE);
     await expect(lead).toContainText('7 Nov 2026');
     await expect(lead).toContainText(/\d+ min read/);
-    await expect(lead).toHaveCSS('border-top-left-radius', '32px');
-    await expect(page.getByRole('heading', { level: 2, name: 'More posts' })).toHaveCount(1);
-    const items = page.locator('.post-rows > li');
+    const items = page.locator('#more .group-card');
     await expect(items).toHaveCount(5);
     expect(
       await page
-        .locator('.post-rows > li a')
+        .locator('#more .group-card h3 a')
         .evaluateAll((els) => els.map((e) => (e as HTMLAnchorElement).pathname)),
     ).toEqual([...PARTS].reverse());
+    for (const card of await page.locator('.group-card').all()) {
+      await expect(card).toHaveCSS('border-top-left-radius', '28px');
+      await expect(card).toHaveCSS('background-color', 'rgb(255, 255, 255)');
+    }
     await expectPartCovers(page, request);
+    // Three cards a row: the fourth starts a new row under the first.
     const lefts = await items.evaluateAll((els) =>
       els.map((e) => Math.round(e.getBoundingClientRect().left)),
     );
-    expect(lefts[0]).toBe(lefts[2]);
-    expect(lefts[1]).toBe(lefts[3]);
-    expect(lefts[1]).toBeGreaterThan(lefts[0] + 300);
+    expect(lefts[0]).toBe(lefts[3]);
+    expect(lefts[1]).toBeGreaterThan(lefts[0] + 200);
+    expect(lefts[2]).toBeGreaterThan(lefts[1] + 200);
     const g = await geom(page);
     expect(g).toHaveLength(5);
     for (const r of g) {
       expect(Math.abs(r.cw - 112)).toBeLessThanOrEqual(1);
       expect(Math.abs(r.ch - 112)).toBeLessThanOrEqual(1);
-      expect(r.coverRight).toBeLessThanOrEqual(r.titleLeft);
-      // The title is top-aligned with its cover.
-      expect(r.titleTop).toBeGreaterThanOrEqual(r.coverTop - 1);
-      expect(r.titleTop).toBeLessThanOrEqual(r.coverBottom);
-      expect(r.rowH).toBeGreaterThanOrEqual(44);
+      // The cover sits above the eyebrow, in the logo slot.
+      expect(r.coverBottom).toBeLessThanOrEqual(r.eyebrowTop);
+      expect(r.linkH).toBeGreaterThanOrEqual(44);
     }
-    for (const li of await items.all()) await expect(li.locator('a')).toHaveCount(1);
+    for (const li of await page.locator('.group-card').all())
+      await expect(li.locator('a')).toHaveCount(1);
   });
 
-  test('index at 375: the lead card stacks, rows keep covers beside the text', async ({ page }) => {
+  test('index at 375: one card per row, covers 72px, description shown', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto('/blog/');
-    await expect(page.locator('.lead-card img.lead-card__cover')).toHaveCount(1);
-    await expect(page.locator('.lead-card h2')).toBeVisible();
     const g = await geom(page);
     expect(g).toHaveLength(5);
     for (const r of g) {
       expect(Math.abs(r.cw - 72)).toBeLessThanOrEqual(1);
       expect(Math.abs(r.ch - 72)).toBeLessThanOrEqual(1);
-      expect(r.coverRight).toBeLessThanOrEqual(r.titleLeft);
-      expect(r.titleTop).toBeGreaterThanOrEqual(r.coverTop - 1);
-      expect(r.titleTop).toBeLessThanOrEqual(r.coverBottom);
-      expect(r.rowH).toBeGreaterThanOrEqual(44);
+      expect(r.coverBottom).toBeLessThanOrEqual(r.eyebrowTop);
+      expect(r.linkH).toBeGreaterThanOrEqual(44);
     }
-    const lefts = await page
-      .locator('.post-rows > li')
-      .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)));
-    expect(new Set(lefts).size).toBe(1);
-    const desc = page.locator('.post-rows .hl-desc');
-    for (let i = 0; i < 5; i++) await expect(desc.nth(i)).toBeHidden();
+    expect(new Set(g.map((r) => Math.round(r.boxLeft))).size).toBe(1);
+    const desc = page.locator('#more .group-card__text');
+    for (let i = 0; i < 5; i++) await expect(desc.nth(i)).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(
       375,
     );
   });
 
-  test('vi index: lead card plus five rows', async ({ page, request }) => {
+  test('vi index: Latest. card plus five cards', async ({ page, request }) => {
     await page.goto('/vi/blog/');
     await expectPartCovers(page, request);
-    const items = page.locator('.post-rows > li');
+    const items = page.locator('#more .group-card');
     await expect(items).toHaveCount(5);
-    await expect(page.locator('.lead-card h2 a')).toHaveAttribute('href', '/vi' + GIT);
+    await expect(page.locator('#latest .group-card h3 a')).toHaveAttribute('href', '/vi' + GIT);
+    await expect(page.getByRole('heading', { level: 2 })).toHaveText([
+      'Mới nhất.',
+      'Bài viết khác.',
+    ]);
     const hrefs = await page
-      .locator('.post-rows > li a')
+      .locator('#more .group-card h3 a')
       .evaluateAll((els) => els.map((e) => e.getAttribute('href')));
     expect(hrefs).toEqual([...PARTS].reverse().map((p) => '/vi' + p));
-    await expect(page.locator('.lead-card')).toContainText('Bài viết');
-    await expect(page.locator('.post-rows .hl-meta').first()).toHaveText(/phút đọc/);
+    await expect(page.locator('#latest .group-card')).toContainText('Bài viết');
+    await expect(page.locator('#more .group-card__meta').first()).toHaveText(/phút đọc/);
     await expect(page.locator('.topic-group')).toHaveCount(0);
   });
 
@@ -227,24 +246,36 @@ test.describe('blog', () => {
     await expect(box.locator('li[aria-current] strong')).toContainText('Part 1:');
     await expect(box.locator('li a')).toHaveCount(4); // parts 2-5 link, part 1 is the current one
     await expect(box.getByText('Coming soon')).toHaveCount(0);
-    // Part 1 has no previous part, so only the next-part link shows.
-    const foot = page.locator('footer.foot nav');
-    await expect(foot).toHaveCount(1);
-    await expect(foot.getByRole('link')).toHaveCount(1);
-    await expect(foot.getByRole('link')).toHaveText(
-      'Part 2: Languages: LSP, completion, formatting and linting →',
+    // owner, blog-like-experiences: footer.foot hairline list -> closing grey band of cards
+    // Part 1 has no previous part, so only the next-part card shows.
+    await expect(page.locator('section#read-more.section--surface')).toHaveCount(1);
+    await expect(page.getByRole('heading', { level: 2, name: 'More in this series.' })).toHaveCount(
+      1,
     );
-    await expect(foot.getByRole('link')).toHaveAttribute('href', PARTS[1]);
+    const cards = page.locator('#more-reading .group-card');
+    await expect(cards).toHaveCount(1);
+    await expect(cards.locator('.group-card__eyebrow')).toHaveText('Part 2 · Neovim setup guide');
+    await expect(cards.locator('h3 a')).toHaveText(
+      'Languages: LSP, completion, formatting and linting',
+    );
+    await expect(cards.locator('h3 a')).toHaveAttribute('href', PARTS[1]);
+    // owner, blog-like-experiences: series box radius 18px -> 28px (the card shell)
+    await expect(page.locator('nav.series-box')).toHaveCSS('border-top-left-radius', '28px');
     await expect(page.locator('.prose h2')).toHaveCount(13);
     await expect(page.locator('.toc-side a')).toHaveCount(18);
   });
 
   test('a middle part links both neighbours', async ({ page }) => {
     await page.goto(PARTS[2]);
-    const links = page.locator('footer.foot nav a');
+    // owner, blog-like-experiences: footer.foot links "← Part 2: ..." / "Part 4: ... →" -> two cards
+    const links = page.locator('#more-reading .group-card h3 a');
     await expect(links).toHaveText([
-      '← Part 2: Languages: LSP, completion, formatting and linting',
-      'Part 4: Java with nvim-jdtls →',
+      'Languages: LSP, completion, formatting and linting',
+      'Java with nvim-jdtls',
+    ]);
+    await expect(page.locator('#more-reading .group-card__eyebrow')).toHaveText([
+      'Part 2 · Neovim setup guide',
+      'Part 4 · Neovim setup guide',
     ]);
     expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual([
       PARTS[1],
@@ -252,6 +283,21 @@ test.describe('blog', () => {
     ]);
     await expect(page.locator('nav.series-box .wide li[aria-current] strong')).toContainText(
       'Part 3:',
+    );
+  });
+
+  test('a post outside a series ends with the previous and next posts as cards', async ({
+    page,
+  }) => {
+    await page.goto(GIT);
+    await expect(page.locator('section#read-more.section--surface')).toHaveCount(1);
+    await expect(page.getByRole('heading', { level: 2, name: 'More to read.' })).toHaveCount(1);
+    const links = page.locator('#more-reading .group-card h3 a');
+    expect(await links.count()).toBeGreaterThanOrEqual(1);
+    for (const a of await links.all()) await expect(a).toHaveAttribute('href', /^\/blog\/[^/]+\/$/);
+    await expect(page.locator('#more-reading .group-card').first()).toHaveCSS(
+      'border-top-left-radius',
+      '28px',
     );
   });
 
@@ -491,7 +537,8 @@ test('drop cap and quote styles apply when opted in', async ({ page }) => {
 for (const path of ['/blog/', '/vi/blog/']) {
   test(`${path} shows no cover credit`, async ({ page }) => {
     await page.goto(path);
-    await expect(page.locator('.post-rows > li').first()).toBeVisible();
+    // owner, blog-like-experiences: .post-rows > li -> #more .group-card
+    await expect(page.locator('#more .group-card').first()).toBeVisible();
     await expect(page.locator('.cover-credits, .cover-credit')).toHaveCount(0);
     await expect(page.locator('main')).not.toContainText(/Cover art|Ảnh bìa|Jason Long/);
   });

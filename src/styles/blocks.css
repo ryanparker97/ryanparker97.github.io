@@ -1,17 +1,11 @@
 /* Page building blocks (spec §5.10) and motion (§5.11): Section, Hero, Lockup, Unit, TileGrid,
    GridTile, NewsTile, SectionHeader, Card, Stat, Gallery, Quote, GraphBars, SiteIndex.
-   Every anchor target clears the stuck bar (§5.10.6). */
-.section,
-.hero,
-.unit,
-.grid-tile {
-  scroll-margin-top: calc(var(--sticky-h) + 16px);
-}
+   The stuck-bar offset comes from html scroll-padding-top (global.css, §5.10.6); headings add only the eyebrow room. */
 .section :is(h1, h2, h3)[id],
 .hero :is(h1, h2, h3)[id],
 .unit :is(h1, h2, h3)[id],
 .grid-tile :is(h1, h2, h3)[id] {
-  scroll-margin-top: calc(var(--sticky-h) + 16px + var(--eyebrow-room));
+  scroll-margin-top: var(--eyebrow-room);
 }
 
 .section {
@@ -28,6 +22,7 @@
 }
 .section-inner--wide {
   width: var(--content-wide);
+  padding-inline: var(--wide-inset);
 }
 /* A section that follows a grid or gallery keeps its own, smaller padding. */
 .section--tight {
@@ -342,6 +337,17 @@
 .tiles-2up--feature .grid-tile.grid-tile--bleed {
   padding-bottom: 0;
 }
+/* At S the tile is full bleed and its content is the column (owner, photo-logos): the side padding is
+   the column's margin, and the children no longer take 87.5% of the already padded box. */
+@media (max-width: 734px) {
+  .grid-tile,
+  .tiles-2up--feature .grid-tile {
+    padding-inline: calc((100% - var(--content)) / 2);
+  }
+  .grid-tile > * {
+    max-width: none;
+  }
+}
 .grid-tile.grid-tile--bleed > .unit__visual {
   display: flex;
   justify-content: center;
@@ -612,7 +618,7 @@ a.grid-tile:hover {
 
 /* Big strip (Home Experiences tile): no hairlines, larger values at M and L; S keeps 28px so 320px holds. */
 .stat-strip--big {
-  max-width: 860px;
+  max-width: none;
 }
 .stat-strip--big > li + li {
   border-top: 0;
@@ -777,7 +783,7 @@ a.grid-tile:hover {
   height: 16px;
 }
 
-/* Gradient text (§5.10.8): the one swipe per page, on the Home hero role. */
+/* Gradient text (§5.10.8): kept for Hero/Lockup `gradient`; no page uses it since home-alt-6 (the Home name is ink). */
 .text-gradient {
   --g1: light-dark(#00509f, #5cb0ff);
   --g2: light-dark(#0b5d52, #64d2b4);
@@ -1175,6 +1181,7 @@ details[open] > .plus-row .plus-disc::after,
   gap: 0;
   width: var(--content-wide);
   margin-inline: auto;
+  padding-inline: var(--wide-inset);
 }
 .chapter-grid .section-header {
   order: 0;
@@ -1533,6 +1540,7 @@ a.hl-row:hover .hl-title {
    pinned at L it is start-aligned in the side column. */
 .stage .chapter-grid {
   width: var(--content);
+  padding-inline: 0;
 }
 .stage-intro {
   order: 0;
@@ -1566,6 +1574,7 @@ a.hl-row:hover .hl-title {
 @media (min-width: 1069px) and (prefers-reduced-motion: no-preference) {
   html.js .stage .chapter-grid {
     width: var(--content-wide);
+    padding-inline: var(--wide-inset);
   }
   html.js .stage-intro {
     margin: 16px 0 0;

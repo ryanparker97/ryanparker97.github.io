@@ -5,6 +5,8 @@ import { useT, type Lang } from '~/i18n';
 import ThemeToggle from './ThemeToggle.astro';
 import LangSwitch from './LangSwitch.astro';
 import MobileMenu from './MobileMenu.astro';
+import NavAvatar from './NavAvatar.astro';
+import { getProfile } from '~/lib/content';
 
 const { lang, switchHref, chromeLang } = Astro.props as {
   lang: Lang;
@@ -12,6 +14,7 @@ const { lang, switchHref, chromeLang } = Astro.props as {
   chromeLang?: string;
 };
 const t = useT(lang);
+const { data: p } = await getProfile(lang);
 const path = stripLang(Astro.url.pathname);
 const links = (
   [
@@ -26,7 +29,7 @@ const links = (
 <header class="nav" data-nav lang={chromeLang}>
   <div class="bar chrome-row">
     <a href={localePath('/', lang)} class="logo" aria-label={t('nav.home')}>
-      Ryan Parker
+      {p.avatar ? <NavAvatar src={p.avatar} /> : p.name}
     </a>
     <nav aria-label={t('nav.primary')} class="links">
       {links.map((l) => (
@@ -112,6 +115,8 @@ const links = (
   .logo {
     display: inline-flex;
     align-items: center;
+    flex: none;
+    min-width: 44px;
     min-height: 44px;
     color: var(--text);
     font-size: 0.875rem;
@@ -158,6 +163,15 @@ const links = (
   .nav :is(a, button, summary):focus-visible {
     outline-offset: -7px;
   }
+  /* With the photo, the brand's ring is a round 2px accent ring around it (a -7px ring would cut across it).
+     The text fallback keeps the normal ring. */
+  .nav .logo:has(img.nav-avatar):focus-visible {
+    outline: none;
+  }
+  .nav .logo:focus-visible :global(img.nav-avatar) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
   .menu-btn {
     display: none;
     position: relative;
@@ -189,9 +203,11 @@ const links = (
     .tools :global(.lang-switch) {
       display: none;
     }
-    /* The 48px buttons sit flush with the right edge. */
+    /* The menu lines (17px inset, below) end on the column (plan U7, from the owner's "align edges"
+       answer: the lead chose the -17px overhang); the 48px box overhangs into the column margin (at
+       least 20px at 320). */
     .tools {
-      margin-inline-end: calc(-1 * max(0px, var(--gutter) - env(safe-area-inset-right)));
+      margin-inline-end: -17px;
     }
     .tools :global(.icon-btn) {
       width: 48px;

@@ -20,20 +20,20 @@ featured: false
 
 ## Situation
 
-Our data pipelines ran in Talend, where each one is defined as XML. The files are very long and hard to read, so the logic behind a pipeline was hard to understand. On top of that, the team had no access to Talend itself to check how a pipeline behaved.
+Our data pipelines ran in Talend, where each one is defined as XML. The files are very long and hard to read, so the logic behind a pipeline was hard to understand. On top of that, the team had no access to Talend itself to check how a pipeline behaved. The pipelines were also complex inside: one pipeline created many output tables and then reused those outputs as source tables for its own later transforms.
 
 ## Task
 
-I led the migration of the Talend pipelines to Databricks. The target was about 500 pipelines in one month, with no breaking change to the business model and the data schema left exactly as it was.
+I led the migration of the Talend pipelines to Databricks. The target was about 500 pipelines in one month, with no breaking change to the business model and the data schema left exactly as it was. The migration was also a chance to reduce that complexity and those dependencies.
 
 ## Action
 
-I removed the two blockers with AI tooling:
+I removed the two blockers with AI tooling, and reduced the complexity along the way:
 
 - **An AI skill to read the pipelines:** it inspects the pipeline definitions straight from the code repository and extracts the logic as a plain spec, so nobody needs Talend access or has to read the XML.
-- **Medallion conversion:** the same skill turns each spec into a Databricks pipeline that follows the medallion data model (bronze, silver, gold).
+- **Medallion conversion with Spark Declarative Pipelines:** the same skill turns each spec into a Databricks pipeline built with Spark Declarative Pipelines on the medallion data model (bronze, silver, gold), replacing tables that were written and read back inside one pipeline and cutting complexity and dependencies.
 - **An MCP server for validation:** I wrote an MCP that connects to the database in the dev environment, so the team could check the output of each migrated pipeline against the expected data and schema.
 
 ## Result
 
-The team migrated **500 pipelines in one month**, with no breaking change to the business model and the data schema still correct as it was.
+The team migrated **500 pipelines in one month**, with no breaking change to the business model and the data schema still correct as it was. The result has less complexity and fewer dependencies than in Talend.

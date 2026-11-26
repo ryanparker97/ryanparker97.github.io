@@ -13,7 +13,10 @@ pnpm install
 pnpm dev          # http://localhost:4321 (search needs a build: pnpm build)
 pnpm verify       # lint, format, types, unit tests, build, PDF checks, JS budget, e2e (the CI gates)
 pnpm lhci autorun # Lighthouse budgets (set CHROME_PATH to a Chromium, e.g. Playwright's)
+pnpm ci:local     # CI's static, build and e2e gates in Linux (Docker), on a clean copy of what git would commit
 ```
+
+`pnpm ci:local` runs CI's static, build and e2e gates in Playwright's Ubuntu 24.04 image, so failures show up before you push. It needs Docker running (Docker Desktop, OrbStack or any engine whose `docker` CLI works) and `pnpm install` once on the host. It copies tracked files with their working-tree edits, plus staged files; untracked files are left out unless you pass `--untracked=<path>` (use this for new files; bare `--untracked` copies every stray file), and ignored files are never copied. A warning names untracked files that tracked code mentions. The first run builds the image (about 1 min 41 s), then chromium takes about 2.5 to 3 minutes. `--webkit` adds the WebKit e2e job (about 4 more minutes), and `--only lint,test` runs a subset (install and what it needs still run). Each step prints pass or FAIL; reports go to `test-results/ci-local/<browser>/`. The Linux fonts match CI's e2e job (ubuntu-24.04), but arm64 against amd64, and ubuntu-latest (static, build) against 24.04, can still differ. Not mirrored: zizmor, Lighthouse, links, deploy and smoke.
 
 ## Add content
 

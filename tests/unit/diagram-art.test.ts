@@ -4,7 +4,10 @@ import { describe, expect, it } from 'vitest';
 
 const sets = [
   { dir: 'src/assets/star', names: ['emr-cost-optimization', 'talend-databricks-migration'] },
-  { dir: 'src/assets/highlights', names: ['agents', 'team', 'years'] },
+  {
+    dir: 'src/assets/highlights',
+    names: ['agents', 'career', 'skills', 'stories', 'team', 'years'],
+  },
 ];
 const allowed = ['--link', '--accent', '--text-2', '--fill', '--border', '--bg', '--surface-2'];
 const header =

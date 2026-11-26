@@ -44,7 +44,7 @@ test.describe('search', () => {
     await expect(page).toHaveURL(/\/blog\/neovim-setup-1-zero-to-editor\/$/);
   });
 
-  test('finds the experiences, STAR stories and projects (with #slug sub-results)', async ({
+  test('finds the experiences, In practice stories and projects (with #slug sub-results)', async ({
     page,
   }) => {
     await page.goto('/');
@@ -58,7 +58,7 @@ test.describe('search', () => {
       page.locator('.hit a[href*="/projects/#agentic-coding-workflow"]').first(),
     ).toBeVisible();
     await input.fill('Airflow reuse idle EMR clusters');
-    await expect(page.locator('.hit .type', { hasText: 'STAR' }).first()).toBeVisible();
+    await expect(page.locator('.hit .type', { hasText: 'In practice' }).first()).toBeVisible();
     await input.fill('zqzqzq');
     await expect(page.locator('#search-status')).toContainText('No results for “zqzqzq”.');
   });

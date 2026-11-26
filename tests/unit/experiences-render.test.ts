@@ -77,7 +77,8 @@ describe('Chapter', () => {
     });
     expect(one).toContain('Current');
     expect(one).toContain('href="/star/s1/"');
-    expect(one).toContain('Read the STAR story');
+    expect(one).toContain('Read the story');
+    expect(one).not.toContain('STAR');
     const many = await render({
       role: role('- **A:** x'),
       lang: 'vi',
@@ -85,6 +86,7 @@ describe('Chapter', () => {
       stories: ['a', 'b'],
     });
     expect(many).toContain('href="/vi/star/#acme-engineer"');
-    expect(many).toContain('2 câu chuyện STAR');
+    expect(many).toContain('2 câu chuyện');
+    expect(many).not.toContain('STAR');
   });
 });

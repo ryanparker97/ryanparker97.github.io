@@ -30,7 +30,8 @@ test.describe('Experiences index (Leadership cards)', () => {
     const navHrefs = await page
       .locator('.local-nav .links a')
       .evaluateAll((els) => els.map((e) => e.getAttribute('href')));
-    expect(navHrefs).toEqual(cardHrefs);
+    // owner, techstack: old = the role links only -> + the Tech stack link last (Q2).
+    expect(navHrefs).toEqual([...cardHrefs, '/experiences/#stack']);
     await expect(page.locator('.local-nav .pill')).toHaveAttribute('href', '/cv.pdf');
   });
 
@@ -40,8 +41,10 @@ test.describe('Experiences index (Leadership cards)', () => {
     await expect(page.locator('h1')).toHaveText('Built for banking data.');
     await expect(page.locator('main h2')).toHaveText([
       'Experience.',
+      'Tech stack.', // lead, techstack: new group after Experience.
       'Certifications.',
       'Education.',
+      'Next.',
       'Get in touch.',
     ]);
     const cards = await page.locator('.group-card').count();
@@ -87,10 +90,20 @@ test.describe('Experiences index (Leadership cards)', () => {
       0,
     );
     await expect(page.locator('#experience .group-card svg')).toHaveCount(0);
-    await expect(page.locator('.group-card svg:not(.group-card__logo)')).toHaveCount(0);
+    // lead, techstack: old `.group-card svg:not(.group-card__logo)` -> the Tech stack cards carry their own tool marks.
+    await expect(
+      page.locator('.card-group:not(#stack) .group-card svg:not(.group-card__logo)'),
+    ).toHaveCount(0);
+    // lead, techstack: the exemption is only for the tool marks; any other svg in #stack fails.
+    // owner, techstack-trim: old 22 -> 16 (six tools dropped).
+    await expect(page.locator('#stack svg')).toHaveCount(16);
+    await expect(page.locator('#stack svg:not(.group-card__tool-mark)')).toHaveCount(0);
+    // owner, next-card: old = the certification cards' marks; now + the Next. group's Claude card mark.
     await expect(page.locator('.group-card svg.group-card__logo')).toHaveCount(
-      await page.locator('#certifications .group-card svg').count(),
+      (await page.locator('#certifications .group-card svg').count()) +
+        (await page.locator('#next .group-card svg').count()),
     );
+    await expect(page.locator('#next .group-card svg')).toHaveCount(1);
   });
 
   test('every role has a logo, EN and VI', () => {
@@ -162,6 +175,60 @@ test.describe('Experiences index (Leadership cards)', () => {
     }
   });
 
+  // owner, photo-logos (A4): the AWS mark was dark navy on the black card. A mark that fails 3:1 on
+  // the dark surface (iconPlate) now sits on the same white plate as the FPT image: a white box with
+  // a 4px white ring outside it; in light there is none, and a mark that needs no plate gets none.
+  test('plated certification marks sit on the white ring like the FPT image, dark only', async ({
+    browser,
+  }) => {
+    for (const prefix of ['', '/vi']) {
+      for (const theme of ['light', 'dark']) {
+        const context = await browser.newContext({
+          viewport: { width: 1440, height: 900 },
+          reducedMotion: 'reduce',
+        });
+        await context.addInitScript((t) => localStorage.setItem('theme', t), theme);
+        const page = await context.newPage();
+        await page.goto(`${prefix}/experiences/`);
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+        const marks = await page
+          .locator('#certifications svg.group-card__logo')
+          .evaluateAll((els) =>
+            els.map((e) => {
+              const cs = getComputedStyle(e);
+              return {
+                icon: e.getAttribute('data-icon'),
+                plate: e.classList.contains('group-card__logo--plate'),
+                bg: cs.backgroundColor,
+                ring: cs.boxShadow,
+                radius: cs.borderTopLeftRadius,
+              };
+            }),
+          );
+        const where = `${prefix || 'en'} ${theme}`;
+        // owner, claude-card: old 2 -> 3; owner, next-card: back to 2 (earned only), the Claude card is in Next.
+        expect(marks.length, where).toBe(2);
+        expect(
+          marks.filter((m) => m.plate).map((m) => m.icon),
+          `${where}: Datadog and AWS need the plate`,
+        ).toEqual(['logos:datadog-icon', 'logos:aws']);
+        for (const m of marks) {
+          expect(m.radius, `${where} ${m.icon} radius`).toBe('4px');
+          if (m.plate && theme === 'dark') {
+            expect(m.bg, `${where} ${m.icon} plate`).toBe('rgb(255, 255, 255)');
+            expect(m.ring, `${where} ${m.icon} ring`).toMatch(
+              /^rgb\(255, 255, 255\) 0px 0px 0px 4px/,
+            );
+          } else {
+            expect(m.bg, `${where} ${m.icon} no plate`).toBe('rgba(0, 0, 0, 0)');
+            expect(m.ring, `${where} ${m.icon} no ring`).toBe('none');
+          }
+        }
+        await context.close();
+      }
+    }
+  });
+
   test('certifications are listed newest first', async ({ page }) => {
     await page.goto('/experiences/');
     // The eyebrow keeps "· year" together with a non-breaking space.
@@ -171,6 +238,41 @@ test.describe('Experiences index (Leadership cards)', () => {
     const at = (s: string) => text.findIndex((x) => x.includes(s));
     expect(at('Datadog · 2023')).toBeGreaterThanOrEqual(0);
     expect(at('Amazon Web Services · 2022')).toBeGreaterThan(at('Datadog · 2023'));
+    // owner, claude-card: the planned card came after both earned ones; owner, next-card: it is not here.
+    expect(at('Claude Certified Architect')).toBe(-1);
+  });
+
+  // owner, next-card: new. The Next. group shows the planned cert as a card (first, where its step
+  // line was), not as a line: same wording and mark as the Certifications card, never earned, no
+  // link. Restoring the `[data-next-step]` line on this page turns it red.
+  test('next: the planned Claude cert is a card, not a step line, and never reads as earned', async ({
+    page,
+  }) => {
+    for (const [path, eyebrow] of [
+      ['/experiences/', 'Anthropic · Planned · Apr 2027'],
+      ['/vi/experiences/', 'Anthropic · Dự kiến · 04/2027'],
+    ]) {
+      await page.goto(path);
+      await expect(page.locator('[data-next-step]')).toHaveCount(0);
+      const cards = page.locator('#next .group-card');
+      await expect(cards).toHaveCount(3);
+      const claude = cards.first();
+      await expect(claude.locator('h3')).toHaveText('Claude Certified Architect');
+      await expect(claude.locator('.group-card__eyebrow')).toHaveText(eyebrow.replace(/ /g, ' '), {
+        useInnerText: true,
+      });
+      await expect(
+        claude.locator('svg.group-card__logo[data-icon="logos:claude-icon"][aria-hidden="true"]'),
+      ).toHaveCount(1);
+      await expect(claude.locator('svg.group-card__logo--plate')).toHaveCount(0);
+      await expect(claude.locator('a')).toHaveCount(0);
+      const text = await claude.innerText();
+      expect(text).not.toMatch(/earned|đạt|\bID\b|verify|xác minh/i);
+      expect(text.match(/20\d\d/g)).toEqual(['2027']);
+      // owner, next-card: and only here, not under Certifications (2 earned cards).
+      await expect(page.locator('#certifications .group-card')).toHaveCount(2);
+      await expect(page.locator('#certifications')).not.toContainText('Claude');
+    }
   });
 
   test('education: one card per locale with the school logo, no dates or link', async ({
@@ -311,7 +413,8 @@ test('at 375px the local nav is a title + chevron dropdown; at 1280px a bar with
   await expect(page.locator('.local-nav .pill')).toBeVisible();
   await expect(page.locator('.local-nav .tray')).toBeHidden();
   await summary.click();
-  await expect(page.locator('.local-nav .tray a')).toHaveCount(order.length);
+  // owner, techstack: old order.length -> + the Tech stack link (Q2).
+  await expect(page.locator('.local-nav .tray a')).toHaveCount(order.length + 1);
   await page.keyboard.press('Escape');
   await expect(page.locator('.local-nav .tray')).toBeHidden();
   await page.setViewportSize({ width: 1280, height: 800 });
@@ -332,8 +435,10 @@ test('Vietnamese hero and translated group headings', async ({ page }) => {
   await expect(page.locator('h1')).toHaveText('Xây dựng cho dữ liệu ngân hàng.');
   await expect(page.locator('main h2')).toHaveText([
     'Kinh nghiệm.',
+    'Công nghệ sử dụng.', // lead, techstack: new group after Kinh nghiệm.
     'Chứng chỉ.',
     'Học vấn.',
+    'Tiếp theo.',
     'Liên hệ với tôi.',
   ]);
 });
@@ -355,7 +460,7 @@ for (const path of ['/experiences/', '/vi/experiences/']) {
       const list = page.locator('.local-nav .links');
       const links = page.locator('.local-nav .links a');
       const n = await links.count();
-      expect(n).toBe(order.length);
+      expect(n).toBe(order.length + 1); // owner, techstack: old order.length -> + Tech stack (Q2)
       const left = (await list.boundingBox())!.x;
       const starts = await links.evaluateAll((els) => els.map((e) => e.getBoundingClientRect().x));
       starts.forEach((x, i) =>
@@ -387,7 +492,8 @@ test('keyboard Tab reaches every local-nav link and keeps the focused one in vie
   await page.setViewportSize({ width: 900, height: 800 });
   await page.goto('/experiences/');
   await page.locator('.local-nav .links a').first().focus();
-  for (let i = 0; i < order.length; i++) {
+  // owner, techstack: old order.length -> + the Tech stack link (Q2).
+  for (let i = 0; i < order.length + 1; i++) {
     await page.waitForTimeout(500); // smooth scroll
     const inView = await page.evaluate(() => {
       const a = document.activeElement as HTMLElement;
@@ -400,10 +506,123 @@ test('keyboard Tab reaches every local-nav link and keeps the focused one in vie
     expect(inView, `focused link ${i}`).toBe(true);
     // Safari does not Tab to links by default, so WebKit moves focus programmatically.
     if (browserName !== 'webkit') await page.keyboard.press('Tab');
-    else if (i + 1 < order.length)
+    else if (i + 1 < order.length + 1)
       await page
         .locator('.local-nav .links a')
         .nth(i + 1)
         .focus();
   }
 });
+
+// lead, techstack: the Tech stack group shows the /skills/ tools with a mark, as /skills/ renders them.
+// The skills page is read in the browser (rows, then each row's marked children, one name once, in
+// band order); the one merge is PySpark into "Apache Spark" (owner Q3), so PySpark is dropped.
+// owner, techstack-trim: also less the six EXCLUDED tools, and grouped by skill role (not by /skills/ area).
+type SkillBand = { group: string; tools: [string, string | null][] };
+async function skillBands(page: import('@playwright/test').Page): Promise<SkillBand[]> {
+  return page.evaluate(() => {
+    const seen = new Set<string>();
+    const out: { group: string; tools: [string, string | null][] }[] = [];
+    for (const band of document.querySelectorAll('[data-spec-row]')) {
+      const tools: [string, string | null][] = [];
+      for (const el of band.querySelectorAll(':is(.tool-name, .spec-child):has(> svg)')) {
+        const name = el.textContent!.trim();
+        if (seen.has(name)) continue;
+        seen.add(name);
+        tools.push([name, el.querySelector('svg')!.getAttribute('data-icon')]);
+      }
+      if (tools.length) out.push({ group: band.querySelector('h2')!.textContent!.trim(), tools });
+    }
+    return out;
+  });
+}
+
+// owner, techstack-trim: removed from the Tech stack, still on /skills/ (checked below).
+const EXCLUDED = ['Talend', 'S3', 'Athena', 'Redshift', 'Lake Formation', 'CloudFormation'];
+// owner, techstack-trim: the six role cards, in order (src/i18n exp.stack.role.*).
+const ROLES = {
+  EN: [
+    'Languages & libs',
+    'Data processing',
+    'Orchestration',
+    'Cloud & storage',
+    'Code & CI/CD',
+    'Infra & monitoring',
+  ],
+  VI: [
+    'Ngôn ngữ & framework',
+    'Xử lý dữ liệu',
+    'Điều phối',
+    'Đám mây & lưu trữ',
+    'Mã nguồn & CI/CD',
+    'Hạ tầng & giám sát',
+  ],
+} as const;
+
+for (const [lang, skills, path] of [
+  ['EN', '/skills/', '/experiences/'],
+  ['VI', '/vi/skills/', '/vi/experiences/'],
+] as const)
+  test(`Tech stack: the /skills/ tools less the six exclusions, grouped by skill role (${lang})`, async ({
+    page,
+  }) => {
+    await page.goto(skills);
+    const bands = await skillBands(page);
+    const all = bands.flatMap((b) => b.tools);
+    // The exclusions are real /skills/ tools: dropping one from EXCLUDED must fail this test.
+    for (const name of EXCLUDED)
+      expect(
+        all.map(([n]) => n),
+        `${name} is still on /skills/`,
+      ).toContain(name);
+    const want = all.filter(([n]) => n !== 'PySpark' && !EXCLUDED.includes(n));
+    // owner, techstack-trim: old 22 -> 16. PySpark is the merge; the six are the exclusions.
+    expect(want).toHaveLength(16);
+    await page.goto(path);
+    const got = await page.evaluate(() =>
+      Array.from(document.querySelectorAll('#stack .group-card')).map((card) => ({
+        group: card.querySelector('h3')!.textContent!.trim(),
+        tools: Array.from(card.querySelectorAll('.group-card__tool')).map(
+          (li) =>
+            [li.textContent!.trim(), li.querySelector('svg')!.getAttribute('data-icon')] as [
+              string,
+              string | null,
+            ],
+        ),
+      })),
+    );
+    // owner, techstack-trim: old 4 /skills/-area cards -> 6 role cards, each with a heading and a tool.
+    expect(
+      got.map((c) => c.group),
+      'role headings',
+    ).toEqual([...ROLES[lang]]);
+    for (const c of got) expect(c.tools.length, `${c.group} is not empty`).toBeGreaterThan(0);
+    const flat = got.flatMap((c) => c.tools);
+    const byName = (x: [string, string | null], y: [string, string | null]) =>
+      x[0].localeCompare(y[0]);
+    expect([...flat].sort(byName)).toEqual([...want].sort(byName));
+    expect(new Set(flat.map(([n]) => n)).size, 'no tool twice').toBe(flat.length);
+    for (const name of await page.locator('#stack .group-card__tool').allTextContents())
+      expect(EXCLUDED, `${name} is excluded`).not.toContain(name.trim());
+    // Logos are decorative (the name is the text); no H4; the group follows Experience. and precedes Certifications.
+    for (const svg of await page.locator('#stack svg').all()) {
+      await expect(svg).toHaveAttribute('aria-hidden', 'true');
+      await expect(svg).not.toHaveAttribute('role', /.*/);
+      await expect(svg.locator('title')).toHaveCount(0);
+    }
+    await expect(page.locator('#stack h4')).toHaveCount(0);
+    await expect(page.locator('#stack')).toHaveAttribute('data-pagefind-ignore', '');
+    const order3 = await page.evaluate(() =>
+      ['experience', 'stack', 'certifications'].map(
+        (id) => document.getElementById(id)!.getBoundingClientRect().top,
+      ),
+    );
+    expect(order3[0]).toBeLessThan(order3[1]);
+    expect(order3[1]).toBeLessThan(order3[2]);
+    // The local nav gains the Tech stack link (last), and the role links are unchanged.
+    const lang2 = lang === 'EN' ? '' : '/vi';
+    await expect(page.locator('.local-nav .links a').last()).toHaveAttribute(
+      'href',
+      `${lang2}/experiences/#stack`,
+    );
+  });

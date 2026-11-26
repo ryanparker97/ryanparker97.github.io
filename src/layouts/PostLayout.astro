@@ -4,12 +4,14 @@ import { Image } from 'astro:assets';
 import interLatin from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import BaseLayout from './BaseLayout.astro';
 import SeriesBox from '~/components/blog/SeriesBox.astro';
-import MoreFrom from '~/components/blog/MoreFrom.astro';
+import PostCards from '~/components/blog/PostCards.astro';
+import Section from '~/components/tile/Section.astro';
 import DotList from '~/components/ui/DotList.astro';
 import CoverCredit from '~/components/blog/CoverCredit.astro';
 import Toc from '~/components/blog/Toc.astro';
 import { seriesNeighbors } from '~/lib/blog';
-import type { Post } from '~/lib/blog-content';
+import { getPostRows, type Post } from '~/lib/blog-content';
+import type { PostRow } from '~/lib/topics';
 import { formatDate } from '~/lib/format';
 import { blogPostingLd } from '~/lib/jsonld';
 import { getProfile } from '~/lib/content';
@@ -48,20 +50,14 @@ const neighbors = series && d.seriesPart ? seriesNeighbors(series.parts, d.serie
 const seriesLabel =
   series && d.seriesPart ? `${t('series.part', { n: d.seriesPart })} · ${series.title}` : undefined;
 const category = [topic?.title, seriesLabel].filter(Boolean).join(' · ') || t('blog.article');
-// "More from": the previous and next published parts, else the two newest other posts.
-const more = neighbors
-  ? [neighbors.prev, neighbors.next]
-      .filter((n) => n?.post)
-      .map((n) => ({
-        href: localePath(`/blog/${n!.post!.slug}/`, lang),
-        title: t(n === neighbors.prev ? 'series.prev' : 'series.next', {
-          n: n!.part,
-          title: n!.title,
-        }),
-      }))
-  : [prev, next]
-      .filter((p): p is Post => !!p)
-      .map((p) => ({ href: localePath(`/blog/${p.slug}/`, lang), title: p.data.title }));
+// Closing band: the previous and next published parts, else the two newest other posts.
+const moreSlugs = (
+  neighbors ? [neighbors.prev?.post?.slug, neighbors.next?.post?.slug] : [prev?.slug, next?.slug]
+).filter((s): s is string => !!s);
+const { rows: allRows } = await getPostRows(lang);
+const moreRows = moreSlugs
+  .map((s) => allRows.find((r) => r.post.slug === s))
+  .filter((r): r is PostRow => !!r);
 ---
 
 <BaseLayout
@@ -144,19 +140,43 @@ const more = neighbors
     <div class:list={['prose body t-article-body', { dropcap: d.dropcap }]}>
       <slot />
     </div>
-
-    <footer class="foot">
-      <MoreFrom {lang} heading={t(neighbors ? 'blog.moreSeries' : 'blog.moreFrom')} items={more} />
-    </footer>
   </article>
+  {moreRows.length > 0 && (
+    <Section id="read-more" tone="surface" labelledby="more-reading-title">
+      <div data-pagefind-ignore>
+        <PostCards
+          {lang}
+          id="more-reading"
+          title={t(neighbors ? 'blog.moreSeries' : 'blog.moreFrom')}
+          rows={moreRows}
+        />
+      </div>
+    </Section>
+  )}
 </BaseLayout>
 
 <style>
   .post {
     display: grid;
     grid-template-columns: 1fr minmax(0, var(--article)) 1fr;
-    grid-template-areas: '. head .' '. post-hero .' '. series .' '. tocn .' '. body .' '. foot .';
+    grid-template-areas: '. head .' '. post-hero .' '. series .' '. tocn .' '. body .';
     padding-bottom: 64px;
+  }
+  /* From 1280 the article starts on the nav/footer column's left edge and the TOC rail ends on its right
+     edge (owner, photo-logos: blog TOC onto the column). The middle three tracks are the 980 column:
+     article, the leftover gap, the 248px rail; the two 1fr tracks are its margins. */
+  @media (min-width: 1280px) {
+    .post {
+      grid-template-columns:
+        1fr var(--article) calc(var(--content) - var(--article) - 248px)
+        248px 1fr;
+      grid-template-areas:
+        '. head . . .'
+        '. post-hero . . .'
+        '. series . . .'
+        '. tocn . . .'
+        '. body . . .';
+    }
   }
   .head {
     grid-area: head;
@@ -172,7 +192,7 @@ const more = neighbors
     margin-inline: auto;
     height: auto;
     aspect-ratio: 1;
-    border-radius: 18px;
+    border-radius: var(--radius-md);
     outline: 1px solid var(--keyline);
     outline-offset: -1px;
   }
@@ -187,10 +207,6 @@ const more = neighbors
   .body {
     grid-area: body;
     margin-top: 24px;
-  }
-  .foot {
-    grid-area: foot;
-    margin-top: 64px;
   }
   .head p {
     margin: 0;

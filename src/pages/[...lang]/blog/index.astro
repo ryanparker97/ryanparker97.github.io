@@ -1,10 +1,10 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import LeadCard from '~/components/blog/LeadCard.astro';
-import PostRows from '~/components/blog/PostRows.astro';
+import PostCards from '~/components/blog/PostCards.astro';
 import CoverCredit from '~/components/blog/CoverCredit.astro';
 import Hero from '~/components/tile/Hero.astro';
+import Section from '~/components/tile/Section.astro';
 import { getPostRows } from '~/lib/blog-content';
 import { getLang, langStaticPaths } from '~/i18n/routes';
 import { blogNav } from '~/lib/localnav';
@@ -25,26 +25,19 @@ const credits = [...new Set(rows.map((r) => r.post.imageCredit).filter((c): c is
   {fallback}
   localNav={blogNav(lang, 'all')}
 >
-  <Hero tight title={t('blog.hero')} subline={t('blog.subline')} />
+  <Hero eyebrow={t('blog.title')} title={t('blog.hero')} copy={t('blog.subline')} />
   {rows.length > 0 ? (
-    <section class="section section--tight">
-      <div class="section-inner">
-        <LeadCard {lang} row={rows[0]} />
-        {rows.length > 1 && (
-          <>
-            <h2 class="more-title">{t('blog.more')}</h2>
-            <div class="more-posts">
-              <PostRows {lang} rows={rows.slice(1)} />
-            </div>
-          </>
-        )}
-        {credits.map((c) => (
-          <p class="t-caption cover-credits">
-            <CoverCredit {lang} credit={c} />
-          </p>
-        ))}
-      </div>
-    </section>
+    <Section id="posts" tone="surface" labelledby="latest-title">
+      <PostCards {lang} id="latest" title={t('blog.latest')} rows={[rows[0]]} />
+      {rows.length > 1 && (
+        <PostCards {lang} id="more" rule title={t('blog.more')} rows={rows.slice(1)} />
+      )}
+      {credits.map((c) => (
+        <p class="t-caption cover-credits">
+          <CoverCredit {lang} credit={c} />
+        </p>
+      ))}
+    </Section>
   ) : (
     <section class="section section--tight">
       <p class="section-inner t-subhead" style="text-align:center">
@@ -55,19 +48,6 @@ const credits = [...new Set(rows.map((r) => r.post.imageCredit).filter((c): c is
 </BaseLayout>
 
 <style>
-  .more-title {
-    margin: 48px 0 16px;
-    font-size: 1.75rem;
-    line-height: 1.1;
-    font-weight: 700;
-  }
-  @media (min-width: 735px) {
-    .more-posts :global(.post-rows) {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      column-gap: 48px;
-    }
-  }
   .cover-credits {
     margin: 24px 0 0;
     color: var(--text-2);

@@ -123,11 +123,31 @@ test.describe('motion: reduced', () => {
             (e) =>
               e.getClientRects().length &&
               !e.closest('.paddle, [disabled], .icon-btn') &&
-              !e.parentElement?.closest('svg.page-art'),
+              !e.parentElement?.closest('svg.page-art') &&
+              // Named change (home-alt-6, settled by the lead): the Wall's static tilt is the one
+              // transform allowed under reduced motion; it never moves. Pinned to one element below.
+              !e.matches('#top .w-wall') &&
+              // lead, techstack: the Java and Terraform optical shifts (spec §4.8) are a static
+              // transform on the mark's <use>; they never move, so they are not motion.
+              !e.matches('svg.group-card__tool-mark > use'),
           )
           .map((e) => e.className),
       );
       expect(bad, path).toEqual([]);
+    }
+  });
+
+  test('Home: the static tilt is the only transform in main, on exactly one element', async ({
+    page,
+  }) => {
+    for (const path of ['/', '/vi/']) {
+      await page.goto(path);
+      const transformed = await page.evaluate(() =>
+        [...document.querySelectorAll('main, main *')]
+          .filter((e) => getComputedStyle(e).transform !== 'none')
+          .map((e) => `${e.tagName.toLowerCase()}.${e.className}`),
+      );
+      expect(transformed, path).toEqual(['div.w-wall']);
     }
   });
 
@@ -162,11 +182,11 @@ test('Vietnamese pages use the new strings', async ({ page }) => {
   await page.goto('/vi/projects/');
   await expect(page.locator('h1')).toHaveText('Những thứ tôi đã xây dựng.');
   await page.goto('/vi/star/');
-  await expect(page.locator('h1')).toHaveText('Những câu chuyện từ công việc.');
+  await expect(page.locator('h1')).toHaveText('Việc thật. Kết quả thật.');
   await page.goto('/vi/blog/');
   await expect(page.locator('h1')).toHaveText('Ghi chú về dữ liệu và công cụ.');
   await page.goto('/vi/');
-  await expect(page.locator('#highlights h2')).toHaveText('Những điểm nổi bật.');
+  await expect(page.locator('#more h2')).toHaveText('Cùng trò chuyện nhé.');
 });
 
 test.describe('secondary button hover contrast', () => {

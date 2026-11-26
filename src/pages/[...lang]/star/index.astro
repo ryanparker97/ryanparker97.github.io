@@ -1,18 +1,15 @@
 ---
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import StarArt from '~/assets/art/star-steps.svg';
-import StoryCard from '~/components/star/StoryCard.astro';
-import Gallery from '~/components/tile/Gallery.astro';
-import SectionHeader from '~/components/tile/SectionHeader.astro';
-import CompetencyFilter from '~/components/star/CompetencyFilter.astro';
+import StoryTeaser from '~/components/star/StoryTeaser.astro';
+import MoreFrom from '~/components/blog/MoreFrom.astro';
 import Hero from '~/components/tile/Hero.astro';
 import { getLocalized } from '~/lib/content';
 import { companyLabel, sortRoles } from '~/lib/cv';
-import { groupStories } from '~/lib/star';
-import { competencyKeys } from '~/content/competencies';
+import { byNewest, deskAnchors, deskSlots, groupStories } from '~/lib/star';
 import { getLang, langStaticPaths } from '~/i18n/routes';
 import { useT } from '~/i18n';
+import { localePath } from '~/i18n/routes';
 
 export const getStaticPaths = (() => langStaticPaths()) satisfies GetStaticPaths;
 
@@ -21,11 +18,23 @@ const t = useT(lang);
 const { items: stories, fallback } = await getLocalized('star', lang);
 const { items: roles, fallback: rolesFallback } = await getLocalized('experience', lang);
 const sortedRoles = sortRoles(roles.map((r) => ({ ...r, start: r.data.start, end: r.data.end })));
+// Validates every story's role and drives the local nav; the desk itself is ordered by date.
 const groups = groupStories(stories, sortedRoles);
-const present = competencyKeys.filter((c) => stories.some((s) => s.data.competencies.includes(c)));
 const labelFor = (g: (typeof groups)[number]) =>
   g.role ? companyLabel(g.role.data.company, g.role.data.client) : t('star.other');
-const cards = groups.flatMap((g) => g.stories.map((st, i) => ({ st, g, anchor: i === 0 })));
+const ordered = byNewest(stories);
+const { lead, tiles, list } = deskSlots(ordered);
+const anchors = deskAnchors(ordered);
+const roleOf = (slug: string) => groups.find((g) => g.stories.some((s) => s.slug === slug))!;
+const teaser = (s: (typeof ordered)[number]) => {
+  const g = roleOf(s.slug);
+  return { story: s, role: g.role, roleId: g.id, anchor: anchors.has(s.slug) };
+};
+const more = list.map((s) => ({
+  href: localePath(`/star/${s.slug}/`, lang),
+  title: s.data.title,
+  id: anchors.get(s.slug),
+}));
 const n = stories.length;
 const m = groups.length;
 const subline = t('star.subline', {
@@ -47,54 +56,55 @@ const subline = t('star.subline', {
     })),
   }}
 >
-  <Hero tight title={t('star.hero')} {subline}>
-    <StarArt class="page-art page-art--steps" role="img" aria-label={t('star.art')} />
-    <CompetencyFilter {lang} {present} />
-  </Hero>
-  <section class="section section--surface star-stories" id="stories">
-    <div class="section-inner section-inner--wide">
-      <SectionHeader id="stories-title" align="start" title={t('star.gallery')} />
-    </div>
-    <Gallery
-      {lang}
-      labelledby="stories-title"
-      id="stories-list"
-      few={cards.length <= 3}
-      prevLabel={t('gallery.prevStories')}
-      nextLabel={t('gallery.nextStories')}
-    >
-      {cards.map((c, i) => (
-        <StoryCard
-          story={c.st}
-          {lang}
-          role={c.g.role}
-          roleId={c.g.id}
-          anchor={c.anchor}
-          index={i}
-        />
-      ))}
-    </Gallery>
-    <div class="section-inner section-inner--wide empty" id="star-empty" hidden>
-      <p class="t-subhead">{t('star.empty')}</p>
-      <button type="button" class="btn btn-secondary" data-reset>
-        {t('star.reset')}
-      </button>
-    </div>
+  <Hero tight title={t('star.hero')} {subline} />
+  <section class="news-band star-desk" id="stories" aria-label={t('star.title')}>
+    {lead && <StoryTeaser {...teaser(lead)} {lang} lead index={0} />}
+    {tiles.length > 0 && (
+      <ul class="news-grid desk-tiles" role="list">
+        {tiles.map((s, i) => (
+          <li>
+            <StoryTeaser {...teaser(s)} {lang} index={i + 1} />
+          </li>
+        ))}
+      </ul>
+    )}
+    {more.length > 0 && (
+      <div class="desk-more">
+        <MoreFrom {lang} heading={t('star.moreFrom')} items={more} />
+      </div>
+    )}
   </section>
 </BaseLayout>
 
 <style>
-  .star-stories :global(.gallery) {
-    background: transparent;
+  .star-desk > :global(.story-teaser--lead),
+  .desk-more {
+    width: var(--content);
+    margin-inline: auto;
   }
-  .empty {
-    text-align: center;
+  .desk-tiles {
+    margin-top: 24px;
   }
-  .empty .btn {
-    margin-top: 17px;
+  .desk-tiles > li {
+    display: grid;
+    min-width: 0;
+  }
+  .desk-more {
+    margin-top: 48px;
+  }
+  @media (min-width: 1069px) {
+    .desk-tiles {
+      margin-top: 36px;
+    }
+  }
+  @media (min-width: 735px) {
+    .desk-tiles > li:only-child {
+      grid-column: 1 / -1;
+    }
+    .desk-tiles > li:only-child :global(.story-teaser) {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 40px;
+      align-items: center;
+    }
   }
 </style>
-
-<script>
-  import '~/scripts/star';
-</script>

@@ -9,7 +9,7 @@
 }
 .prose :is(h2, h3) {
   font-family: var(--font-sans);
-  scroll-margin-top: calc(var(--sticky-h) + 16px + var(--eyebrow-room));
+  scroll-margin-top: var(--eyebrow-room);
 }
 .prose h2 {
   margin-top: 44px;
