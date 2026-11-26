@@ -703,23 +703,35 @@ for (const lang of ['en', 'vi'] as const)
             fit: getComputedStyle(e).objectFit,
           };
         });
-        for (const [k, v] of [
-          ['left', [imgEl.l, pop.left]],
-          ['right', [imgEl.r, pop.right]],
-          ['top', [imgEl.t, pop.top]],
-          ['bottom', [imgEl.b, pop.bottom]],
-        ] as const)
-          expect(Math.abs(v[0] - v[1]), `${where} image ${k} = frame`).toBeLessThanOrEqual(0.5);
-        // owner, photo-align-cutout (was: image box ratio = natural ratio, not cover): the box is the frame's
-        // and the picture is drawn `contain` inside it, filling one axis, its bottom on the frame's bottom.
+        // owner, photo-layout (O1): from M the picture is drawn at the frame's height (width from the ratio,
+        // centred, bottom on the frame's bottom; was: the img box = the frame box). S keeps the frame box.
         expect(imgEl.fit, `${where} object-fit`).toBe('contain');
-        const k = Math.min(imgEl.w / imgEl.nW, imgEl.h / imgEl.nH);
-        expect(imgEl.nW * k, `${where} drawn width inside`).toBeLessThanOrEqual(imgEl.w + 0.5);
-        expect(imgEl.nH * k, `${where} drawn height inside`).toBeLessThanOrEqual(imgEl.h + 0.5);
-        expect(
-          Math.min(Math.abs(imgEl.nW * k - imgEl.w), Math.abs(imgEl.nH * k - imgEl.h)),
-          `${where} drawn picture fills one axis`,
-        ).toBeLessThanOrEqual(0.5);
+        if (width < 735) {
+          for (const [k, v] of [
+            ['left', [imgEl.l, pop.left]],
+            ['right', [imgEl.r, pop.right]],
+            ['top', [imgEl.t, pop.top]],
+            ['bottom', [imgEl.b, pop.bottom]],
+          ] as const)
+            expect(Math.abs(v[0] - v[1]), `${where} image ${k} = frame`).toBeLessThanOrEqual(0.5);
+        } else {
+          expect(
+            Math.abs(imgEl.h - pop.height),
+            `${where} image height = frame`,
+          ).toBeLessThanOrEqual(0.5);
+          expect(
+            Math.abs(imgEl.w - pop.height * (600 / 894)),
+            `${where} image width from the ratio`,
+          ).toBeLessThanOrEqual(0.5);
+          expect(
+            Math.abs((imgEl.l + imgEl.r) / 2 - (pop.left + pop.right) / 2),
+            `${where} image centred on the frame`,
+          ).toBeLessThanOrEqual(0.5);
+          expect(
+            Math.abs(imgEl.b - pop.bottom),
+            `${where} image bottom = frame`,
+          ).toBeLessThanOrEqual(0.5);
+        }
         if (width < 735)
           expect(
             Math.abs(pop.width / pop.height - 600 / 894),

@@ -253,4 +253,39 @@ describe('sources', () => {
     expect(src).toMatch(/text-align: center;/);
     expect(src).toMatch(/\.t-intro \{[^}]*color: var\(--text-2\);/);
   });
+
+  // owner, home-type-ladder: #next and #more use the O4 ladder (kicker and "when" 17, step name and
+  // lead 19 / 21 / 24); the shared NextStep keeps its own sizes and Home scopes the change.
+  it('#next and #more follow the O4 ladder', () => {
+    const next = read('HomeNext');
+    const base = next.slice(0, next.indexOf('@media (min-width: 735px)'));
+    const m735 = next.slice(
+      next.indexOf('@media (min-width: 735px)'),
+      next.indexOf('@media (min-width: 1069px)'),
+    );
+    const m1069 = next.slice(next.indexOf('@media (min-width: 1069px)'));
+    expect(base).toMatch(/\.home-kicker \{[^}]*font-size: 1\.0625rem;/);
+    expect(m735).not.toMatch(/\.home-kicker/);
+    expect(next).toMatch(/\.next-path :global\(\.next-step__when\) \{[^}]*font-size: 1\.0625rem;/);
+    expect(base).toMatch(/\.next-path :global\(\.next-step__name\) \{[^}]*font-size: 1\.1875rem;/);
+    expect(m735).toMatch(/\.next-path :global\(\.next-step__name\) \{[^}]*font-size: 1\.3125rem;/);
+    expect(m1069).toMatch(/\.next-path :global\(\.next-step__name\) \{[^}]*font-size: 1\.5rem;/);
+
+    const talk = read('LetsTalk');
+    const tBase = talk.slice(0, talk.indexOf('@media (min-width: 735px)'));
+    const t735 = talk.slice(
+      talk.indexOf('@media (min-width: 735px)'),
+      talk.indexOf('@media (min-width: 1069px)'),
+    );
+    const t1069 = talk.slice(talk.indexOf('@media (min-width: 1069px)'));
+    expect(tBase).toMatch(/\.t-intro \{[^}]*font-size: 1\.1875rem;/);
+    expect(t735).toMatch(/\.t-intro \{[^}]*font-size: 1\.3125rem;/);
+    expect(t1069).toMatch(/\.t-intro \{[^}]*font-size: 1\.5rem;/);
+  });
+
+  it('NextStep is untouched: its own sizes stay 14 and 21px', () => {
+    const src = readFileSync('src/components/ui/NextStep.astro', 'utf8');
+    expect(src).toMatch(/\.next-step__when \{[^}]*font-size: 0\.875rem;/);
+    expect(src).toMatch(/\.next-step__name \{[^}]*font-size: 1\.3125rem;/);
+  });
 });

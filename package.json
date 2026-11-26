@@ -20,6 +20,7 @@
     "test:e2e": "playwright test",
     "lhci": "lhci",
     "verify": "pnpm lint && pnpm format:check && pnpm check && pnpm test && pnpm build && pnpm test:pdf && pnpm test:budget && pnpm test:e2e",
+    "ci:local": "tsx scripts/ci-local.ts",
     "test:budget": "tsx scripts/js-budget.ts"
   },
   "dependencies": {

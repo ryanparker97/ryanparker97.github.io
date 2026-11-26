@@ -67,7 +67,7 @@ const t = useT(lang);
   #next-title {
     scroll-margin-top: var(--eyebrow-room);
   }
-  /* Type rows (scoped copy, spec §4.1). */
+  /* Type rows (scoped copy, spec §4.1): the O4 Home ladder (home-type-ladder). */
   .home-big {
     margin: 0;
     font-size: 2rem;
@@ -77,10 +77,10 @@ const t = useT(lang);
   }
   .home-kicker {
     margin: 0;
-    font-size: 0.875rem;
-    line-height: 1.2858;
+    font-size: 1.0625rem;
+    line-height: 1.2353;
     font-weight: 600;
-    letter-spacing: -0.016em;
+    letter-spacing: -0.022em;
     color: var(--text-2);
   }
   .goal-title {
@@ -121,6 +121,17 @@ const t = useT(lang);
     gap: 28px;
     min-width: 0;
   }
+  /* The dated step (shared NextStep) on the Home ladder: 17px when, 19 / 21 / 24px name. Scoped here
+     so NextStep keeps its own sizes; colour and weight stay NextStep's. */
+  .next-path :global(.next-step__when) {
+    font-size: 1.0625rem;
+    line-height: 1.2353;
+    letter-spacing: -0.022em;
+  }
+  .next-path :global(.next-step__name) {
+    font-size: 1.1875rem;
+    line-height: 1.2105;
+  }
   .goals {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -137,10 +148,9 @@ const t = useT(lang);
       font-size: 2.5rem;
       line-height: 1.1;
     }
-    .home-kicker {
-      font-size: 1.0625rem;
-      line-height: 1.2353;
-      letter-spacing: -0.022em;
+    .next-path :global(.next-step__name) {
+      font-size: 1.3125rem;
+      line-height: 1.1905;
     }
     /* From M the H2 sits in the identity row's photo-plus-gap track and the path beside it, on the
        identity text's left edge and ending on the column's right edge like it. The goals stay one
@@ -163,6 +173,10 @@ const t = useT(lang);
       font-size: 3rem;
       line-height: 1.0834;
       letter-spacing: -0.003em;
+    }
+    .next-path :global(.next-step__name) {
+      font-size: 1.5rem;
+      line-height: 1.1667;
     }
   }
 </style>

@@ -52,7 +52,7 @@ const t = useT(lang);
   #more-title {
     scroll-margin-top: var(--eyebrow-room);
   }
-  /* Type row (scoped copy, spec §4.1). */
+  /* Type rows (scoped copy, spec §4.1): the O4 Home ladder (home-type-ladder). */
   .home-big {
     margin: 0;
     font-size: 2rem;
@@ -63,6 +63,7 @@ const t = useT(lang);
   .t-intro {
     margin: 14px 0 0;
     color: var(--text-2);
+    font-size: 1.1875rem;
   }
   /* Pills: centred, 12px 14px gap (the global .actions is centred with a 17px gap). */
   .home-acts {
@@ -92,12 +93,19 @@ const t = useT(lang);
       font-size: 2.5rem;
       line-height: 1.1;
     }
+    .t-intro {
+      font-size: 1.3125rem;
+    }
   }
   @media (min-width: 1069px) {
     .home-big {
       font-size: 3rem;
       line-height: 1.0834;
       letter-spacing: -0.003em;
+    }
+    .t-intro {
+      font-size: 1.5rem;
+      line-height: 1.3334;
     }
   }
 </style>

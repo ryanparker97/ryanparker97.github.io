@@ -877,7 +877,7 @@ test.describe('Home photo frame', () => {
         objectFit: getComputedStyle(img).objectFit,
         f: { left: f.left, right: f.right, top: f.top, bottom: f.bottom, w: f.width, h: f.height },
         i: { left: i.left, right: i.right, top: i.top, bottom: i.bottom, w: i.width, h: i.height },
-        text: { top: t.top, bottom: t.bottom },
+        text: { top: t.top, bottom: t.bottom, left: t.left },
         acts: { top: a.top, bottom: a.bottom },
         radius: cs.borderTopLeftRadius,
         transform: getComputedStyle(img).transform,
@@ -909,25 +909,44 @@ test.describe('Home photo frame', () => {
           ).toBeLessThanOrEqual(1);
         }
         expect(m.radius, `${where} radius`).toBe(`${radius}px`);
-        // owner, profile-image-full (was: image square, `img` tall, bottom on the frame, no band above,
-        // head row 80 inside the frame, centred): the image box is the frame box, at the photo's own ratio.
-        for (const k of ['left', 'right', 'top', 'bottom'] as const)
-          expect(Math.abs(m.i[k] - m.f[k]), `${where} image ${k} = frame ${k}`).toBeLessThanOrEqual(
+        expect(m.objectFit, `${where} object-fit`).toBe('contain');
+        if (edge === 'ratio') {
+          // S: the image box is the frame box at the photo's own ratio (unchanged).
+          for (const k of ['left', 'right', 'top', 'bottom'] as const)
+            expect(
+              Math.abs(m.i[k] - m.f[k]),
+              `${where} image ${k} = frame ${k}`,
+            ).toBeLessThanOrEqual(0.5);
+        } else {
+          // owner, photo-layout (O1; was: the image box = the frame box, drawn contained at the frame's width,
+          // so 21.5px (1440) and 55px (1024) of empty frame sat above the head): from M the picture is drawn
+          // at the frame's height, its box centred on the frame with the photo's ratio, bottom on the frame's
+          // bottom, so the top of the picture is the intro's top. Its transparent side margins pass the column.
+          expect(
+            Math.abs(m.i.h - m.f.h),
+            `${where} image height = frame height`,
+          ).toBeLessThanOrEqual(0.5);
+          expect(
+            Math.abs(m.i.w - m.f.h * (600 / 894)),
+            `${where} image width from the ratio`,
+          ).toBeLessThanOrEqual(0.5);
+          expect(Math.abs(m.i.top - m.f.top), `${where} image top = frame top`).toBeLessThanOrEqual(
             0.5,
           );
-        // owner, photo-align-cutout (was: the image box ratio = the natural ratio): the box is the frame's, and
-        // the picture is drawn `contain` (the natural ratio), inside the frame, filling one axis, its bottom on
-        // the frame's bottom. At S the frame ratio is the photo's (600:894).
-        expect(m.objectFit, `${where} object-fit`).toBe('contain');
-        const k = Math.min(m.f.w / m.nW, m.f.h / m.nH);
-        const dw = m.nW * k;
-        const dh = m.nH * k;
-        expect(dw, `${where} drawn width inside`).toBeLessThanOrEqual(m.f.w + 0.5);
-        expect(dh, `${where} drawn height inside`).toBeLessThanOrEqual(m.f.h + 0.5);
-        expect(
-          Math.min(Math.abs(dw - m.f.w), Math.abs(dh - m.f.h)),
-          `${where} drawn picture fills one axis`,
-        ).toBeLessThanOrEqual(0.5);
+          expect(
+            Math.abs(m.i.bottom - m.f.bottom),
+            `${where} image bottom = frame bottom`,
+          ).toBeLessThanOrEqual(0.5);
+          expect(
+            Math.abs((m.i.left + m.i.right) / 2 - (m.f.left + m.f.right) / 2),
+            `${where} image centred on the frame`,
+          ).toBeLessThanOrEqual(0.5);
+          expect(m.i.w, `${where} image wider than the frame`).toBeGreaterThan(m.f.w);
+          // No overlap with the name, links or CV button: the box ends before the text column starts.
+          expect(m.i.right, `${where} image right <= text left`).toBeLessThanOrEqual(
+            m.text.left + 0.5,
+          );
+        }
         if (edge === 'ratio')
           expect(Math.abs(m.f.w / m.f.h - 600 / 894), `${where} S ratio`).toBeLessThanOrEqual(
             0.005,
@@ -982,8 +1001,12 @@ test.describe('Home photo frame', () => {
       });
       const where = `@${w} DPR ${dpr} (${r.natural}px for ${r.rendered.toFixed(1)}px)`;
       expect(r.dpr, `${where} dpr`).toBe(dpr);
-      expect(r.natural, `${where} sharp`).toBeGreaterThanOrEqual(r.rendered * dpr - 1);
-      expect(r.rendered * dpr, `${where} not above the 600px source`).toBeLessThanOrEqual(600);
+      expect(r.natural, `${where} sharp`).toBeGreaterThanOrEqual(
+        Math.min(r.rendered * dpr - 1, 600),
+      );
+      // owner, photo-layout (O1): the picture is 302.4px wide at 1440 (was 288), so 604.8 device pixels at DPR 2
+      // from the 600px source: a 1% upscale, allowed; anything beyond fails.
+      expect(r.rendered * dpr, `${where} not above the 600px source`).toBeLessThanOrEqual(606);
       await ctx.close();
     });
 
@@ -2129,13 +2152,14 @@ test.describe('Home role line hierarchy', () => {
 
 // owner, title-below-name: the role title sits directly under the name, bigger (32 / 28 / 24px at L / M / S, was
 // 17 / 17 / 14px), the areas line keeps its size; the H1 is the top of the text block (and of the frame from L).
+// owner, home-type-ladder: areas 14 -> 17px at S (390 and 320), one body size at every width.
 test.describe('Home title below the name', () => {
   for (const { path, lang } of LANGS)
     for (const [w, title, areas] of [
       [1440, 32, 17],
       [1024, 28, 17],
-      [390, 24, 14],
-      [320, 24, 14],
+      [390, 24, 17],
+      [320, 24, 17],
     ] as const)
       test(`${lang} ${w}: the title is ${title}px directly under the name, then the areas line`, async ({
         page,
@@ -2175,6 +2199,129 @@ test.describe('Home title below the name', () => {
             'the frame top is the name top',
           ).toBeLessThanOrEqual(1);
         expect(r.sw, 'no sideways scroll').toBeLessThanOrEqual(w);
+      });
+});
+
+// owner, home-type-ladder (O4): one size ladder for the Home hero and the sections below it.
+// display 72/56/44, section 48/40/32, title 32/28/24, lead 24/21/19, body 17, fine 12, goal H3 24 (L/M/S).
+test.describe('Home type ladder (O4)', () => {
+  type Row = [name: string, selector: string, steps: [number, number, number] | number];
+  const ROWS: Row[] = [
+    ['display', '#top .w-name', [72, 56, 44]],
+    ['section next', '#next .home-big', [48, 40, 32]],
+    ['section more', '#more .home-big', [48, 40, 32]],
+    ['title', '#top .w-title', [32, 28, 24]],
+    ['lead intro', '#top .w-say', [24, 21, 19]],
+    ['lead more', '#more .t-intro', [24, 21, 19]],
+    ['lead step name', '#next .next-step__name', [24, 21, 19]],
+    ['body areas', '#top .w-areas', 17],
+    ['body hero links', '#top .w-links a', 17],
+    ['body kicker', '#next .home-kicker', 17],
+    ['body when', '#next .next-step__when', 17],
+    ['body goal text', '#next .home-text', 17],
+    ['body goal links', '#next .home-links a', 17],
+    ['body hero pills', '#top .actions .btn', 17],
+    ['body more pills', '#more .actions .btn', 17],
+    ['fine logos note', '#next .logos-note', 12],
+    ['fine facts', '#more [data-facts] li', 12],
+    ['goal H3', '#next .goal-title', 24],
+  ];
+  const ALLOWED: Record<'L' | 'M' | 'S', number[]> = {
+    L: [72, 48, 32, 24, 17, 12],
+    M: [56, 40, 28, 24, 21, 17, 12],
+    S: [44, 32, 24, 19, 17, 12],
+  };
+
+  for (const { path, lang } of LANGS)
+    for (const [w, band, idx] of [
+      [1440, 'L', 0],
+      [1024, 'M', 1],
+      [390, 'S', 2],
+      [320, 'S', 2],
+    ] as const)
+      test(`${lang} ${w}: every Home text size is a step of the ladder`, async ({ page }) => {
+        await page.setViewportSize(size(w));
+        await page.goto(path);
+        await fontsSettled(page);
+        const r = await page.evaluate(
+          ([rows, allowed]) => {
+            const sizes = rows.map(([name, sel]) => ({
+              name,
+              sel,
+              got: [...document.querySelectorAll(sel)].map((e) =>
+                parseFloat(getComputedStyle(e).fontSize),
+              ),
+            }));
+            const stray: string[] = [];
+            for (const root of document.querySelectorAll('#top .w-id, #next, #more'))
+              for (const e of [root, ...root.querySelectorAll('*')]) {
+                const hasText = [...e.childNodes].some(
+                  (n) => n.nodeType === 3 && /\S/.test(n.textContent ?? ''),
+                );
+                const rect = e.getBoundingClientRect();
+                if (!hasText || !rect.width || !rect.height) continue;
+                const px = parseFloat(getComputedStyle(e).fontSize);
+                if (!allowed.includes(px))
+                  stray.push(`${e.tagName.toLowerCase()}.${e.className} ${px}`);
+              }
+            return { sizes, stray };
+          },
+          [ROWS, ALLOWED[band]] as const,
+        );
+        for (const row of r.sizes) {
+          const spec = ROWS.find((x) => x[0] === row.name)![2];
+          const want = typeof spec === 'number' ? spec : spec[idx];
+          expect(row.got.length, `${row.name} (${row.sel}) matches an element`).toBeGreaterThan(0);
+          for (const g of row.got) expect(g, `${row.name} (${row.sel})`).toBe(want);
+        }
+        expect(r.stray, 'Home text outside the ladder').toEqual([]);
+      });
+
+  for (const { path, lang } of LANGS)
+    for (const theme of ['light', 'dark'] as const)
+      test(`${lang} ${theme}: the ladder moved no colour`, async ({ page }) => {
+        await page.setViewportSize(size(1440, 900));
+        await gotoThemed(page, path, theme);
+        const r = await page.evaluate(() => {
+          const token = (v: string) => {
+            const e = document.createElement('i');
+            e.style.color = `var(${v})`;
+            document.body.append(e);
+            const c = getComputedStyle(e).color;
+            e.remove();
+            return c;
+          };
+          const colours = (sel: string) =>
+            [...document.querySelectorAll(sel)].map((e) => getComputedStyle(e).color);
+          const tokens = { text: token('--text'), text2: token('--text-2'), link: token('--link') };
+          const rows: [string, string, 'text' | 'text2' | 'link'][] = [
+            ['#top .w-name', 'name', 'text'],
+            ['#top .w-title', 'title', 'text'],
+            ['#next .home-big', 'next H2', 'text'],
+            ['#more .home-big', 'more H2', 'text'],
+            ['#next .goal-title', 'goal H3', 'text'],
+            ['#top .w-say strong', 'intro bold', 'text'],
+            ['#next .next-step__name', 'step name', 'text'],
+            ['#top .w-areas', 'areas', 'text2'],
+            ['#top .w-say', 'intro', 'text2'],
+            ['#more .t-intro', 'more lead', 'text2'],
+            ['#next .home-kicker', 'kicker', 'text2'],
+            ['#next .next-step__when', 'when', 'text2'],
+            ['#next .home-text', 'goal text', 'text2'],
+            ['#next .logos-note', 'logos note', 'text2'],
+            ['#more [data-facts] li', 'facts', 'text2'],
+            ['#top .w-links a', 'hero links', 'link'],
+            ['#next .home-links a', 'goal links', 'link'],
+          ];
+          return {
+            tokens,
+            rows: rows.map(([sel, name, tok]) => ({ name, tok, got: colours(sel) })),
+          };
+        });
+        for (const row of r.rows) {
+          expect(row.got.length, `${row.name} matches an element`).toBeGreaterThan(0);
+          for (const g of row.got) expect(g, `${row.name} = --${row.tok}`).toBe(r.tokens[row.tok]);
+        }
       });
 });
 

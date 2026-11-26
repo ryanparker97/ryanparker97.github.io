@@ -224,7 +224,9 @@ describe.each(['en', 'vi'] as const)('HomeWall (%s)', (lang) => {
     const srcset = attr(photo[0], 'srcset') ?? '';
     for (const w of ['320w', '400w', '480w', '600w']) expect(srcset).toContain(w);
     expect(attr(photo[0], 'sizes')).toBe(
-      '(max-width: 734px) 160px, (max-width: 1068px) 216px, 288px',
+      // owner, photo-layout (O1): the picture is drawn at the frame's height, so 252.9 / 302.4px wide at 1024 / 1440
+      // (was 216 / 288, the frame's width).
+      '(max-width: 734px) 160px, (max-width: 1068px) 253px, 303px',
     );
     expect(attr(photo[0], 'width')).toBeTruthy();
     expect(attr(photo[0], 'height')).toBeTruthy();
@@ -374,6 +376,17 @@ describe('HomeWall source', () => {
     expect(mFrame).toContain('border-radius: var(--radius-md)');
     expect(mFrame).toContain('aspect-ratio: auto'); // owner, photo-align-cutout
     expect(mFrame).toContain('align-self: stretch');
+    // owner, photo-layout (O1): from M the frame no longer clips and the picture is drawn at the frame's height,
+    // centred, capped at column / 0.785 (the person's share of the picture) for 200% text.
+    expect(mFrame).toContain('overflow: visible');
+    const mImg = M.match(/\.pop img \{([^}]*)\}/)?.[1] ?? '';
+    expect(mImg).toContain('inset: auto auto 0 auto');
+    expect(mFrame).toContain('display: flex'); // centres the absolute img by its static position
+    expect(mFrame).toContain('justify-content: center');
+    expect(mImg).toContain('width: auto');
+    expect(mImg).toContain('pointer-events: none'); // the wider box must not take clicks meant for the wall tile links
+    expect(mImg).toContain('max-width: none'); // the global img rule caps at 100% of the frame
+    expect(mImg).toContain('height: min(100%, calc(var(--pop) / 0.785 * 894 / 600))');
     expect(style).not.toContain('.pop::before');
     expect(style).not.toContain('.pop > span');
     // The size is one token shared with #next (tokens.css): 160 / 216 / 288px at S / M / L (was 192 at S), gap 16 / 28 / 36.
@@ -446,6 +459,27 @@ describe('HomeWall source', () => {
     expect(rule('.w-name')).toContain('margin: 0;');
     expect(rule('.w-role')).toContain('margin: 6px 0 0');
     expect(rule('.w-areas')).not.toContain('font-size');
+  });
+
+  // owner, home-type-ladder: the hero follows the O4 ladder.
+  it('the hero follows the O4 ladder: areas and links 17, intro 19 / 21 / 24', () => {
+    const iM = style.indexOf('@media (min-width: 735px)');
+    const iL = style.indexOf('@media (min-width: 1069px)');
+    const M = style.slice(iM, iL);
+    const L = style.slice(iL);
+    const pick = (css: string, sel: string) =>
+      css.match(new RegExp(`${sel.replace(/\./g, '\\.')} \\{([^}]*)\\}`))?.[1] ?? '';
+    // was 14px at S, 17px from M: the areas line dipped under the intro at S.
+    expect(rule('.w-role')).toContain('font-size: 1.0625rem');
+    expect(M).not.toContain('.w-role');
+    // was 21px at S, 24px from M: the intro tied with the title at M.
+    expect(rule('.w-say')).toContain('font-size: 1.1875rem');
+    expect(pick(M, '.w-say')).toContain('font-size: 1.3125rem');
+    expect(pick(L, '.w-say')).toContain('font-size: 1.5rem');
+    // was 17px at S, 19px from M.
+    expect(rule('.w-links')).toContain('font-size: 1.0625rem');
+    expect(pick(M, '.w-links')).not.toContain('font-size');
+    expect(pick(L, '.w-links')).not.toContain('font-size');
   });
 
   it('tokens: the keyline; no warm panel in HomeWall', () => {
