@@ -1,0 +1,4 @@
+name: CodeQL config
+# Skip test code and fixtures; everything else stays analysed.
+paths-ignore:
+  - tests

@@ -12,7 +12,6 @@ const AVATAR = 'src/assets/profile/avatar.jpg';
 const APPLE = 'public/apple-touch-icon.png';
 const FAVICON = 'public/favicon-48.png';
 const OG = 'public/og-default.png';
-const CUTOUT = 'src/assets/profile/avatar-cutout.png';
 // owner, profile-image-full: the whole photo, one stripped web master (the 848x1264 original is never committed).
 const PHOTO = 'src/assets/profile/photo.jpg';
 // owner, photo-align-cutout: new. The Home portrait is photo.jpg keyed onto transparency (no grey backdrop).
@@ -193,13 +192,7 @@ describe('brand images carry no metadata', () => {
     expect(b.length).toBeLessThanOrEqual(80 * 1024);
   });
 
-  it('avatar-cutout.png: only image chunks, 600x600 RGBA, <= 300 KB (the keyed avatar.jpg)', () => {
-    const b = read(CUTOUT);
-    const w = walkPng(b);
-    expect(w.disallowed, `chunks: ${w.segments.join(' ')}`).toEqual([]);
-    expect([w.width, w.height, w.colorType]).toEqual([600, 600, 6]);
-    expect(b.length).toBeLessThanOrEqual(300 * 1024);
-  });
+  // owner, ci-unit-tests: avatar-cutout.png is unused and not committed, so it is no longer tested here.
 
   // owner, photo-align-cutout: new.
   it('photo-cutout.png: only image chunks, 600x894 RGBA (the keyed photo.jpg), <= 320 KB', () => {
@@ -282,12 +275,12 @@ describe('brand images carry no metadata', () => {
       expect(width, f).toBeLessThanOrEqual(600);
       expect(height, f).toBeLessThanOrEqual(894);
     }
-    // The non-JPEGs are the two cut-outs, each pinned by its own test above.
-    // owner, photo-align-cutout: was ['avatar-cutout.png'] only.
-    expect(files.filter((f) => /\.(png|webp|avif|heic|tiff?)$/i.test(f))).toEqual([
-      'avatar-cutout.png',
-      'photo-cutout.png',
-    ]);
+    // The only non-JPEG is the cut-out, pinned by its own test above.
+    // owner, ci-unit-tests: was ['avatar-cutout.png', 'photo-cutout.png']; avatar-cutout.png is unused and not committed.
+    // It may still sit untracked on the owner's disk, so it is ignored here; any other new image fails.
+    expect(
+      files.filter((f) => /\.(png|webp|avif|heic|tiff?)$/i.test(f) && f !== 'avatar-cutout.png'),
+    ).toEqual(['photo-cutout.png']);
   });
 
   it('no JPEG/WebP/PNG over 600px outside the share card and logos, and no HEIC/TIFF, in public/ or src/assets/', () => {

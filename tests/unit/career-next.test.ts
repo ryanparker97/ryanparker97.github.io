@@ -74,20 +74,20 @@ describe('career-next', () => {
 
   it('shows the owner-chosen titles and target years, exactly', () => {
     expect([en['exp.next.architecture.title'], en['exp.next.architecture.eyebrow']]).toEqual([
-      'Enterprise Data Architect',
-      'Goal · by 2029',
+      'Data Architect', // owner, ci-unit-tests: was Enterprise Data Architect / 2029 and FDE 2031
+      'Goal · by 2028',
     ]);
     expect([en['exp.next.deployed.title'], en['exp.next.deployed.eyebrow']]).toEqual([
       'Forward Deployed Engineer (FDE)',
-      'Goal · by 2031',
+      'Goal · by 2030',
     ]);
     expect([vi['exp.next.architecture.title'], vi['exp.next.architecture.eyebrow']]).toEqual([
-      'Enterprise Data Architect',
-      'Mục tiêu · đến năm 2029',
+      'Data Architect',
+      'Mục tiêu · đến năm 2028',
     ]);
     expect([vi['exp.next.deployed.title'], vi['exp.next.deployed.eyebrow']]).toEqual([
       'Forward Deployed Engineer (FDE)',
-      'Mục tiêu · đến năm 2031',
+      'Mục tiêu · đến năm 2030',
     ]);
   });
 
@@ -98,12 +98,12 @@ describe('career-next', () => {
     for (const bad of [
       'Seeking a role',
       'Open to work',
-      'by 2030',
+      'by 2031',
       'Senior Data Architect',
       'Chief Engineer',
       'In 3 years',
       'Joining Databricks',
-      'Goal · by 2029 at FPT',
+      'Goal · by 2028 at FPT',
       'Senior Enterprise Data Architect',
       'Lead Forward Deployed Engineer (FDE)',
       'Looking for my next role',

@@ -2270,7 +2270,7 @@ test.describe('Home next cell', () => {
       expect((await items.locator('.home-kicker').allTextContents()).map(nbsp)).toEqual(eyebrows);
       expect((await items.locator('.goal-title').allTextContents()).map(nbsp)).toEqual(titles);
       expect((await items.locator('.home-text').allTextContents()).map(nbsp)).toEqual(texts);
-      for (const [i, year] of ['2029', '2031'].entries()) expect(eyebrows[i]).toContain(year);
+      for (const [i, year] of ['2028', '2030'].entries()) expect(eyebrows[i]).toContain(year);
       const links = goals.locator('a');
       await expect(links).toHaveCount(2);
       expect(await links.evaluateAll((els) => els.map((e) => e.getAttribute('href')))).toEqual(

@@ -16,8 +16,8 @@ const LOCALES = [
     edu: 'Học vấn.',
     next: 'Tiếp theo.',
     contact: 'Liên hệ với tôi.',
-    eyebrows: ['Mục tiêu · đến năm 2029', 'Mục tiêu · đến năm 2031'],
-    titles: ['Enterprise Data Architect', 'Forward Deployed Engineer (FDE)'],
+    eyebrows: ['Mục tiêu · đến năm 2028', 'Mục tiêu · đến năm 2030'],
+    titles: ['Data Architect', 'Forward Deployed Engineer (FDE)'],
     hrefs: [
       '/vi/experiences/fpt-software-senior-data-engineer/',
       '/vi/projects/agentic-coding-workflow/',
@@ -30,8 +30,8 @@ const LOCALES = [
     edu: 'Education.',
     next: 'Next.',
     contact: 'Get in touch.',
-    eyebrows: ['Goal · by 2029', 'Goal · by 2031'],
-    titles: ['Enterprise Data Architect', 'Forward Deployed Engineer (FDE)'],
+    eyebrows: ['Goal · by 2028', 'Goal · by 2030'],
+    titles: ['Data Architect', 'Forward Deployed Engineer (FDE)'],
     hrefs: [
       '/experiences/fpt-software-senior-data-engineer/',
       '/projects/agentic-coding-workflow/',
@@ -159,11 +159,11 @@ test.describe('Next group stays off print', () => {
   const pages = [
     {
       path: '/experiences/print/',
-      titles: ['Enterprise Data Architect', 'Forward Deployed Engineer (FDE)'],
+      titles: ['Data Architect', 'Forward Deployed Engineer (FDE)'],
     },
     {
       path: '/vi/experiences/print/',
-      titles: ['Enterprise Data Architect', 'Forward Deployed Engineer (FDE)'],
+      titles: ['Data Architect', 'Forward Deployed Engineer (FDE)'],
     },
   ];
   for (const p of pages)
