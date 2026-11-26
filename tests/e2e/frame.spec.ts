@@ -611,7 +611,10 @@ test.describe('chrome alignment, transparency and the sticky bar (§5.2, §5.7, 
   });
 
   // owner, techstack (Q2): the Tech stack link is last; the strip overflows 127px EN and 138px VI at
-  // 834-1068 (554 in 427; 603 in 465), so the cap is 128 for EN and 140 for VI (lead: old cap 64, EN only).
+  // 834-1068 (554 in 427; 603 in 465) on macOS (lead: old cap 64, EN only).
+  // owner, ci-e2e: the Linux runner's font stack makes the strip wider (EN 144, VI 154, measured in the
+  // Playwright v1.64.1 Linux image), so the caps are 160 EN and 170 VI: 16px of headroom over Linux, ~33
+  // over macOS. A new link or a longer name adds 60px or more, so the cap still fails on real growth.
   // Everything fits at 1069 and 1440 in both languages.
   for (const [lang, path, names, cap] of [
     [
@@ -625,9 +628,9 @@ test.describe('chrome alignment, transparency and the sticky bar (§5.2, §5.7, 
         'Hitachi Vantara',
         'Tech stack',
       ],
-      128,
+      160,
     ],
-    ['VI', '/vi/experiences/', null, 140],
+    ['VI', '/vi/experiences/', null, 170],
   ] as const)
     test(`${lang}: Experiences links use short names; they fit at 1440 and 1069 and stay reachable at 900`, async ({
       page,

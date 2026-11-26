@@ -2064,13 +2064,13 @@ test.describe('Home photo', () => {
   });
 });
 
-// owner, avatar-title (hierarchy) and owner, title-accent ("highlight title"): the role title is in the theme
-// accent token, plain text (no underline), the areas line is lighter, in --text-2 at weight 500; the name keeps
-// its ink. Colours are compared with what the tokens compute to, in light and dark, EN and VI.
+// owner, avatar-title (hierarchy) and owner, title-black (was --accent, "highlight title"): the role title is in
+// the name's --text token, plain text (no underline), the areas line is lighter, in --text-2 at weight 500.
+// Hierarchy is size and weight (title 600 > areas 500). Colours are compared with what the tokens compute to, in light and dark, EN and VI.
 test.describe('Home role line hierarchy', () => {
   for (const { path, lang } of LANGS)
     for (const theme of ['light', 'dark'] as const)
-      test(`${lang} ${theme}: the title is the accent, the areas lighter, the name unchanged`, async ({
+      test(`${lang} ${theme}: the title is --text like the name, the areas lighter`, async ({
         page,
       }) => {
         await page.setViewportSize(size(1440, 900));
@@ -2102,12 +2102,21 @@ test.describe('Home role line hierarchy', () => {
             text2: token('--text-2'),
           };
         });
-        expect(r.title, 'title = --accent').toBe(r.accent);
-        expect(r.title, 'title differs from the name').not.toBe(r.name);
+        // owner, title-black: was `title = --accent` and `!= name`.
+        expect(r.title, 'title = --text').toBe(r.text);
+        expect(r.title, 'title equals the name colour').toBe(r.name);
+        expect(r.title, 'title is not the accent').not.toBe(r.accent);
         expect(r.name, 'name stays in ink').toBe(r.text);
         expect(r.areas, 'areas = --text-2').toBe(r.text2);
         expect(r.areas, 'areas differ from the title').not.toBe(r.title);
+        expect(r.titleWeight, 'title weight 600').toBe('600');
         expect(r.areasWeight, 'areas lighter than the title').toBe('500');
+        expect(Number(r.titleWeight), 'title heavier than the areas').toBeGreaterThan(
+          Number(r.areasWeight),
+        );
+        expect(parseFloat(r.titleSize), 'title bigger than the areas').toBeGreaterThan(
+          parseFloat(r.areasSize),
+        );
         expect(r.titleDeco, 'title is not link-like').toBe('none');
         // owner, title-below-name: was `areasSize == titleSize`; the title is now bigger than the areas line.
         expect(r.titleSize, 'title is 32px at 1440').toBe('32px');

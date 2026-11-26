@@ -33,6 +33,12 @@ async function set(page: Page, body: string, css = '') {
   await page.setContent(`<!doctype html><meta charset="utf-8"><style>${BASE}${css}</style>${body}`);
 }
 
+// owner, ci-e2e: was toBeCloseTo(0, 1) on the line-box slack. Linux's `sans-serif` is WenQuanYi Zen Hei,
+// whose glyph box is 17px high at 16px, so the 24px line has a 3.5px half-leading that layout snaps to
+// a whole pixel (slack -0.5); the 72px/1.05 case reads -0.8. macOS reads 0. Padding, border and glyph-box
+// leaks are 2.5px or more (the tests below say so), so "under a pixel" still catches them.
+const LINE_ROUND = 1;
+
 const LONG =
   'A longer body copy that wraps over several lines inside the narrow card, so this card is taller than its neighbour.';
 
@@ -205,8 +211,9 @@ test.describe('boxes', () => {
     for (const id of ['#t', '#w', '#i']) {
       const [card] = await boxes(page, id);
       // Glyph boxes alone would leave ~2.5px of slack above and below every 24px line.
-      expect(card.slack!.top, id).toBeCloseTo(0, 1);
-      expect(card.slack!.bottom, id).toBeCloseTo(0, 1);
+      // owner, ci-e2e: within LINE_ROUND, not toBeCloseTo(0, 1) (Linux rounds the line box by 0.5px).
+      expect(Math.abs(card.slack!.top), id).toBeLessThan(LINE_ROUND);
+      expect(Math.abs(card.slack!.bottom), id).toBeLessThan(LINE_ROUND);
     }
     const [wrapped] = await boxes(page, '#w');
     expect(wrapped.content.height).toBeGreaterThanOrEqual(72);
@@ -225,9 +232,10 @@ test.describe('boxes', () => {
     // at 0 measured the glyph box, which pokes out of the content box (slack -4 / -3.4).
     for (const id of ['#direct', '#wrapped']) {
       const [card] = await boxes(page, id);
-      // Within half a pixel: the engines round the glyph box height differently.
-      expect(Math.abs(card.slack!.top), id).toBeLessThan(0.5);
-      expect(Math.abs(card.slack!.bottom), id).toBeLessThan(0.5);
+      // Within a pixel: the engines round the glyph box height differently.
+      // owner, ci-e2e: was 0.5; the Linux font stack reads 0.8 here. The clamp defect reads 3.4 or more.
+      expect(Math.abs(card.slack!.top), id).toBeLessThan(LINE_ROUND);
+      expect(Math.abs(card.slack!.bottom), id).toBeLessThan(LINE_ROUND);
     }
   });
 
@@ -242,8 +250,10 @@ test.describe('boxes', () => {
     );
     for (const id of ['#pad', '#border']) {
       const [card] = await boxes(page, id);
-      expect(card.slack!.top, id).toBeCloseTo(0, 1);
-      expect(card.slack!.bottom, id).toBeCloseTo(0, 1);
+      // owner, ci-e2e: was toBeCloseTo(0, 1); Linux font metrics round line boxes by 0.5px. The padding
+      // (12px) and border (6px) leaks this test is about are far over LINE_ROUND.
+      expect(Math.abs(card.slack!.top), id).toBeLessThan(LINE_ROUND);
+      expect(Math.abs(card.slack!.bottom), id).toBeLessThan(LINE_ROUND);
     }
   });
 

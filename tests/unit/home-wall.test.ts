@@ -423,9 +423,10 @@ describe('HomeWall source', () => {
   });
 
   // owner, avatar-title: the HomeWall style no longer uses var(--warm) (the frame is unfilled).
-  // owner, title-accent: the role title is the accent token; the areas line is lighter (500) in --text-2.
-  it('the role title is the accent, the areas lighter, both from tokens', () => {
-    expect(style).toMatch(/\.w-title \{[^}]*color: var\(--accent\);/);
+  // owner, title-black: was --accent; the role title is the name's --text token; the areas line is lighter (500) in --text-2.
+  it('the role title is --text like the name, the areas lighter, both from tokens', () => {
+    expect(style).toMatch(/\.w-title \{[^}]*color: var\(--text\);/);
+    expect(style).not.toMatch(/\.w-title \{[^}]*var\(--accent\)/);
     expect(style).toMatch(/\.w-areas \{[^}]*font-weight: 500;/);
     expect(rule('.w-role')).toContain('color: var(--text-2)');
   });
