@@ -27,6 +27,12 @@
   --hl-2: light-dark(#8c3800, #ffa24d);
   --hl-3: light-dark(#6136ad, #c9a7ff);
   --hl-4: light-dark(#a01549, #ff8fb3);
+  /* Warm tint behind the Home photo (the Wall mock): --hl-2 at 12% into --bg in light, at 16% into
+     --surface-2 in dark, written out as hex like every token. No text sits on it. */
+  --warm: light-dark(#f1e7e0, #413226);
+  /* Always-white plate behind marks that fail 3:1 on the dark surface (tool-icons.ts iconPlate, never
+     recoloured). Not themed: it only paints in dark. Owner, photo-logos: one plate token for every mark. */
+  --mark-plate: #fff;
   --nav-ink: light-dark(rgb(0 0 0 / 0.8), rgb(255 255 255 / 0.8));
   --nav-ink-hover: light-dark(#000, #fff);
   --paddle-fill: light-dark(rgb(210 210 215 / 0.64), rgb(66 66 69 / 0.72));
@@ -44,15 +50,22 @@
   /* Layout (§5.2): content widths at L; M and S override below. */
   --content: 980px;
   --content-max: 980px;
-  --content-wide: min(87.5%, 1260px);
+  /* Wide boxes keep their 1260 box but never narrower than the column (owner, photo-logos: keep both
+     columns, align edges); --wide-inset puts their content on the column. */
+  --content-wide: max(var(--content), min(87.5%, 1260px));
+  --wide-inset: calc((var(--content-wide) - var(--content)) / 2);
   --article: 653px;
-  --chrome-nav: 1024px;
-  --chrome: 980px;
   --gutter: 22px;
   --section-pad: 120px;
   --hero-pad-top: 144px;
   --section-pad-tight: 80px;
   --head-gap: 48px;
+  /* Home identity row: the photo's width and the gap beside it. #next starts its path after the same
+     two, so the Next. path and the identity text share one left edge (HomeWall, HomeNext). The photo is
+     --home-photo wide; from M its frame is as tall as the intro beside it (HomeWall), at S its own ratio
+     (x 894 / 600: 238.4px). */
+  --home-photo: 288px;
+  --home-photo-gap: 36px;
   --eyebrow-room: 56px;
   /* Radius family (§5.5). */
   --radius-sm: 12px;
@@ -81,19 +94,19 @@
   :root {
     --content: 692px;
     --content-max: 692px;
-    --content-wide: 87.5%;
+    --content-wide: max(var(--content), 87.5%);
     --article: 576px;
     --section-pad: 80px;
     --hero-pad-top: 120px;
     --section-pad-tight: 64px;
     --head-gap: 40px;
+    --home-photo: 216px;
+    --home-photo-gap: 28px;
   }
 }
 @media (max-width: 833px) {
   :root {
     --nav-h: 48px;
-    --chrome-nav: 100%;
-    --chrome: 100%;
     --gutter: 16px;
   }
   :root:has([data-local-nav]) {
@@ -109,6 +122,8 @@
     --hero-pad-top: 112px;
     --section-pad-tight: 48px;
     --head-gap: 32px;
+    --home-photo: 160px;
+    --home-photo-gap: 16px;
   }
 }
 

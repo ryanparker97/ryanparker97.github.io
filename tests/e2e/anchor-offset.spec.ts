@@ -6,7 +6,11 @@ test.use({ reducedMotion: 'reduce' });
 const CASES = [
   { path: '/experiences/#next', id: 'next', bar: 52 },
   { path: '/experiences/#education', id: 'education', bar: 52 },
-  { path: '/#career', id: 'career', bar: 44 },
+  // owner, techstack: the Tech stack local-nav link's target.
+  { path: '/experiences/#stack', id: 'stack', bar: 52 },
+  { path: '/vi/experiences/#stack', id: 'stack', bar: 52 },
+  // Home has no local nav (one nav row): --sticky-h is --nav-h.
+  { path: '/#next', id: 'next', bar: 44 },
 ];
 
 for (const { path, id, bar } of CASES) {

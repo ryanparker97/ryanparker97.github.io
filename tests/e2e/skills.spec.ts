@@ -285,12 +285,23 @@ test.describe('Skills page', () => {
               e.getAttribute('data-icon'),
               getComputedStyle(e).backgroundColor,
               Math.round(e.getBoundingClientRect().width),
+              e.classList.contains('cert-logo--plate'),
             ]),
           );
       };
       const dark = await certs('dark');
-      expect(dark.map((r) => r[0]).sort()).toEqual(['logos:aws', 'logos:datadog-icon']);
-      for (const r of dark) expect(r[1], String(r[0])).toBe('rgb(255, 255, 255)');
+      // owner, photo-logos: the planned certification shows the Claude mark too (old: two marks,
+      // aws + datadog, all on a white plate). The Claude mark is 5.4:1 on the dark surface, so it
+      // takes no plate (tool-icons.ts iconPlate); the two earned marks keep theirs.
+      expect(dark.map((r) => r[0]).sort()).toEqual([
+        'logos:aws',
+        'logos:claude-icon',
+        'logos:datadog-icon',
+      ]);
+      for (const r of dark) {
+        expect(r[3], String(r[0])).toBe(r[0] !== 'logos:claude-icon');
+        expect(r[1], String(r[0])).toBe(r[3] ? 'rgb(255, 255, 255)' : 'rgba(0, 0, 0, 0)');
+      }
       const light = await certs('light');
       for (const r of light) expect(r[1], String(r[0])).toBe('rgba(0, 0, 0, 0)');
       // same box in both themes: no layout shift
@@ -317,7 +328,8 @@ test.describe('Skills page', () => {
       const certs = await page
         .locator('#certifications svg.cert-logo')
         .evaluateAll((l) => l.map((e) => getComputedStyle(e).backgroundColor));
-      expect(certs).toEqual(['rgb(255, 255, 255)', 'rgb(255, 255, 255)']);
+      // owner, photo-logos: old [white, white]; the Claude mark (planned row, last) takes no plate.
+      expect(certs).toEqual(['rgb(255, 255, 255)', 'rgb(255, 255, 255)', 'rgba(0, 0, 0, 0)']);
       await ctx.close();
     });
   }
@@ -378,21 +390,22 @@ test.describe('Skills page', () => {
     await expect(page.locator('main h2').first()).toHaveText('Kỹ thuật dữ liệu');
   });
 
-  test('linked from the footer and the Home local nav', async ({ page }) => {
+  // Named change (home-alt-6, Wall): Home's main no longer has a keyboard link to Skills (the mock
+  // has no Skills tile). The footer links it, and one wall tile (a pointer link) opens it.
+  test('linked from the footer on Home and from one wall tile', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/');
-    await expect(page.locator('footer').getByRole('link', { name: 'Skills' })).toHaveAttribute(
-      'href',
-      '/skills/',
-    );
-    await expect(page.locator('.local-nav .links a', { hasText: 'Skills' })).toHaveAttribute(
-      'href',
-      '/skills/',
-    );
-    await page.goto('/vi/');
-    await expect(page.locator('.local-nav .links a', { hasText: 'Kỹ năng' })).toHaveAttribute(
-      'href',
-      '/vi/skills/',
-    );
+    for (const [path, name, href] of [
+      ['/', 'Skills', '/skills/'],
+      ['/vi/', 'Kỹ năng', '/vi/skills/'],
+    ] as const) {
+      await page.goto(path);
+      await expect(page.locator('footer').getByRole('link', { name }), path).toHaveAttribute(
+        'href',
+        href,
+      );
+      await expect(page.locator('.w-clip a[href$="/skills/"]'), path).toHaveCount(1);
+      await expect(page.locator('.w-clip a[href$="/skills/"]'), path).toHaveAttribute('href', href);
+      await expect(page.locator('[data-local-nav]'), path).toHaveCount(0);
+    }
   });
 });

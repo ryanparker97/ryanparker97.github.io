@@ -6,6 +6,7 @@ import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
 import en from '../src/i18n/en.json';
 import vi from '../src/i18n/vi.json';
 import { readCollection } from './lib/frontmatter';
+import { certWhen, type CertData } from '../src/lib/certs';
 
 // Each PDF with the label of its "Languages" skills row (UI strings are translated).
 const PDFS: { path: string; lang: 'en' | 'vi'; languages: string }[] = [
@@ -31,7 +32,9 @@ async function expectedText(lang: 'en' | 'vi', languagesLabel: string) {
     ...(await readCollection('projects', lang)).filter(inPdf).map((p) => str(p.title)),
     ...(await readCollection('skills', lang)).map((g) => str(g.group)),
     languagesLabel,
-    ...(await readCollection('certifications', lang)).map((c) => str(c.name)),
+    ...(await readCollection('certifications', lang)).map(
+      (c) => `${str(c.name)} (${certWhen(c as unknown as CertData, lang)})`,
+    ),
     ...(await readCollection('education', lang)).map((e) => str(e.name)),
     // Section headings (rendered in capitals; matching is case-insensitive).
     ui['cv.summary'],

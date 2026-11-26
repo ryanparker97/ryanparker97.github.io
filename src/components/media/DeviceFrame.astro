@@ -17,7 +17,6 @@ const { kind = 'laptop', class: cls } = Astro.props;
   .device {
     container-type: inline-size;
     width: 100%;
-    max-width: 880px;
     margin: 0 auto;
   }
   .device--laptop {
@@ -46,7 +45,7 @@ const { kind = 'laptop', class: cls } = Astro.props;
     content: '';
     display: block;
     height: clamp(8px, 1.8cqi, 16px);
-    margin-inline: -4%;
+    margin-inline: calc(-50% / 9);
     border-radius: 0 0 var(--radius-sm) var(--radius-sm);
     background: var(--border);
   }

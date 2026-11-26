@@ -157,7 +157,7 @@ const attrs = (l: LocalNavLink) => ({
     bottom: 0;
     height: 1px;
     background: var(--keyline);
-    inset-inline: max(0px, calc((100% - 980px) / 2));
+    inset-inline: max(0px, calc((100% - var(--content)) / 2));
   }
   @supports (animation-timeline: scroll()) {
     .local-nav::after {
@@ -229,6 +229,24 @@ const attrs = (l: LocalNavLink) => ({
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
     mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
   }
+  /* Scrolled (`data-start`, set by local-nav.ts): the start fade mirrors the end fade, so a link cut
+     at the left edge is faded, not hard-clipped. At scrollLeft 0 the mask above is unchanged. */
+  .links[data-start] {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 32px,
+      #000 calc(100% - 32px),
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 32px,
+      #000 calc(100% - 32px),
+      transparent
+    );
+  }
   .links::-webkit-scrollbar {
     display: none;
   }
@@ -265,6 +283,10 @@ const attrs = (l: LocalNavLink) => ({
   }
   .local-nav :is(a, button, summary):focus-visible {
     outline-offset: -7px;
+  }
+  /* The pill is filled with the accent, so its accent ring sits outside it, not inset. */
+  .local-nav .pill:focus-visible {
+    outline-offset: 2px;
   }
   /* Current marker: full ink and a 1px rule on the bar's bottom edge. */
   .links a[aria-current='true'] {
@@ -316,6 +338,10 @@ const attrs = (l: LocalNavLink) => ({
     flex: none;
     color: var(--on-accent);
   }
+  /* A one-link bar (Projects) has no .links list to carry the auto margin: the pill ends on the column. */
+  .title + .pill {
+    margin-inline-start: auto;
+  }
   @media (max-width: 833px) {
     .local-nav::after {
       inset-inline: 0;
@@ -363,7 +389,7 @@ const attrs = (l: LocalNavLink) => ({
       z-index: 1;
       max-height: 60dvh;
       margin: 0;
-      padding: 16px max(16px, env(safe-area-inset-left)) 20px;
+      padding: 16px max(calc((100% - var(--content)) / 2), env(safe-area-inset-left)) 20px;
       list-style: none;
       overflow-y: auto;
       background: var(--nav-solid);

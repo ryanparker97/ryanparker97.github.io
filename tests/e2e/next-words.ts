@@ -3,12 +3,12 @@
 // purpose, so exactly those strings are removed before the check (any other title or year still fails).
 // The allow-list applies only to a card title or eyebrow (withoutAllowed); goal and link text is checked raw.
 export const NEXT_ALLOWED: string[] = [
-  'Enterprise Data Architect',
+  'Data Architect',
   'Forward Deployed Engineer (FDE)',
-  'by 2029',
-  'by 2031',
-  'đến năm 2029',
-  'đến năm 2031',
+  'by 2028',
+  'by 2030',
+  'đến năm 2028',
+  'đến năm 2030',
 ];
 
 export const NEXT_FORBIDDEN: RegExp[] = [
@@ -54,3 +54,17 @@ export const withoutAllowed = (s: string): string =>
 /** An aria-label with its " (<allowed title>)" suffix removed by exact text (the title may hold its own parentheses); the rest is returned raw and normalised. */
 export const withoutTitleSuffix = (s: string): string =>
   NEXT_ALLOWED.reduce((acc, a) => acc.split(` (${a})`).join(''), norm(s));
+
+/**
+ * The dated certification step (`[data-next-step]`): exactly these strings are removed before the
+ * NEXT_FORBIDDEN check. It applies only to that line, never to goal fields. "Anthropic" stays
+ * forbidden, so the step names no issuer.
+ */
+export const NEXT_STEP_ALLOWED: string[] = [
+  'Claude Certified Architect',
+  'Planned · Apr 2027',
+  'Dự kiến · 04/2027',
+];
+
+export const withoutStepAllowed = (s: string): string =>
+  NEXT_STEP_ALLOWED.reduce((acc, a) => acc.split(a).join(' '), norm(s));

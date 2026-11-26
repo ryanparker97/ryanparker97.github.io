@@ -2,11 +2,41 @@ import { expect, test } from '@playwright/test';
 import { builtPages } from './pages';
 
 test.describe('desktop nav', () => {
-  test('lists Experiences, Projects, STAR, Blog in order', async ({ page }) => {
+  test('lists Experiences, Projects, In practice, Blog in order', async ({ page }) => {
     await page.goto('/');
     const links = page.locator('header nav.links a');
-    await expect(links).toHaveText(['Experiences', 'Projects', 'STAR', 'Blog']);
+    await expect(links).toHaveText(['Experiences', 'Projects', 'In practice', 'Blog']);
   });
+
+  for (const width of [834, 1440]) {
+    for (const path of ['/', '/vi/']) {
+      test(`nav links stay on one line without colliding at ${width}px on ${path}`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: width === 834 ? 800 : 900 });
+        await page.goto(path);
+        const boxes = await page.locator('header nav.links a').evaluateAll((els) =>
+          els.map((e) => {
+            const r = e.getBoundingClientRect();
+            return {
+              left: r.left,
+              right: r.right,
+              height: r.height,
+              overflow: e.scrollWidth - e.clientWidth,
+            };
+          }),
+        );
+        expect(boxes).toHaveLength(4);
+        for (const [i, b] of boxes.entries()) {
+          expect(b.height, `link ${i} height`).toBeLessThanOrEqual(44);
+          expect(b.overflow, `link ${i} scrollWidth - clientWidth`).toBeLessThanOrEqual(0);
+          if (i < boxes.length - 1) {
+            expect(b.right, `link ${i} right edge`).toBeLessThanOrEqual(boxes[i + 1].left);
+          }
+        }
+      });
+    }
+  }
 
   for (const [path, label] of [
     ['/projects/', 'Projects'],
@@ -62,7 +92,12 @@ test.describe('mobile menu', () => {
     await expect(button).toHaveAttribute('aria-expanded', 'true');
     await expect(button).toHaveAccessibleName('Close');
     await expect(menu.locator('a').first()).toBeFocused();
-    await expect(menu.locator('nav a')).toHaveText(['Experiences', 'Projects', 'STAR', 'Blog']);
+    await expect(menu.locator('nav a')).toHaveText([
+      'Experiences',
+      'Projects',
+      'In practice',
+      'Blog',
+    ]);
     await expect(menu.locator('nav a[aria-current="page"]')).toHaveText('Projects');
     const size = await menu
       .locator('nav a')

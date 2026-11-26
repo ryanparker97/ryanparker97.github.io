@@ -1,5 +1,4 @@
 import type { SvgComponent } from 'astro/types';
-import { parseHighlights, type Highlight } from './cv';
 
 export interface StoryLike {
   slug: string;
@@ -38,6 +37,41 @@ export function groupStories<S extends StoryLike, R extends { slug: string }>(
   const other = stories.filter((s) => !s.data.role).sort(newestFirst);
   if (other.length) groups.push({ id: 'other', stories: other });
   return groups;
+}
+
+/** A new array, newest story first (by `date`); equal dates are ordered by slug, A to Z. */
+export function byNewest<S extends { slug: string; data: { date: Date } }>(stories: S[]): S[] {
+  return [...stories].sort(
+    (a, b) => b.data.date.getTime() - a.data.date.getTime() || a.slug.localeCompare(b.slug),
+  );
+}
+
+/**
+ * The /star/ desk rule (spec §4.4) for stories already ordered newest first: the 1st is the lead,
+ * the 2nd and 3rd are tiles, the 4th onwards go to the "More from" list. The same rule holds for
+ * any number of stories.
+ */
+export function deskSlots<S>(ordered: S[]): { lead?: S; tiles: S[]; list: S[] } {
+  return { lead: ordered[0], tiles: ordered.slice(1, 3), list: ordered.slice(3) };
+}
+
+/**
+ * The slug of the first story of each role in the given order, mapped to that role's id
+ * (`data.role`, or `other`). Those stories carry the role id as their element id, the target of
+ * `/star/#<role>` and the local nav.
+ */
+export function deskAnchors<S extends { slug: string; data: { role?: string } }>(
+  ordered: S[],
+): Map<string, string> {
+  const seen = new Set<string>();
+  const out = new Map<string, string>();
+  for (const s of ordered) {
+    const id = s.data.role ?? 'other';
+    if (seen.has(id)) continue;
+    seen.add(id);
+    out.set(s.slug, id);
+  }
+  return out;
 }
 
 /**
@@ -84,21 +118,6 @@ export function graphBars(compare: { label: string; value: number }[]) {
     w: Number((c.value / max).toFixed(3)),
     after: i === compare.length - 1,
   }));
-}
-
-/**
- * The Action section's labelled bullets (spec §4.4), for the "Step by step." stage. Empty unless
- * the Action has at least two bold-labelled bullets.
- */
-export function actionSteps(body: string): Highlight[] {
-  const parts = body.split(/^## .*$/m); // [lead, S, T, A, R]
-  const steps = parseHighlights(parts[3] ?? '').filter((h) => h.label);
-  return steps.length >= 2 ? steps : [];
-}
-
-/** Removes the first list from rendered HTML (the stage shows the Action's bullets as cards). */
-export function stripFirstList(html: string): string {
-  return html.replace(/<ul\b[^>]*>[\s\S]*?<\/ul>/i, '').trim();
 }
 
 /**

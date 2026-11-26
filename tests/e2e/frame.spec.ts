@@ -24,6 +24,10 @@ const INNER = [
 // Every built route (the print views are not pages a visitor navigates to).
 const ALL = [...INNER, '/'].flatMap((p) => [p, p === '/' ? '/vi/' : `/vi${p}`]).concat('/404.html');
 
+// A computed mask whose first stop is transparent: the local nav's leading fade (spec §5.8). The
+// engines serialise the direction as 90deg (the built CSS's form), so both spellings are accepted.
+const START_FADE = /^linear-gradient\((to right|90deg), (transparent|rgba\(0, 0, 0, 0\))/;
+
 test.describe('tokens and fonts', () => {
   test('font stack starts with -apple-system and no Newsreader file is requested', async ({
     page,
@@ -135,7 +139,7 @@ test.describe('type scale (§5.4)', () => {
 });
 
 test.describe('local nav on every inner page', () => {
-  for (const path of [...INNER, '/']) {
+  for (const path of INNER) {
     test(`${path}: directly under the global nav, 52px at 1440, one H1`, async ({ page }) => {
       await page.setViewportSize({ width: 1440, height: 900 });
       await page.goto(path);
@@ -215,6 +219,27 @@ test.describe('local nav on every inner page', () => {
     // Only the local nav is stuck: 48px + 16px.
     expect(top).toBeGreaterThanOrEqual(64 - 1);
   });
+
+  // Owner decision (spec §4.0 / §5.8): Home drops its local nav; the global nav is its one sticky row.
+  for (const path of ['/', '/vi/'])
+    for (const [width, h] of [
+      [1440, 44],
+      [375, 48],
+    ] as const)
+      test(`${path} @${width}: Home has no local nav; the global nav is the sticky row`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(path);
+        await expect(page.locator('[data-local-nav]')).toHaveCount(0);
+        const nav = (await page.locator('header[data-nav]').boundingBox())!;
+        expect(nav.height).toBe(h);
+        expect(Math.round(nav.y)).toBe(0);
+        await expect(page.locator('h1')).toHaveCount(1);
+        await page.evaluate(() => window.scrollTo(0, 800));
+        await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThanOrEqual(h);
+        expect(Math.round((await page.locator('header[data-nav]').boundingBox())!.y)).toBe(0);
+      });
 
   test('404 has no local nav', async ({ page }) => {
     await page.goto('/404.html');
@@ -367,8 +392,9 @@ test.describe('footer placement and width (§5.9)', () => {
       const b = await footerBox(page);
       expect(Math.abs(b.left), path).toBeLessThanOrEqual(1);
       expect(Math.abs(b.width - b.vw), path).toBeLessThanOrEqual(1);
-      expect(Math.abs(b.innerW - 1024), path).toBeLessThanOrEqual(1);
-      expect(Math.abs(b.innerL - (b.vw - 1024) / 2), path).toBeLessThanOrEqual(1);
+      // owner, photo-logos: chrome rows sit on the column (was the 1024 chrome box).
+      expect(Math.abs(b.innerW - 980), path).toBeLessThanOrEqual(1);
+      expect(Math.abs(b.innerL - (b.vw - 980) / 2), path).toBeLessThanOrEqual(1);
     }
     await page.goto('/blog/series/');
     const rule = await page.evaluate(
@@ -491,7 +517,9 @@ test.describe('small screens', () => {
 test.describe('chrome alignment, transparency and the sticky bar (§5.2, §5.7, §5.8)', () => {
   for (const [w, x] of [
     [1440, 230],
-    [900, 22],
+    // owner, photo-logos: chrome rows sit on the column (was 22, the old 1024 chrome box's gutter);
+    // at 900 the column is 692 wide, (900 - 692) / 2 = 104.
+    [900, 104],
   ] as const) {
     test(`the first glyphs of nav, local nav, footer and search share one left edge at ${w}px`, async ({
       page,
@@ -582,23 +610,137 @@ test.describe('chrome alignment, transparency and the sticky bar (§5.2, §5.7, 
     }
   });
 
-  test('Experiences links use short names and fit at 1440 and 900', async ({ page }) => {
-    for (const w of [1440, 900]) {
-      await page.setViewportSize({ width: w, height: 800 });
-      await page.goto('/experiences/');
-      await expect(page.locator('.local-nav .links a')).toHaveText([
+  // owner, techstack (Q2): the Tech stack link is last; the strip overflows 127px EN and 138px VI at
+  // 834-1068 (554 in 427; 603 in 465), so the cap is 128 for EN and 140 for VI (lead: old cap 64, EN only).
+  // Everything fits at 1069 and 1440 in both languages.
+  for (const [lang, path, names, cap] of [
+    [
+      'EN',
+      '/experiences/',
+      [
         'FPT Software 2026',
         'Security Bank',
         'TymeX',
         'FPT Software 2020',
         'Hitachi Vantara',
-      ]);
-      const fits = await page
-        .locator('.local-nav .links')
-        .evaluate((e) => e.scrollWidth <= e.clientWidth);
-      expect(fits, `${w}`).toBe(true);
-    }
-  });
+        'Tech stack',
+      ],
+      128,
+    ],
+    ['VI', '/vi/experiences/', null, 140],
+  ] as const)
+    test(`${lang}: Experiences links use short names; they fit at 1440 and 1069 and stay reachable at 900`, async ({
+      page,
+    }) => {
+      // owner, photo-logos: the local nav sits on the column, which is 692px wide from 735 to 1068
+      // (was the 1024 chrome box, 856px at 900). The role links, Tech stack, the title and the pill no
+      // longer fit in 692, so the strip scrolls behind its fade mask there (plan Risk 3). 1069 is the
+      // narrowest width of the 980 column: it keeps the "fits" assertion (was 1440 and 900).
+      for (const w of [1440, 1069]) {
+        await page.setViewportSize({ width: w, height: 800 });
+        await page.goto(path);
+        if (names) await expect(page.locator('.local-nav .links a')).toHaveText(names);
+        else await expect(page.locator('.local-nav .links a')).toHaveCount(6);
+        const fits = await page
+          .locator('.local-nav .links')
+          .evaluate((e) => e.scrollWidth <= e.clientWidth);
+        expect(fits, `${lang} ${w}`).toBe(true);
+      }
+      // At 900: the overflow stays within the cap, and scrolled to its end the last link (Tech stack)
+      // sits clear of the 32px fade (it is not lost behind the mask).
+      await page.setViewportSize({ width: 900, height: 800 });
+      await page.goto(path);
+      if (names) await expect(page.locator('.local-nav .links a')).toHaveText(names);
+      const reach = await page.locator('.local-nav .links').evaluate((e) => {
+        e.scrollLeft = e.scrollWidth;
+        const box = e.getBoundingClientRect();
+        const last = e.querySelector('li:last-child a')!.getBoundingClientRect();
+        return {
+          overflow: e.scrollWidth - e.clientWidth,
+          clearOfFade: box.right - 32 - last.right,
+        };
+      });
+      expect(reach.overflow, `${lang} overflow at 900`).toBeLessThanOrEqual(cap);
+      expect(reach.overflow, `${lang} still scrolls at 900`).toBeGreaterThan(0);
+      expect(
+        reach.clearOfFade,
+        `${lang} last link clear of the fade at 900`,
+      ).toBeGreaterThanOrEqual(-1);
+    });
+
+  // Review round 1 (accessibility): at 900 the strip scrolls (692px column) and the current link of a
+  // role page is the last role link (Tech stack follows it), so it must be scrolled into view on load, clear of the 32px fade, not
+  // left half under the mask at scrollLeft 0.
+  for (const [lang, path] of [
+    ['EN', '/experiences/hitachi-vantara-backend-engineer/'],
+    ['VI', '/vi/experiences/hitachi-vantara-backend-engineer/'],
+  ] as const)
+    test(`${lang}: the current local-nav link is scrolled into view on load at 900`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 900, height: 800 });
+      await page.goto(path);
+      const list = page.locator('.local-nav .links');
+      const overflow = await list.evaluate((e) => e.scrollWidth - e.clientWidth);
+      expect(overflow, 'the strip scrolls here, so the test is not vacuous').toBeGreaterThan(0);
+      // The reveal also runs when the web fonts are ready, and that can move the link: wait for them,
+      // then poll the clear-of-fade condition itself, not only the first scroll.
+      await page.evaluate(() => document.fonts.ready);
+      await expect
+        .poll(() => list.evaluate((e) => e.scrollLeft), { message: 'scrolled to the current link' })
+        .toBeGreaterThan(0);
+      const clearOfFade = () =>
+        list.evaluate((e) => {
+          const box = e.getBoundingClientRect();
+          const cur = e.querySelector('a[aria-current]')!.getBoundingClientRect();
+          return box.right - 32 - cur.right;
+        });
+      await expect
+        .poll(clearOfFade, { message: 'current link clear of the 32px fade' })
+        .toBeGreaterThanOrEqual(-1);
+      const m = await list.evaluate((e) => {
+        const box = e.getBoundingClientRect();
+        const cur = e.querySelector('a[aria-current]')!.getBoundingClientRect();
+        return { left: cur.left - box.left, clearOfFade: box.right - 32 - cur.right };
+      });
+      expect(m.left, 'current link starts inside the strip').toBeGreaterThanOrEqual(0);
+      expect(m.clearOfFade, 'current link ends clear of the 32px fade').toBeGreaterThanOrEqual(-1);
+      // Scrolled, the strip also fades at its start (the end fade mirrored, spec §5.8), so a link cut at
+      // the left edge is faded, not hard-clipped. The mask's first stop is transparent only when it is on.
+      const mask = () =>
+        list.evaluate((e) => {
+          const s = getComputedStyle(e);
+          return s.maskImage || s.getPropertyValue('-webkit-mask-image');
+        });
+      await expect
+        .poll(async () => START_FADE.test(await mask()), {
+          message: 'start fade on while scrolled',
+        })
+        .toBe(true);
+    });
+
+  // The same strip at 1440 fits: it does not scroll and has no start fade, so it looks as it did before
+  // the scrolled fade existed.
+  for (const [lang, path] of [
+    ['EN', '/experiences/hitachi-vantara-backend-engineer/'],
+    ['VI', '/vi/experiences/hitachi-vantara-backend-engineer/'],
+  ] as const)
+    test(`${lang}: a local-nav strip that does not overflow has no start fade`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: 1440, height: 800 });
+      await page.goto(path);
+      const list = page.locator('.local-nav .links');
+      const overflow = await list.evaluate((e) => e.scrollWidth - e.clientWidth);
+      expect(overflow, 'the strip fits at 1440').toBeLessThanOrEqual(0);
+      const scrollLeft = await list.evaluate((e) => e.scrollLeft);
+      expect(scrollLeft).toBe(0);
+      const mask = await list.evaluate((e) => {
+        const s = getComputedStyle(e);
+        return s.maskImage || s.getPropertyValue('-webkit-mask-image');
+      });
+      expect(START_FADE.test(mask), `no start fade: ${mask}`).toBe(false);
+    });
 
   test('an anchor lands below the stuck local nav (--sticky-h)', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
@@ -673,6 +815,11 @@ test.describe('mobile menu rows at 375px (§5.7)', () => {
         mainColor: getComputedStyle(first).color,
         curColor: getComputedStyle(cur).color,
         btn: [btn.right, btn.width, btn.height],
+        // The open menu rotates the lines, so read the unrotated layout box (offset*, no transform).
+        lineRight: (() => {
+          const line = document.querySelector<HTMLElement>('[data-menu-button] .line')!;
+          return btn.right - (btn.width - (line.offsetLeft + line.offsetWidth));
+        })(),
       };
     });
     expect(v.short).toEqual([]);
@@ -682,7 +829,11 @@ test.describe('mobile menu rows at 375px (§5.7)', () => {
     expect(v.firstTop).toBeLessThanOrEqual(56);
     expect(v.mainColor).toBe('rgb(51, 51, 54)');
     expect(v.curColor).toBe('rgb(51, 51, 54)');
-    expect(v.btn).toEqual([375, 48, 48]);
+    // owner, photo-logos: the menu lines end on the column. The 48px box overhangs the column's right
+    // edge (375 x 0.9375 = 351.5625) by the 17px line inset: was [375, 48, 48] (flush with the viewport).
+    expect(Math.abs(v.btn[0] - (375 * 0.9375 + 17))).toBeLessThanOrEqual(0.5);
+    expect(v.btn.slice(1)).toEqual([48, 48]);
+    expect(Math.abs(v.lineRight - 375 * 0.9375)).toBeLessThanOrEqual(0.5);
   });
 });
 
@@ -832,8 +983,8 @@ test.describe('blocks and in-page targets', () => {
           .filter((e) => e.getClientRects().length && !e.closest('.prose, .code-block'))
           .map((e) => {
             const r = e.getBoundingClientRect();
-            const chip = e.classList.contains('chip');
-            const h = chip ? parseFloat(getComputedStyle(e, '::before').height) : r.height;
+            const pseudo = e.matches('.chip, .fn-ref a, .fn-back');
+            const h = pseudo ? parseFloat(getComputedStyle(e, '::before').height) : r.height;
             return { t: (e.textContent ?? '').trim().slice(0, 24), h };
           })
           .filter((x) => x.h < 43.5),

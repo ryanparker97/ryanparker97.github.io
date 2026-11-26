@@ -15,15 +15,17 @@ test.describe('Part A: review r3 fixes', () => {
       await page.goto(path);
       const empty = await page.evaluate(
         () =>
-          [...document.querySelectorAll('.t-eyebrow, .lockup .actions')].filter(
-            (e) => !e.textContent?.trim() && !e.querySelector('a, button, svg'),
-          ).length,
+          [
+            ...document.querySelectorAll(
+              '.t-eyebrow, .home-kicker, .lockup .actions, main .actions',
+            ),
+          ].filter((e) => !e.textContent?.trim() && !e.querySelector('a, button, svg')).length,
       );
       expect(empty, path).toBe(0);
     }
   });
 
-  test("each STAR card eyebrow starts with its role's local-nav label (M1)", async ({ page }) => {
+  test("each STAR card category starts with its role's local-nav label (M1)", async ({ page }) => {
     await page.goto('/star/');
     const cards = await page.locator('[data-story]').all();
     expect(cards.length).toBeGreaterThan(0);
@@ -32,7 +34,7 @@ test.describe('Part A: review r3 fixes', () => {
       const label = (
         await page.locator(`[data-local-nav] .links a[href="#${role}"]`).innerText()
       ).trim();
-      await expect(card.locator('.stat-card__eyebrow')).toHaveText(
+      await expect(card.locator('.t-news-cat')).toHaveText(
         new RegExp(`^${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`),
       );
     }
@@ -43,6 +45,7 @@ test.describe('Part A: review r3 fixes', () => {
     '/blog/series/',
     '/star/',
     '/vi/star/',
+    '/star/emr-cost-optimization/',
     '/experiences/datum-security-bank-data-engineer/',
   ]) {
     test(`the footer has a top rule when the last band is grey: ${path} (M3)`, async ({ page }) => {
@@ -58,30 +61,24 @@ test.describe('Part A: review r3 fixes', () => {
     });
   }
 
-  test('the STAR story hero is centred and the local nav title is the role (M4)', async ({
+  test('the STAR story H1 is start-aligned with the article column and the local nav title is the role (M4)', async ({
     page,
   }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
     await page.goto('/star/emr-cost-optimization/');
     await expect(page.locator('[data-local-nav] .title').first()).toHaveText(/Data Engineer/);
     await expect(page.locator('[data-local-nav] .title').first()).not.toContainText('Security');
     const m = await page.evaluate(() => {
-      const mid = (r: DOMRect) => r.left + r.width / 2;
       const h1 = document.querySelector('h1')!;
-      const bq = document.querySelector('.quote blockquote')!;
-      const range = document.createRange();
-      range.selectNodeContents(bq);
-      const stepper = document.querySelector('.story-steps')!.getBoundingClientRect();
+      const col = document.querySelector('.story .head')!;
       return {
-        h1: mid(h1.getBoundingClientRect()),
-        quote: mid(range.getBoundingClientRect()),
-        align: getComputedStyle(bq).textAlign,
-        band: stepper.top + scrollY,
+        h1: h1.getBoundingClientRect().left,
+        col: col.getBoundingClientRect().left,
+        align: getComputedStyle(h1).textAlign,
       };
     });
-    expect(Math.abs(m.h1 - m.quote)).toBeLessThanOrEqual(4);
-    expect(m.align).toBe('center');
-    expect(m.band).toBeLessThanOrEqual(900 - 64);
-    expect(await page.locator('h1').evaluate((e) => getComputedStyle(e).fontSize)).toBe('80px');
+    expect(Math.abs(m.h1 - m.col)).toBeLessThanOrEqual(1);
+    expect(['start', 'left']).toContain(m.align);
   });
 
   test('the post TOC lines up with the category and has a 26px pitch (B9)', async ({ page }) => {
@@ -133,9 +130,12 @@ test.describe('Part A: review r3 fixes', () => {
     await page.goto('/blog/');
     await expect(page.locator('main .chip-mint')).toHaveCount(0);
     await page.goto('/');
-    await expect(page.locator('#writing .chip-mint')).toHaveCount(0);
+    await expect(page.locator('main .chip-mint')).toHaveCount(0);
     await page.goto('/blog/');
-    await expect(page.locator('.post-rows .hl-meta').first()).toHaveText(/\d{4} · \d+ min read/);
+    // owner, blog-like-experiences: .post-rows .hl-meta -> #more .group-card__meta
+    await expect(page.locator('#more .group-card__meta').first()).toHaveText(
+      /\d{4} · \d+ min read/,
+    );
   });
 
   test('successive reveal steps differ: the subhead follows the headline (minor 9)', async ({

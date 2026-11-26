@@ -1,0 +1,168 @@
+---
+/**
+ * "Next." (spec §4.1): a full-width section under the Wall's identity row. The H2 on the left, then both
+ * career goals from NEXT_STEPS (year eyebrow, H3 title, text, and the "So far" link to the same evidence
+ * page as /experiences/) beside it from 735px (the H2 over the identity photo's column, the path on the
+ * identity text's left edge), stacked below. The section owns its padding.
+ * Above the goals, one plain-text dated step (NEXT_MILESTONE, the planned certification): no link,
+ * no heading, no list item, so the goals' counts and links are unchanged.
+ */
+import ChevronLink from '~/components/ui/ChevronLink.astro';
+import NextStep from '~/components/ui/NextStep.astro';
+import { NEXT_MILESTONE, NEXT_STEPS, nextHref } from '~/lib/career-next';
+import { useT, type Lang } from '~/i18n';
+
+interface Props {
+  lang: Lang;
+}
+const { lang } = Astro.props;
+const t = useT(lang);
+---
+
+<section id="next" class="container-wide next" aria-labelledby="next-title">
+  <div class="next-in" data-reveal-group>
+    <h2 id="next-title" class="home-big" data-reveal style="--i:1">
+      {t('exp.next.title')}
+    </h2>
+    <div class="next-path">
+      <div data-reveal style="--i:2">
+        <NextStep
+          when={t(NEXT_MILESTONE.eyebrow)}
+          name={t(NEXT_MILESTONE.title)}
+          logo={NEXT_MILESTONE.logo}
+        />
+      </div>
+      <ul class="goals" role="list">
+        {NEXT_STEPS.map((s, i) => (
+          <li data-reveal style={`--i:${i + 3}`}>
+            <p class="home-kicker">{t(s.eyebrow)}</p>
+            <h3 class="goal-title">{t(s.title)}</h3>
+            <p class="home-text">{t(s.text)}</p>
+            <p class="home-links">
+              <ChevronLink href={nextHref(s, lang)}>{t(s.link)}</ChevronLink>
+            </p>
+          </li>
+        ))}
+      </ul>
+    </div>
+    <p class="logos-note">{t('skills.logosNote')}</p>
+  </div>
+</section>
+
+<style>
+  .next {
+    padding-block: 48px;
+  }
+  /* One column with a 28px gap below 735px; H2 | path with aligned tops from there. */
+  .next-in {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+  /* The logo note (owner, photo-logos) spans both columns, on the column's start edge. */
+  .next-in > .logos-note {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+  #next-title {
+    scroll-margin-top: var(--eyebrow-room);
+  }
+  /* Type rows (scoped copy, spec §4.1). */
+  .home-big {
+    margin: 0;
+    font-size: 2rem;
+    line-height: 1.125;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+  }
+  .home-kicker {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.2858;
+    font-weight: 600;
+    letter-spacing: -0.016em;
+    color: var(--text-2);
+  }
+  .goal-title {
+    margin: 8px 0 0;
+    font-size: 1.5rem;
+    line-height: 1.1667;
+    font-weight: 600;
+    letter-spacing: 0.009em;
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  .home-text {
+    margin: 8px 0 0;
+    font-size: 1.0625rem;
+    line-height: 1.4706;
+    letter-spacing: -0.022em;
+    color: var(--text-2);
+  }
+  /* A 22px row gap keeps two stacked 44px link targets from overlapping. */
+  .home-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 22px;
+    margin: 10px 0 0;
+    font-size: 1.0625rem;
+  }
+  /* The link flows as text, so a wrapped label keeps the › after its last word. The 11px block
+     padding gives one line a 44px target; the equal negative margin keeps the mock's rhythm. */
+  .home-links :global(.link-chevron) {
+    display: inline-block;
+    min-height: 0;
+    padding-block: 11px;
+    margin-block: -11px;
+  }
+  /* One goal per row below 1069px, two from there. */
+  .next-path {
+    display: grid;
+    gap: 28px;
+    min-width: 0;
+  }
+  .goals {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 735px) {
+    .next {
+      padding-block: 72px;
+    }
+    .home-big {
+      font-size: 2.5rem;
+      line-height: 1.1;
+    }
+    .home-kicker {
+      font-size: 1.0625rem;
+      line-height: 1.2353;
+      letter-spacing: -0.022em;
+    }
+    /* From M the H2 sits in the identity row's photo-plus-gap track and the path beside it, on the
+       identity text's left edge and ending on the column's right edge like it. The goals stay one
+       column until L: two would be about 200px each and break words at 200% text. */
+    .next-in {
+      grid-template-columns: calc(var(--home-photo) + var(--home-photo-gap)) minmax(0, 1fr);
+      gap: 28px 0;
+      align-items: start;
+    }
+  }
+  @media (min-width: 1069px) {
+    .next {
+      padding-block: 96px;
+    }
+    .goals {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 40px;
+    }
+    .home-big {
+      font-size: 3rem;
+      line-height: 1.0834;
+      letter-spacing: -0.003em;
+    }
+  }
+</style>

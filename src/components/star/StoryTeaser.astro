@@ -1,0 +1,147 @@
+---
+/**
+ * One STAR story on the /star/ desk (spec §4.4): the diagram, the company (and "Sample"), the
+ * title as the card's only link, the interview question, the headline stat and the month. The lead
+ * card sits media-beside-text from 735px; a tile stacks the media above the text.
+ */
+import Stat from '~/components/tile/Stat.astro';
+import { headlineStat, storyImage } from '~/lib/star';
+import type { Localized } from '~/lib/content';
+import { companyLabel, formatCvDate } from '~/lib/cv';
+import { useT, type Lang } from '~/i18n';
+import { localePath } from '~/i18n/routes';
+
+interface Props {
+  story: Localized<'star'>;
+  lang: Lang;
+  role?: Localized<'experience'>;
+  roleId: string;
+  /** First story of its role: carries the role slug as its id (local-nav target). */
+  anchor?: boolean;
+  lead?: boolean;
+  /** Position on the desk: picks the stat colour (--hl-1…4, cycling). */
+  index: number;
+}
+const { story, lang, role, roleId, anchor = false, lead = false, index } = Astro.props;
+const t = useT(lang);
+const d = story.data;
+const company = role ? companyLabel(role.data.company, role.data.client) : t('star.other');
+const category = d.sample ? `${company} · ${t('star.sample')}` : company;
+const stat = headlineStat(d.metrics);
+const img = storyImage(d);
+const month = d.date.toISOString().slice(0, 7);
+---
+
+<article
+  class:list={['story-teaser', { 'story-teaser--lead': lead }]}
+  id={anchor ? roleId : undefined}
+  data-story=""
+  data-slug={story.slug}
+  data-role={roleId}
+  aria-labelledby={`${story.slug}-title`}
+  style={`--hl: var(--hl-${(index % 4) + 1})`}
+>
+  {img && (
+    <div class="teaser-media">
+      <img.Svg role="img" aria-label={img.alt} />
+    </div>
+  )}
+  <div class="teaser-text">
+    <p class="t-news-cat">{category}</p>
+    <h2 class="t-news-title" id={`${story.slug}-title`}>
+      <a href={localePath(`/star/${story.slug}/`, lang)}>{d.title}</a>
+    </h2>
+    <p class="teaser-q">{d.question}</p>
+    {stat && <Stat card above={stat.prefix} value={stat.value} below={stat.label} />}
+    <p class="teaser-date">
+      <time datetime={month}>{formatCvDate(month, lang)}</time>
+    </p>
+  </div>
+</article>
+
+<style>
+  .story-teaser {
+    position: relative;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+    align-content: start;
+    min-width: 0;
+    padding: 24px;
+    border-radius: 24px;
+    background: var(--bg);
+    color: var(--text);
+    overflow-wrap: anywhere;
+  }
+  .teaser-media {
+    min-width: 0;
+  }
+  .teaser-media :global(svg) {
+    display: block;
+    inline-size: 100%;
+    block-size: auto;
+    aspect-ratio: 2 / 1;
+  }
+  .teaser-text {
+    min-width: 0;
+  }
+  .story-teaser .t-news-title {
+    margin: 12px 0 0;
+  }
+  .story-teaser .t-news-title a {
+    display: inline-block;
+    margin-block: -10px;
+    padding-block: 10px;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .story-teaser .t-news-title a::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+  .teaser-q {
+    margin: 12px 0 0;
+    color: var(--text-2);
+  }
+  .story-teaser :global(.stat) {
+    margin-top: 24px;
+  }
+  .story-teaser :global(.stat-value) {
+    color: var(--hl);
+    font-size: 2.5rem;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .teaser-date {
+    margin: 24px 0 0;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.4286;
+  }
+  .story-teaser:has(a:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+  .story-teaser a:focus-visible {
+    outline: none;
+  }
+  @media (min-width: 735px) {
+    .story-teaser--lead {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+      gap: 40px;
+      align-items: center;
+    }
+  }
+  @media (min-width: 1069px) {
+    .story-teaser {
+      padding: 32px;
+      border-radius: 32px;
+    }
+    .story-teaser--lead :global(.stat-value) {
+      font-size: 3.5rem;
+    }
+  }
+</style>

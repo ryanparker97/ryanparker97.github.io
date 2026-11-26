@@ -203,9 +203,11 @@ const links = (
     .tools :global(.lang-switch) {
       display: none;
     }
-    /* The 48px buttons sit flush with the right edge. */
+    /* The menu lines (17px inset, below) end on the column (plan U7, from the owner's "align edges"
+       answer: the lead chose the -17px overhang); the 48px box overhangs into the column margin (at
+       least 20px at 320). */
     .tools {
-      margin-inline-end: calc(-1 * max(0px, var(--gutter) - env(safe-area-inset-right)));
+      margin-inline-end: -17px;
     }
     .tools :global(.icon-btn) {
       width: 48px;

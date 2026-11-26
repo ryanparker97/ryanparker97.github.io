@@ -1,20 +1,26 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
+import { frontmatter } from '../../scripts/lib/frontmatter';
 import { contrastRatio } from '../../src/lib/contrast';
 import { CHILD_ICONS, TOOL_ICONS, toolChildIcon, toolIcon } from '../../src/lib/tool-icons';
 import { brandTools, iconPlate } from '../../src/lib/tool-icons';
 
 const css = readFileSync('src/styles/tokens.css', 'utf8');
 
-function surface2(): { light: string; dark: string } {
+/** A `--name: light-dark(#light, #dark)` token from tokens.css, 6-digit hex, lower-cased. */
+function lightDark(name: string): { light: string; dark: string } {
   const m = css.match(
-    /--surface-2:\s*light-dark\(\s*(#[0-9a-f]{6})\s*,\s*(#[0-9a-f]{6})\s*\)\s*;/i,
+    new RegExp(
+      `--${name}:\\s*light-dark\\(\\s*(#[0-9a-f]{6})\\s*,\\s*(#[0-9a-f]{6})\\s*\\)\\s*;`,
+      'i',
+    ),
   );
-  if (!m) throw new Error('--surface-2 not found or not a light-dark() pair of 6-digit hex');
+  if (!m) throw new Error(`--${name} not found or not a light-dark() pair of 6-digit hex`);
   return { light: m[1].toLowerCase(), dark: m[2].toLowerCase() };
 }
-const SURFACE = surface2();
+const SURFACE = lightDark('surface-2');
+const BG = lightDark('bg');
 
 type Group = {
   group: string;
@@ -365,5 +371,39 @@ describe('brandTools', () => {
     for (const t of brandTools([...ALL, ...skillNames('vi')])) {
       expect(t.icon, t.name).not.toMatch(/lucide/i);
     }
+  });
+});
+
+/** The `logo` of every certification entry in one language (entries without one are skipped). */
+function certLogos(lang: 'en' | 'vi'): string[] {
+  const dir = `src/content/certifications/${lang}`;
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.md'))
+    .map((f) => frontmatter(readFileSync(`${dir}/${f}`, 'utf8')).logo)
+    .filter((logo): logo is string => typeof logo === 'string');
+}
+
+describe('certification logos', () => {
+  it('finds every cert logo in the logos set and plates it by the computed rule', () => {
+    // owner, photo-logos: the planned cert's Claude mark is the one added to the content
+    const ids = [...new Set([...certLogos('en'), ...certLogos('vi')])];
+    expect(ids).toContain('logos:claude-icon');
+    for (const id of ids) {
+      expect(id.startsWith('logos:') && logos.icons[id.slice(6)] !== undefined, id).toBe(true);
+      const darkMin = Math.min(
+        ...colours(markSvg(id)).flatMap((c) => [
+          contrastRatio(c, SURFACE.dark),
+          contrastRatio(c, BG.dark),
+        ]),
+      );
+      expect(iconPlate(id), id).toBe(darkMin < 3);
+    }
+  });
+
+  it('gives the Claude mark one colour, #d97757, at 3:1 or better on dark --surface-2 and --bg, with no plate', () => {
+    expect(colours(markSvg('logos:claude-icon'))).toEqual(['#d97757']);
+    expect(contrastRatio('#d97757', SURFACE.dark)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio('#d97757', BG.dark)).toBeGreaterThanOrEqual(3);
+    expect(iconPlate('logos:claude-icon')).toBe(false);
   });
 });

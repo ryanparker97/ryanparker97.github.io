@@ -33,7 +33,7 @@ test('the mobile menu opens, locks scroll and closes with the button', async ({ 
   await expect(page.locator('#mobile-menu nav a')).toHaveText([
     'Experiences',
     'Projects',
-    'STAR',
+    'In practice',
     'Blog',
   ]);
   await button.tap();

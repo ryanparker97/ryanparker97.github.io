@@ -43,12 +43,16 @@ const FONTS = {
   verdana: ':root{--font-sans:Verdana,"DejaVu Sans",sans-serif!important}',
 } as const;
 for (const [name, css] of Object.entries(FONTS)) {
-  for (const path of ['/', '/vi/']) {
-    test(`board stat one line ${name} ${path}`, async ({ page }) => {
+  // Home has no number tiles (O6); the project page's StatStrip keeps the font matrix exercised.
+  for (const path of [
+    '/projects/agentic-coding-workflow/',
+    '/vi/projects/agentic-coding-workflow/',
+  ]) {
+    test(`project stats stay on one line ${name} ${path}`, async ({ page }) => {
       await page.goto(path);
       if (css) await page.addStyleTag({ content: css });
       await page.evaluate(() => document.fonts.ready.then(() => undefined));
-      const rows = await page.locator('#board .stat-value').evaluateAll((els) =>
+      const rows = await page.locator('main .stat-value').evaluateAll((els) =>
         els.map((e) => ({
           h: e.getBoundingClientRect().height,
           lh: parseFloat(getComputedStyle(e).lineHeight),

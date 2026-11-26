@@ -1,6 +1,6 @@
 import { experimental_AstroContainer as AstroContainer } from 'astro/container';
 import { describe, expect, it, vi } from 'vitest';
-import StoryCard from '../../src/components/star/StoryCard.astro';
+import StoryTeaser from '../../src/components/star/StoryTeaser.astro';
 import Art from '../../src/assets/art/star-steps.svg';
 import StatCard from '../../src/components/tile/StatCard.astro';
 import BaseLayout from '../../src/layouts/BaseLayout.astro';
@@ -27,6 +27,7 @@ const story = (sample: boolean, metrics: unknown[] = [], image?: unknown, imageA
       title: 'Fixture story',
       question: 'Q?',
       competencies: ['ownership'],
+      date: new Date('2026-10-01'),
       metrics,
       sample,
       image,
@@ -40,56 +41,73 @@ const render = async (
   anchor = false,
   image?: unknown,
   imageAlt?: string,
+  lead = false,
 ) =>
-  (await AstroContainer.create()).renderToString(StoryCard as never, {
+  (await AstroContainer.create()).renderToString(StoryTeaser as never, {
     props: {
       story: story(sample, metrics, image, imageAlt),
       lang: 'en',
       roleId: 'other',
       anchor,
+      lead,
       index: 0,
     },
   });
 
-describe('StoryCard', () => {
+describe('StoryTeaser', () => {
   it('shows the Sample marker only for sample stories', async () => {
     expect(await render(true)).toContain('Sample');
     expect(await render(false)).not.toContain('Sample');
   });
-  it('carries the filter and anchor hooks', async () => {
+  it('has exactly one link, to the story page, with the title as its text', async () => {
+    const html = await render(false);
+    expect(html.match(/<a\b/g)).toHaveLength(1);
+    expect(html).toMatch(/<a[^>]*href="\/star\/fixture\/"[^>]*>Fixture story<\/a>/);
+    expect(html).toMatch(/<h2[^>]*id="fixture-title"[^>]*>\s*<a /);
+    expect(html).toContain('aria-labelledby="fixture-title"');
+  });
+  it('carries the card and anchor hooks, and no filter hook', async () => {
     const html = await render(false);
     expect(html).toContain('data-story');
     expect(html).toContain('data-slug="fixture"');
     expect(html).toContain('data-role="other"');
-    expect(html).toContain('data-competencies="ownership"');
+    expect(html).not.toContain('data-competencies');
     expect(html).not.toContain('id="other"');
     expect(await render(false, [], true)).toContain('id="other"');
   });
-  it('renders the question as the card body', async () => {
-    expect(await render(false)).toMatch(/stat-card__body[^>]*>Q\?</);
+  it('renders the question and the month and year', async () => {
+    const html = await render(false);
+    expect(html).toMatch(/teaser-q[^>]*>Q\?</);
+    expect(html).toMatch(/<time datetime="2026-10"[^>]*>Oct 2026<\/time>/);
   });
-  it('has no value without metrics, and a words value for a word-only metric', async () => {
-    expect(await render(false)).not.toContain('stat-card__value');
-    expect(await render(false, [{ label: 'scope', value: 'unchanged' }])).toContain(
-      'stat-card__value--words',
+  it('has the --lead class only for the lead', async () => {
+    expect(await render(false, [], false, undefined, undefined, true)).toContain(
+      'story-teaser--lead',
     );
-    expect(await render(false, [{ label: 'cost', value: '52%' }])).not.toContain(
-      'stat-card__value--words',
+    expect(await render(false)).not.toContain('story-teaser--lead');
+  });
+  it('shows a stat only for a numeric first metric', async () => {
+    expect(await render(false)).not.toContain('stat-value');
+    expect(await render(false, [{ label: 'scope', value: 'unchanged' }])).not.toContain(
+      'stat-value',
     );
+    const html = await render(false, [{ prefix: 'Cut', label: 'cost', value: '52%' }]);
+    expect(html).toContain('stat--card');
+    expect(html).toMatch(/stat-value[^>]*>52%</);
+    expect(html).toContain('Cut');
   });
 });
 
-describe('StoryCard image', () => {
-  it('renders one inline labelled SVG between the body and the value', async () => {
-    const html = await render(false, [{ label: 'cost', value: '52%' }], false, Art, 'A diagram');
-    expect(html.match(/stat-card__media/g)).toHaveLength(1);
-    expect(html).toMatch(/stat-card__media[^>]*>\s*<svg[^>]*role="img"[^>]*aria-label="A diagram"/);
-    expect(html.indexOf('stat-card__body')).toBeLessThan(html.indexOf('stat-card__media'));
-    expect(html.indexOf('stat-card__media')).toBeLessThan(html.indexOf('stat-card__value'));
+describe('StoryTeaser image', () => {
+  it('renders one inline labelled SVG before the category', async () => {
+    const html = await render(false, [], false, Art, 'A diagram');
+    expect(html.match(/teaser-media/g)).toHaveLength(1);
+    expect(html).toMatch(/teaser-media[^>]*>\s*<svg[^>]*role="img"[^>]*aria-label="A diagram"/);
+    expect(html.indexOf('teaser-media')).toBeLessThan(html.indexOf('t-news-cat'));
   });
   it('renders no media without an image or without alt text', async () => {
-    expect(await render(false)).not.toContain('stat-card__media');
-    expect(await render(false, [], false, Art, ' ')).not.toContain('stat-card__media');
+    expect(await render(false)).not.toContain('teaser-media');
+    expect(await render(false, [], false, Art, ' ')).not.toContain('teaser-media');
   });
 });
 

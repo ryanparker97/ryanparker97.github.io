@@ -44,7 +44,7 @@ test.describe('role pages', () => {
       tech.length,
     );
     await expect(
-      page.locator('.chapter-meta').getByRole('link', { name: 'Read the STAR story' }),
+      page.locator('.chapter-meta').getByRole('link', { name: 'Read the story', exact: true }),
     ).toHaveAttribute('href', '/star/emr-cost-optimization/');
   });
 
@@ -61,7 +61,8 @@ test.describe('role pages', () => {
     const nav = page.locator('[data-local-nav]');
     await expect(nav.locator('.title').first()).toHaveText('Experiences');
     await expect(nav.locator('.title-static')).toHaveAttribute('href', '/experiences/');
-    await expect(nav.locator('.links a')).toHaveCount(SLUGS.length);
+    // owner, techstack: old SLUGS.length -> + the Tech stack link.
+    await expect(nav.locator('.links a')).toHaveCount(SLUGS.length + 1);
     await expect(nav.locator('.links a[aria-current]')).toHaveCount(1);
     await expect(nav.locator('.links a[aria-current]')).toHaveAttribute(
       'href',
@@ -295,7 +296,14 @@ test.describe('role pages', () => {
       await page.goto(`/experiences/${slug}/`);
       const r = await page.locator('.chapter').evaluate((c) => {
         const head = c.querySelector('.chapter-side .section-header')!.getBoundingClientRect();
-        const wide = c.querySelector('.chapter-grid')!.getBoundingClientRect().width;
+        const grid = c.querySelector('.chapter-grid')!;
+        // owner, photo-logos: the grid keeps its 1260 box but its content box is the 980 column (padding
+        // inset), and the 40% track is a share of the content box: was the border-box width.
+        const gs = getComputedStyle(grid);
+        const wide =
+          grid.getBoundingClientRect().width -
+          parseFloat(gs.paddingLeft) -
+          parseFloat(gs.paddingRight);
         return { sticky: c.classList.contains('chapter--sticky'), ratio: head.width / wide };
       });
       expect(r.sticky, slug).toBe(true);

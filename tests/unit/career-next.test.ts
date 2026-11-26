@@ -1,9 +1,18 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import en from '../../src/i18n/en.json';
 import vi from '../../src/i18n/vi.json';
-import { NEXT_STEPS, nextHref } from '../../src/lib/career-next';
-import { NEXT_ALLOWED, NEXT_FORBIDDEN, norm, withoutAllowed } from '../e2e/next-words';
+import { NEXT_MILESTONE, NEXT_STEPS, nextHref } from '../../src/lib/career-next';
+import { certWhen, type CertData } from '../../src/lib/certs';
+import { frontmatter } from '../../scripts/lib/frontmatter';
+import {
+  NEXT_ALLOWED,
+  NEXT_FORBIDDEN,
+  NEXT_STEP_ALLOWED,
+  norm,
+  withoutAllowed,
+  withoutStepAllowed,
+} from '../e2e/next-words';
 
 const dict = { en, vi } as Record<'en' | 'vi', Record<string, string>>;
 const keys = (s: (typeof NEXT_STEPS)[number]) => [s.eyebrow, s.title, s.text, s.link] as string[];
@@ -129,5 +138,59 @@ describe('career-next', () => {
         expect(hitTitle(dict[lang][s.eyebrow]), `${lang} ${s.eyebrow}`).toBe(false);
       }
     for (const ok of NEXT_ALLOWED) expect(hitTitle(ok), ok).toBe(false);
+  });
+});
+
+describe('NEXT_MILESTONE', () => {
+  const fm = (lang: 'en' | 'vi') =>
+    frontmatter(
+      readFileSync(`src/content/certifications/${lang}/${NEXT_MILESTONE.cert}.md`, 'utf8'),
+    ) as unknown as CertData;
+
+  it('has non-empty copy in both languages and the same title', () => {
+    for (const lang of ['en', 'vi'] as const)
+      for (const k of [NEXT_MILESTONE.eyebrow, NEXT_MILESTONE.title])
+        expect(dict[lang][k]?.trim().length, `${lang} ${k}`).toBeGreaterThan(0);
+    expect(vi[NEXT_MILESTONE.title]).toBe(en[NEXT_MILESTONE.title]);
+  });
+
+  it('is pinned to the planned certification entry', () => {
+    for (const lang of ['en', 'vi'] as const) {
+      const entry = fm(lang);
+      expect(entry.planned, lang).toBeDefined();
+      expect(dict[lang][NEXT_MILESTONE.eyebrow], lang).toBe(certWhen(entry, lang));
+      expect(dict[lang][NEXT_MILESTONE.title], lang).toBe(entry.name);
+      // owner, photo-logos: the dated step carries the same Claude mark as the planned entry
+      expect(NEXT_MILESTONE.logo, lang).toBe('logos:claude-icon');
+      expect(entry.logo, lang).toBe(NEXT_MILESTONE.logo);
+    }
+  });
+
+  it('passes the forbidden list after its own allow-list, and names no issuer', () => {
+    for (const lang of ['en', 'vi'] as const)
+      for (const k of [NEXT_MILESTONE.eyebrow, NEXT_MILESTONE.title]) {
+        const rest = withoutStepAllowed(dict[lang][k]);
+        for (const re of NEXT_FORBIDDEN) expect(re.test(rest), `${lang} ${k} ${re}`).toBe(false);
+        expect(dict[lang][k]).not.toMatch(/Anthropic/i);
+      }
+  });
+
+  it('shares no allowed string with the goal allow-list', () => {
+    for (const a of NEXT_STEP_ALLOWED) expect(NEXT_ALLOWED).not.toContain(a);
+  });
+
+  it('still rejects other years, issuers and titles', () => {
+    // "Senior …" matches no forbidden word, so leftover text after the allow-list also counts as a hit.
+    const hit = (s: string) =>
+      NEXT_FORBIDDEN.some((re) => re.test(withoutStepAllowed(s))) ||
+      withoutStepAllowed(s).replace(/[\s·]/g, '') !== '';
+    for (const bad of [
+      'Planned · Apr 2028',
+      'Claude Certified Architect at Anthropic',
+      'Senior Claude Certified Architect',
+      'Planned · by 2027',
+      'Certified Architect',
+    ])
+      expect(hit(bad), bad).toBe(true);
   });
 });

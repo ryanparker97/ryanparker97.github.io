@@ -1,23 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { bandTones } from '../../src/lib/bands';
 
-const HOME = ['highlights', 'closer', 'story', 'career', 'writing', 'more'];
+const HOME = ['practice', 'project', 'team', 'also', 'next', 'more'];
 const PROJECT = ['visual', 'stats', 'problem', 'approach', 'result', 'more'];
 
 describe('bandTones', () => {
   it('alternates the full Home list from the white hero', () => {
     expect(bandTones(HOME)).toEqual({
-      highlights: 'surface',
-      closer: 'bg',
-      story: 'surface',
-      career: 'bg',
-      writing: 'surface',
+      practice: 'surface',
+      project: 'bg',
+      team: 'surface',
+      also: 'bg',
+      next: 'surface',
       more: 'bg',
     });
   });
 
-  it('shifts when highlights is missing', () => {
-    expect(bandTones(HOME.slice(1)).closer).toBe('surface');
+  it('shifts when practice is missing', () => {
+    expect(bandTones(HOME.slice(1)).project).toBe('surface');
   });
 
   it('handles the full project list', () => {

@@ -1,55 +1,25 @@
 import { expect, test } from '@playwright/test';
 
-// Component conformance to spec.md: STAR card, filter chips, footer rule, search panel, nav, post meta.
+// Component conformance to spec.md: STAR desk card, footer rule, search panel, nav, post meta.
 test.use({ reducedMotion: 'reduce' });
 
 test.describe('STAR', () => {
-  for (const [w, pad, minH] of [
-    [1440, 32, 640],
-    [900, 28, 560],
-    [375, 24, 520],
+  for (const [w, pad, radius] of [
+    [1440, 32, 32],
+    [375, 24, 24],
   ] as const) {
-    test(`story card padding is ${pad}px and min-height ${minH}px at ${w}px`, async ({ page }) => {
+    test(`desk card padding is ${pad}px and radius ${radius}px at ${w}px`, async ({ page }) => {
       await page.setViewportSize({ width: w, height: 900 });
       await page.goto('/star/');
-      const v = await page
-        .locator('[data-story]')
-        .first()
-        .evaluate((e) => {
+      for (const card of await page.locator('[data-story]').all()) {
+        const v = await card.evaluate((e) => {
           const s = getComputedStyle(e);
-          return { pad: s.paddingLeft, minH: s.minHeight };
+          return { pad: s.paddingLeft, radius: s.borderTopLeftRadius };
         });
-      expect(v).toEqual({ pad: `${pad}px`, minH: `${minH}px` });
+        expect(v).toEqual({ pad: `${pad}px`, radius: `${radius}px` });
+      }
     });
   }
-
-  test('every filter chip is at least 44px wide', async ({ page }) => {
-    await page.goto('/star/');
-    const widths = await page
-      .locator('.chip-filter')
-      .evaluateAll((els) => els.map((e) => e.getBoundingClientRect().width));
-    expect(widths.length).toBeGreaterThan(1);
-    for (const w of widths) expect(w).toBeGreaterThanOrEqual(44);
-  });
-
-  test('filter chips show state in forced colours', async ({ page, browserName }) => {
-    test.skip(browserName !== 'chromium', 'forced-colors emulation is Chromium only');
-    await page.emulateMedia({ forcedColors: 'active' });
-    await page.goto('/star/');
-    const read = (sel: string) =>
-      page
-        .locator(sel)
-        .first()
-        .evaluate((e) => {
-          const s = getComputedStyle(e);
-          return { border: s.borderTopWidth, bg: s.backgroundColor };
-        });
-    const on = await read('.chip-filter[aria-pressed="true"]');
-    const off = await read('.chip-filter[aria-pressed="false"]');
-    expect(on.border).toBe('1px');
-    expect(off.border).toBe('1px');
-    expect(on.bg).not.toBe(off.bg);
-  });
 });
 
 test.describe('footer rule', () => {
@@ -67,13 +37,10 @@ test.describe('footer rule', () => {
     await expect(page.locator('.site-footer')).toHaveCSS('border-top-width', '1px');
   });
   for (const p of ['/', '/vi/']) {
-    test(`${p} ends on the grey footnotes and has a 1px rule`, async ({ page }) => {
+    test(`${p} ends on the grey #more band and has a 1px rule`, async ({ page }) => {
       await page.goto(p);
-      await expect(page.locator('main > :last-child.footnotes, .footnotes').last()).toBeVisible();
-      const v = await page
-        .locator('.site-footer')
-        .evaluate((e) => getComputedStyle(e).borderTopWidth);
-      expect(v).toBe('1px');
+      await expect(page.locator('main > section#more.section--surface:last-child')).toHaveCount(1);
+      await expect(page.locator('.site-footer')).toHaveCSS('border-top-width', '1px');
     });
   }
 });

@@ -1,0 +1,79 @@
+---
+/**
+ * A dated step on the career path (spec §4.2): "Planned · Apr 2027" over the milestone name.
+ * Plain text: no link, no heading, so the goal cards stay the only cards and links of the group.
+ * With `logo` the name starts with the mark box (spec §4.8): 20px mark, 2px padding, 24px box on the
+ * row's start edge, 8px gap, centred on the name's first line.
+ */
+import { Icon } from 'astro-icon/components';
+import { iconPlate } from '~/lib/tool-icons';
+
+interface Props {
+  when: string;
+  name: string;
+  /** Iconify mark of the milestone (decorative: the name is beside it). */
+  logo?: string;
+}
+const { when, name, logo } = Astro.props;
+---
+
+<p class="next-step" data-next-step>
+  <span class="next-step__when">{when}</span>
+  <span class:list={['next-step__name', logo && 'next-step__name--mark']}>
+    {logo && (
+      <Icon
+        name={logo}
+        size={20}
+        aria-hidden="true"
+        class:list={['next-step__logo', iconPlate(logo) && 'next-step__logo--plate']}
+      />
+    )}
+    {name}
+  </span>
+</p>
+
+<style>
+  .next-step {
+    margin: 0;
+  }
+  .next-step__when,
+  .next-step__name {
+    display: block;
+  }
+  .next-step__when {
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.2858;
+  }
+  .next-step__name {
+    margin-top: 4px;
+    color: var(--text);
+    font-size: 1.3125rem;
+    font-weight: 600;
+    line-height: 1.1905;
+    overflow-wrap: anywhere;
+  }
+  .next-step__name--mark {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .next-step__logo {
+    flex: none;
+    box-sizing: content-box;
+    padding: 2px;
+    border-radius: 6px;
+    margin-block-start: calc((1lh - 24px) / 2);
+  }
+  @media screen {
+    :global(:root[data-theme='dark']) .next-step__logo--plate {
+      background: var(--mark-plate);
+    }
+    @media (prefers-color-scheme: dark) {
+      :global(:root[data-pref='system']) .next-step__logo--plate {
+        background: var(--mark-plate);
+      }
+    }
+  }
+</style>

@@ -1,70 +1,79 @@
-import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { expect, test, type Page } from '@playwright/test';
 
 const IDS = ['fpt-software-senior-data-engineer', 'datum-security-bank-data-engineer'];
 
 test.describe('STAR', () => {
-  test('hero art is themed by tokens', async ({ page }) => {
+  test('hero, the desk and its role anchors', async ({ page }) => {
     await page.goto('/star/');
-    const fill = () =>
-      page.evaluate(
-        () =>
-          getComputedStyle(document.querySelector('.hero svg.page-art rect:last-of-type')!).fill,
-      );
-    expect(await fill()).toBe('rgb(0, 80, 159)');
-    await page.evaluate(() => {
-      document.documentElement.dataset.theme = 'dark';
-    });
-    expect(await fill()).toBe('rgb(92, 176, 255)');
-  });
-
-  test('hero and the story gallery', async ({ page }) => {
-    await page.goto('/star/');
-    await expect(page.locator('h1')).toHaveText('Stories from the work.');
-    await expect(page.locator('.hero svg.page-art[role="img"]')).toHaveAttribute(
-      'aria-label',
-      /^Illustration: four rising steps/,
-    );
+    await expect(page.locator('h1')).toHaveText('Real work. Real results.');
     await expect(page.locator('.hero')).toContainText('2 stories across 2 roles.');
-    await expect(page.locator('#stories')).toHaveClass(/section--surface/);
-    await expect(page.getByRole('region', { name: 'Explore the stories.' })).toHaveCount(1);
+    await expect(page.locator('#stories')).toHaveClass(/news-band/);
+    const slugs = await page
+      .locator('[data-story]')
+      .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.slug));
+    expect(slugs).toEqual(['talend-databricks-migration', 'emr-cost-optimization']);
     const roles = await page
       .locator('[data-story]')
       .evaluateAll((els) => els.map((e) => (e as HTMLElement).dataset.role));
     expect(roles).toEqual(IDS);
+    const navHrefs = await page
+      .locator('.local-nav .links a')
+      .evaluateAll((els) => els.map((e) => e.getAttribute('href')));
+    expect(navHrefs).toEqual(roles.map((id) => `#${id}`));
     for (const id of roles) {
-      await expect(page.locator(`.local-nav .links a[href="#${id}"]`)).toHaveCount(1);
       await expect(page.locator(`#${id}`)).toHaveCount(1);
-      await expect(page.locator(`#stories-list #${id}`)).toHaveCount(1);
+      await expect(page.locator(`#stories #${id}`)).toHaveCount(1);
     }
-    await expect(page.locator('main [data-star-group], main .tiles-2up, main details')).toHaveCount(
+    await expect(page.locator('main [data-gallery], main .stat-card, main .paddles')).toHaveCount(
       0,
     );
+    await expect(page.locator('main details')).toHaveCount(0);
   });
 
-  test('story card: company eyebrow, title, question, stat, Read the story', async ({ page }) => {
+  test('the lead card is the newest story, the other is the one tile', async ({ page }) => {
     await page.goto('/star/');
-    const link = page.getByRole('link', {
-      name: 'Read the story: Cutting EMR costs by more than half',
-    });
+    await expect(page.locator('#stories > [data-story]')).toHaveCount(1);
+    await expect(page.locator('#stories > [data-story]')).toHaveAttribute(
+      'data-slug',
+      'talend-databricks-migration',
+    );
+    await expect(page.locator('#stories > [data-story]')).toHaveClass(/story-teaser--lead/);
+    await expect(page.locator('#stories ul.desk-tiles > li')).toHaveCount(1);
+    await expect(page.locator('#stories ul.desk-tiles [data-story]')).toHaveAttribute(
+      'data-slug',
+      'emr-cost-optimization',
+    );
+    await expect(page.locator('#stories .more-from')).toHaveCount(0);
+  });
+
+  test('story tile: company eyebrow, title, question, stat, month', async ({ page }) => {
+    await page.goto('/star/');
+    const link = page.getByRole('link', { name: 'Cutting EMR costs by more than half' });
     const card = page.locator('[data-story]', { has: link });
     const navLabel = (
       await page
         .locator('.local-nav .links a[href="#datum-security-bank-data-engineer"]')
         .innerText()
     ).trim();
-    await expect(card.locator('.stat-card__eyebrow')).toHaveText(navLabel);
-    await expect(card.locator('h3')).toHaveText('Cutting EMR costs by more than half');
-    await expect(card.locator('.stat-card__body')).toContainText(
-      'Tell me about a time you reduced cost',
+    await expect(card.locator('.t-news-cat')).toHaveText(navLabel);
+    await expect(card.getByRole('heading', { level: 2 })).toHaveText(
+      'Cutting EMR costs by more than half',
     );
-    await expect(card.locator('.stat-card__value')).toHaveText('>50%');
-    await expect(card.locator('.stat-card__cap')).toContainText('Cut EMR costs');
+    await expect(card).toHaveAttribute('aria-labelledby', 'emr-cost-optimization-title');
+    await expect(card.locator('.teaser-q')).toContainText('Tell me about a time you reduced cost');
+    await expect(card.locator('.stat-value')).toHaveText('>50%');
+    await expect(card.locator('.stat-cap').first()).toHaveText('Cut');
+    await expect(card.locator('.stat-cap').last()).toContainText('EMR costs');
+    await expect(card.locator('time')).toHaveAttribute('datetime', '2025-06');
+    await expect(card.locator('time')).toHaveText('Jun 2025');
     await expect(card.getByRole('link')).toHaveCount(1);
     await expect(link).toHaveAttribute('href', '/star/emr-cost-optimization/');
     const b = (await link.boundingBox())!;
     expect(b.height).toBeGreaterThanOrEqual(44);
     await expect(card).toHaveCSS('background-color', 'rgb(255, 255, 255)');
-    const values = page.locator('[data-story] .stat-card__value');
+    await expect(page.locator('#stories')).toHaveCSS('background-color', 'rgb(245, 245, 247)');
+    const values = page.locator('[data-story] .stat-value');
     await expect(values.nth(0)).toHaveCSS('color', 'rgb(11, 93, 82)');
     await expect(values.nth(1)).toHaveCSS('color', 'rgb(140, 56, 0)');
   });
@@ -75,14 +84,14 @@ test.describe('STAR', () => {
   ];
 
   for (const { base, label } of LANGS) {
-    test(`gallery cards show the story diagram (${base})`, async ({ page }) => {
+    test(`desk cards show the story diagram above their category (${base})`, async ({ page }) => {
       for (const w of [1440, 375]) {
         await page.setViewportSize({ width: w, height: 900 });
         await page.goto(base);
         const cards = page.locator('[data-story]');
         await expect(cards).toHaveCount(2);
         for (const card of await cards.all()) {
-          const svg = card.locator('.stat-card__media svg[role="img"]');
+          const svg = card.locator('.teaser-media svg[role="img"]');
           await expect(svg).toHaveCount(1);
           await expect(svg).toHaveAttribute('aria-label', label);
           await expect(svg).toHaveAttribute('width', '640');
@@ -91,18 +100,18 @@ test.describe('STAR', () => {
           const b = (await svg.boundingBox())!;
           expect(b.width / b.height, `${base} ${w}`).toBeGreaterThan(1.97);
           expect(b.width / b.height, `${base} ${w}`).toBeLessThan(2.03);
-          const order = await card.evaluate((c) => {
-            const body = c.querySelector('.stat-card__body')!;
-            const media = c.querySelector('.stat-card__media')!;
-            const value = c.querySelector('.stat-card__value')!;
+          // The diagram comes before the category in reading order. At 1440 the lead and the lone
+          // tile put it beside the text; at 375 it sits above (the column test covers 320).
+          const geo = await card.evaluate((c) => {
+            const media = c.querySelector('.teaser-media')!;
+            const cat = c.querySelector('.t-news-cat')!;
             return {
-              afterBody: !!(body.compareDocumentPosition(media) & Node.DOCUMENT_POSITION_FOLLOWING),
-              beforeValue: !!(
-                media.compareDocumentPosition(value) & Node.DOCUMENT_POSITION_FOLLOWING
-              ),
+              first: !!(media.compareDocumentPosition(cat) & Node.DOCUMENT_POSITION_FOLLOWING),
+              above: media.getBoundingClientRect().bottom <= cat.getBoundingClientRect().top + 1,
             };
           });
-          expect(order).toEqual({ afterBody: true, beforeValue: true });
+          expect(geo.first, `${base} ${w}`).toBe(true);
+          if (w === 375) expect(geo.above, `${base} ${w}`).toBe(true);
         }
       }
     });
@@ -114,23 +123,28 @@ test.describe('STAR', () => {
     ['/vi/star/emr-cost-optimization/', /^Sơ đồ: /],
     ['/vi/star/talend-databricks-migration/', /^Sơ đồ: /],
   ] as const) {
-    test(`story page shows the diagram above the panels (${path})`, async ({ page }) => {
+    test(`story page shows the diagram between the keyline and Situation (${path})`, async ({
+      page,
+    }) => {
       for (const w of [1440, 375]) {
         await page.setViewportSize({ width: w, height: 900 });
         await page.goto(path);
-        const svg = page.locator('.story-steps .story-figure svg[role="img"]');
+        const svg = page.locator('figure.story-figure svg[role="img"]');
         await expect(svg).toHaveCount(1);
         await expect(svg).toHaveAttribute('aria-label', label);
-        await expect(page.locator('.hero svg[role="img"]')).toHaveCount(0);
+        await expect(page.locator('main svg[role="img"]')).toHaveCount(1);
         const b = (await svg.boundingBox())!;
         expect(b.width / b.height, `${path} ${w}`).toBeGreaterThan(1.97);
         expect(b.width / b.height, `${path} ${w}`).toBeLessThan(2.03);
-        const above = await page.evaluate(
-          () =>
-            document.querySelector('.story-figure')!.getBoundingClientRect().bottom <=
-            document.querySelector('[data-star-panel="s"]')!.getBoundingClientRect().top,
-        );
-        expect(above).toBe(true);
+        const order = await page.evaluate(() => {
+          const top = (s: string) => document.querySelector(s)!.getBoundingClientRect().top;
+          const bottom = (s: string) => document.querySelector(s)!.getBoundingClientRect().bottom;
+          return {
+            afterKeyline: bottom('.keyline') <= top('.story-figure'),
+            beforeSituation: bottom('.story-figure') <= top('#situation'),
+          };
+        });
+        expect(order, `${path} ${w}`).toEqual({ afterKeyline: true, beforeSituation: true });
       }
     });
   }
@@ -150,85 +164,200 @@ test.describe('STAR', () => {
     expect(await fill()).toBe('rgb(92, 176, 255)');
   });
 
-  test('competency filter updates the URL; empty roles lose their nav link and anchor', async ({
+  test('the competency filter is gone and an old ?c= link still shows both stories', async ({
     page,
   }) => {
-    await page.goto('/star/');
-    await page.getByRole('button', { name: 'Ownership' }).click();
-    await expect(page).toHaveURL(/\?c=ownership$/);
-    await expect(page.locator('[data-story]:visible')).toHaveCount(1);
-    await page.goBack();
-    await expect(page).not.toHaveURL(/\?c=/);
-    await page.goto('/star/?c=customer-focus');
-    await expect(page.locator('[data-story]:visible')).toHaveCount(1);
-    await expect(page.getByRole('button', { name: 'Customer focus' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    await page.goto('/star/?c=ownership');
-    await expect(page.locator('.links a[href="#fpt-software-senior-data-engineer"]')).toBeHidden();
-    await expect(page.locator('#fpt-software-senior-data-engineer')).toHaveCount(0);
-    await page.goto('/star/?c=conflict');
-    await expect(page.locator('#stories [data-gallery]')).toBeHidden();
-    for (const id of IDS) await expect(page.locator(`.links a[href="#${id}"]`)).toBeHidden();
-    await expect(page.getByText('No stories match.')).toBeVisible();
-    await expect(page.locator('#stories')).toBeVisible();
-    await page.getByRole('button', { name: 'Show all' }).click();
-    await expect(page.locator('[data-story]:visible')).toHaveCount(2);
-    await expect(page.locator('#stories [data-gallery]')).toBeVisible();
-    for (const id of IDS) await expect(page.locator(`.links a[href="#${id}"]`)).toBeVisible();
+    for (const path of ['/star/?c=ownership', '/star/?c=conflict', '/vi/star/?c=ownership']) {
+      await page.goto(path);
+      await expect(page.locator('[data-story]')).toHaveCount(2);
+      for (const card of await page.locator('[data-story]').all()) await expect(card).toBeVisible();
+      await expect(page.locator('[data-competency-filter], .chip-filter, #star-empty')).toHaveCount(
+        0,
+      );
+      await expect(page.locator('main button')).toHaveCount(0);
+    }
   });
 
-  test('story page: quote with Interview question, super stat, four-panel grid, closing links', async ({
-    page,
-  }) => {
+  test('/star/ ships no client script beyond the one /blog/ has', async ({ page }) => {
+    const scripts = () =>
+      page.evaluate(() => ({
+        src: [...document.querySelectorAll<HTMLScriptElement>('script[src]')]
+          .map((s) => s.getAttribute('src'))
+          .sort(),
+        inline: [...document.querySelectorAll('script:not([src])')]
+          .map((s) => s.textContent ?? '')
+          .filter((t) => /competenc|star-empty|data-reset/.test(t)),
+      }));
+    await page.goto('/blog/');
+    const blog = await scripts();
+    for (const path of ['/star/', '/vi/star/']) {
+      await page.goto(path);
+      const star = await scripts();
+      expect(star.src, path).toEqual(blog.src);
+      expect(star.inline, path).toEqual([]);
+    }
+  });
+
+  test('the title link opens the story page', async ({ page }) => {
     await page.goto('/star/');
-    const link = page.getByRole('link', {
-      name: 'Read the story: Cutting EMR costs by more than half',
-    });
+    const link = page.getByRole('link', { name: 'Cutting EMR costs by more than half' });
     await link.scrollIntoViewIfNeeded();
-    // The lockup fades up as it enters view; click once it has settled.
-    await expect(page.locator('[data-story]', { has: link })).toHaveCSS('translate', 'none');
     await link.click();
     await expect(page).toHaveURL(/\/star\/emr-cost-optimization\/$/);
     await expect(page.locator('h1')).toHaveText('Cutting EMR costs by more than half');
-    await expect(page.locator('figure.quote figcaption')).toHaveText('Interview question');
-    await expect(page.locator('.stat--super .stat-value')).toHaveText('>50%');
-    const panels = page.locator('[data-star-panel]');
-    await expect(panels.locator('h3')).toHaveText(['Situation', 'Task', 'Result']);
-    await expect(page.locator('#steps h2')).toHaveText('Step by step.');
-    for (const p of await panels.all()) await expect(p).toBeVisible();
-    await expect(page.getByRole('link', { name: 'All stories' }).last()).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Read the role' })).toHaveAttribute(
-      'href',
-      '/experiences/datum-security-bank-data-engineer/',
-    );
   });
 
-  test('story panels: S and T side by side, R full width; one column at 375px', async ({
+  const STORIES = [
+    {
+      path: '/star/emr-cost-optimization/',
+      lang: 'en',
+      slug: 'emr-cost-optimization',
+      values: ['>50%', 'unchanged'],
+      h2: ['Situation', 'Task', 'Action', 'Result'],
+      qLabel: 'Interview question',
+      refLabel: 'Footnote 1',
+      role: '/experiences/datum-security-bank-data-engineer/',
+      other: '/star/talend-databricks-migration/',
+    },
+    {
+      path: '/star/talend-databricks-migration/',
+      lang: 'en',
+      slug: 'talend-databricks-migration',
+      values: ['500', '0', 'unchanged'],
+      h2: ['Situation', 'Task', 'Action', 'Result'],
+      qLabel: 'Interview question',
+      refLabel: 'Footnote 1',
+      role: '/experiences/fpt-software-senior-data-engineer/',
+      other: '/star/emr-cost-optimization/',
+    },
+    {
+      path: '/vi/star/emr-cost-optimization/',
+      lang: 'vi',
+      slug: 'emr-cost-optimization',
+      values: ['>50%', 'không đổi'],
+      h2: ['Bối cảnh', 'Nhiệm vụ', 'Hành động', 'Kết quả'],
+      qLabel: 'Câu hỏi phỏng vấn',
+      refLabel: 'Chú thích 1',
+      role: '/vi/experiences/datum-security-bank-data-engineer/',
+      other: '/vi/star/talend-databricks-migration/',
+    },
+    {
+      path: '/vi/star/talend-databricks-migration/',
+      lang: 'vi',
+      slug: 'talend-databricks-migration',
+      values: ['500', '0', 'không đổi'],
+      h2: ['Bối cảnh', 'Nhiệm vụ', 'Hành động', 'Kết quả'],
+      qLabel: 'Câu hỏi phỏng vấn',
+      refLabel: 'Chú thích 1',
+      role: '/vi/experiences/fpt-software-senior-data-engineer/',
+      other: '/vi/star/emr-cost-optimization/',
+    },
+  ];
+
+  for (const st of STORIES) {
+    test(`story page is an article: header, four sections, metrics, links (${st.path})`, async ({
+      page,
+    }) => {
+      await page.goto(st.path);
+      await expect(page.locator('h1')).toHaveCount(1);
+      await expect(page.locator('.q-label')).toHaveText(st.qLabel);
+      await expect(page.locator('.t-article-sub')).not.toBeEmpty();
+      await expect(page.locator('.story time')).toHaveAttribute('datetime', /^\d{4}-\d{2}$/);
+      await expect(page.locator('.story .part h2')).toHaveText(st.h2);
+      for (const h of st.h2)
+        await expect(page.getByRole('heading', { name: h, level: 2 })).toBeVisible();
+      await expect(page.locator('#action li')).toHaveCount(3);
+      await expect(page.locator('#result .stat-value')).toHaveText(st.values);
+      await expect(
+        page.locator(
+          'main [data-star-panel], main #steps, main .quote, main .stat--super, main .chapter--sticky, main .hero',
+        ),
+      ).toHaveCount(0);
+      await expect(
+        page.getByRole('link', { name: /^(All stories|Tất cả câu chuyện)/ }).last(),
+      ).toBeVisible();
+      await expect(page.locator(`.closing a[href="${st.role}"]`)).toHaveCount(1);
+      await expect(page.locator(`.more-from a[href="${st.other}"]`)).toHaveCount(1);
+      await expect(page.locator('.more-from a')).toHaveCount(1);
+      // H1 then H2s, none skipped.
+      const levels = await page.evaluate(() =>
+        [...document.querySelectorAll('main h1, main h2, main h3, main h4')].map((h) => h.tagName),
+      );
+      expect(levels.shift()).toBe('H1');
+      expect(new Set(levels)).toEqual(new Set(['H2']));
+    });
+
+    test(`story page footnotes: one ref and one note per noted metric (${st.path})`, async ({
+      page,
+    }) => {
+      const md = readFileSync(`src/content/star/${st.lang}/${st.slug}.md`, 'utf8');
+      const front = md.split('---')[1];
+      const metrics = front.split(/^ {2}- /m).slice(1);
+      const notes = metrics
+        .map((m) => /^ {4}note: (["'])(.*)\1\s*$/m.exec(m)?.[2])
+        .filter((n): n is string => !!n);
+      expect(notes.length).toBeGreaterThan(0);
+      expect(metrics.length).toBe(st.values.length);
+      await page.goto(st.path);
+      const refs = page.locator('sup.fn-ref a');
+      await expect(refs).toHaveCount(notes.length);
+      await expect(page.locator('#result sup.fn-ref a')).toHaveCount(notes.length);
+      await expect(page.locator('main sup.fn-ref a')).toHaveCount(notes.length);
+      for (const [i, note] of notes.entries()) {
+        const n = i + 1;
+        const ref = page.locator(`#fnref-${n}`);
+        await expect(ref).toHaveAttribute('href', `#fn-${n}`);
+        await expect(ref).toHaveAttribute('aria-label', st.refLabel.replace('1', String(n)));
+        const fn = page.locator(`#fn-${n}`);
+        expect((await fn.innerText()).startsWith(note)).toBe(true);
+        await expect(fn.locator('a.fn-back')).toHaveAttribute('href', `#fnref-${n}`);
+      }
+      await refs.first().click();
+      expect(await page.evaluate(() => document.querySelector(':target')?.id)).toBe('fn-1');
+      const dup = await page.evaluate(() => {
+        const ids = [...document.querySelectorAll('[id]')].map((e) => e.id);
+        return ids.filter((id, i) => ids.indexOf(id) !== i);
+      });
+      expect(dup).toEqual([]);
+      await expect(page.locator('main > .footnotes')).toHaveCount(1);
+    });
+  }
+
+  test('story page column: H1, first H2 and figure share a left edge, measure <= 653px', async ({
     page,
   }) => {
-    const boxes = async () => {
-      const out: Record<string, { x: number; y: number; w: number }> = {};
-      for (const k of ['s', 't', 'r']) {
-        const b = (await page.locator(`[data-star-panel="${k}"]`).boundingBox())!;
-        out[k] = { x: Math.round(b.x), y: Math.round(b.y), w: Math.round(b.width) };
-      }
-      return out;
-    };
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/star/emr-cost-optimization/');
-    let b = await boxes();
-    expect(b.s.y).toBe(b.t.y);
-    expect(b.t.x).toBeGreaterThan(b.s.x);
-    expect(b.r.w).toBeGreaterThan(b.s.w * 1.8);
-    expect(b.r.y).toBeGreaterThan(b.t.y);
-    await expect(page.locator('[data-star-panel="r"] .stat-value').first()).toHaveText('>50%');
-    await page.setViewportSize({ width: 375, height: 812 });
-    b = await boxes();
-    expect(b.t.y).toBeGreaterThan(b.s.y);
-    expect(b.t.x).toBe(b.s.x);
+    for (const path of ['/star/emr-cost-optimization/', '/vi/star/talend-databricks-migration/']) {
+      await page.setViewportSize({ width: 1440, height: 900 });
+      await page.goto(path);
+      const m = await page.evaluate(() => {
+        const box = (s: string) => document.querySelector(s)!.getBoundingClientRect();
+        return {
+          h1: box('h1').left,
+          h2: box('#situation h2').left,
+          fig: box('.story-figure').left,
+          w: box('#situation .prose').width,
+        };
+      });
+      expect(Math.abs(m.h1 - m.h2), path).toBeLessThanOrEqual(1);
+      expect(Math.abs(m.h1 - m.fig), path).toBeLessThanOrEqual(1);
+      expect(m.w, path).toBeLessThanOrEqual(653);
+    }
   });
+
+  for (const st of STORIES) {
+    for (const w of [375, 320]) {
+      test(`story page has no overflow at ${w}px, also at 200% text (${st.path})`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: w, height: 812 });
+        await page.goto(st.path);
+        const over = () => page.evaluate(() => document.documentElement.scrollWidth > innerWidth);
+        expect(await over()).toBe(false);
+        await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+        expect(await over()).toBe(false);
+      });
+    }
+  }
 
   test('peek rule at 1440x900 and 375x812', async ({ page }) => {
     for (const path of ['/star/', '/vi/star/']) {
@@ -244,101 +373,68 @@ test.describe('STAR', () => {
     }
   });
 
-  test('gallery geometry at L, M and S', async ({ page }) => {
-    const info = () =>
-      page.evaluate(() => {
-        const g = document.querySelector<HTMLElement>('#stories [data-gallery]')!;
-        const cards = [...g.querySelectorAll<HTMLElement>('[data-story]')].map((c) =>
-          c.getBoundingClientRect(),
-        );
-        return {
-          few: g.classList.contains('gallery--few'),
-          tops: cards.map((r) => Math.round(r.top)),
-          widths: cards.map((r) => Math.round(r.width)),
-          secondX: cards[1].left,
-          paddles: !g.querySelector<HTMLElement>('.paddles')!.hidden,
-          overflow: document.documentElement.scrollWidth > innerWidth,
-        };
+  const deskGeometry = (page: Page) =>
+    page.evaluate(() => {
+      const box = (e: Element) => {
+        const b = e.getBoundingClientRect();
+        return { l: b.left, r: b.right, t: b.top, b: b.bottom, w: b.width };
+      };
+      const cards = [...document.querySelectorAll<HTMLElement>('[data-story]')];
+      return {
+        overflow: document.documentElement.scrollWidth > innerWidth,
+        cards: cards.map((c) => ({
+          card: box(c),
+          media: box(c.querySelector('.teaser-media')!),
+          text: box(c.querySelector('.teaser-text')!),
+          within: [...c.querySelectorAll('*')].every((k) => {
+            const b = k.getBoundingClientRect();
+            return b.right <= c.getBoundingClientRect().right + 1 && b.left >= -1;
+          }),
+          self: c.scrollWidth <= c.clientWidth,
+        })),
+      };
+    });
+  for (const base of ['/star/', '/vi/star/']) {
+    for (const w of [1440, 900]) {
+      test(`desk geometry at ${w}px: media beside text, the lone tile spans the lead (${base})`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: w, height: 900 });
+        await page.goto(base);
+        const g = await deskGeometry(page);
+        const [lead, tile] = g.cards;
+        expect(g.overflow).toBe(false);
+        for (const c of g.cards) {
+          expect(c.media.r, 'media left of text').toBeLessThanOrEqual(c.text.l + 1);
+          expect(c.within).toBe(true);
+          expect(c.self).toBe(true);
+        }
+        expect(Math.abs(tile.card.w - lead.card.w)).toBeLessThanOrEqual(2);
+        expect(Math.abs(tile.card.l - lead.card.l)).toBeLessThanOrEqual(2);
+        expect(tile.card.t).toBeGreaterThan(lead.card.b);
       });
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/star/');
-    // The cards reveal with a staggered translate; measure only once both have settled.
-    for (const card of await page.locator('[data-story]').all()) {
-      await card.scrollIntoViewIfNeeded();
-      await expect(card).toHaveCSS('translate', 'none');
     }
-    let m = await info();
-    expect(m.few).toBe(true);
-    expect(Math.abs(m.tops[0] - m.tops[1])).toBeLessThanOrEqual(2);
-    for (const w of m.widths) expect(w).toBeGreaterThan(372);
-    expect(m.paddles).toBe(false);
-    await page.setViewportSize({ width: 900, height: 900 });
-    m = await info();
-    expect(m.widths).toEqual([344, 344]);
-    await page.setViewportSize({ width: 375, height: 812 });
-    await expect(page.locator('#stories .paddles')).toBeVisible();
-    m = await info();
-    expect(m.widths).toEqual([260, 260]);
-    expect(m.secondX).toBeLessThan(375);
-    expect(m.paddles).toBe(true);
-    expect(m.overflow).toBe(false);
-  });
-
-  for (const w of [375, 320]) {
-    test(`Vietnamese cards never overflow at ${w}px`, async ({ page }) => {
-      await page.setViewportSize({ width: w, height: 812 });
-      await page.goto('/vi/star/');
-      const r = await page.evaluate(() =>
-        [...document.querySelectorAll<HTMLElement>('[data-story]')].map((c) => {
-          const b = c.getBoundingClientRect();
-          return {
-            self: c.scrollWidth <= c.clientWidth,
-            kids: [...c.children].every((k) => k.getBoundingClientRect().right <= b.right + 1),
-            h: Math.round(b.height),
-          };
-        }),
-      );
-      for (const c of r) {
-        expect(c.self).toBe(true);
-        expect(c.kids).toBe(true);
-      }
-      expect(new Set(r.map((c) => c.h)).size).toBe(1);
-    });
+    for (const w of [375, 320]) {
+      test(`desk is one column with media above text at ${w}px, no overflow (${base})`, async ({
+        page,
+      }) => {
+        await page.setViewportSize({ width: w, height: 812 });
+        await page.goto(base);
+        const g = await deskGeometry(page);
+        expect(g.overflow).toBe(false);
+        expect(g.cards).toHaveLength(2);
+        for (const c of g.cards) {
+          expect(c.media.b, 'media above text').toBeLessThanOrEqual(c.text.t + 1);
+          expect(c.card.r).toBeLessThanOrEqual(w);
+          expect(c.card.l).toBeGreaterThanOrEqual(0);
+          expect(c.within).toBe(true);
+          expect(c.self).toBe(true);
+        }
+        expect(Math.abs(g.cards[0].card.w - g.cards[1].card.w)).toBeLessThanOrEqual(1);
+        expect(g.cards[1].card.t).toBeGreaterThan(g.cards[0].card.b);
+      });
+    }
   }
-
-  test('paddles follow the filter without a resize', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
-    await page.goto('/star/');
-    const g = page.locator('#stories [data-gallery]');
-    const prev = g.getByRole('button', { name: 'Previous stories' });
-    const next = g.getByRole('button', { name: 'Next stories' });
-    await expect(prev).toBeDisabled();
-    await expect(next).toBeEnabled();
-    await next.click();
-    await expect(next).toBeDisabled();
-    await expect(prev).toBeEnabled();
-    await page.evaluate(() => {
-      document.querySelector<HTMLElement>('[data-story]')!.hidden = true;
-    });
-    await expect(g.locator('.paddles')).toBeHidden();
-    await page.evaluate(() => {
-      document.querySelector<HTMLElement>('[data-story]')!.hidden = false;
-    });
-    await expect(g.locator('.paddles')).toBeVisible();
-    await page.goto('/star/?c=ownership');
-    await expect(page.locator('#stories .paddles')).toBeHidden();
-    await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/star/?c=ownership');
-    await expect(page.locator('#stories [data-gallery]')).toHaveClass(/gallery--few/);
-    const m = await page.evaluate(() => {
-      const t = document.querySelector<HTMLElement>('#stories .gallery-track')!;
-      const cs = getComputedStyle(t);
-      const content = t.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
-      const card = document.querySelector<HTMLElement>('[data-story]:not([hidden])')!;
-      return { content, card: card.getBoundingClientRect().width };
-    });
-    expect(Math.abs(m.card - m.content)).toBeLessThanOrEqual(2);
-  });
 
   for (const [w, h, bar] of [
     [1440, 900, 52],
@@ -349,12 +445,8 @@ test.describe('STAR', () => {
         await page.setViewportSize({ width: w, height: h });
         await page.goto(`/star/#${id}`);
         const card = page.locator(`#${id}`);
-        // Wait for the staggered reveal to finish, then poll the settled position instead of
-        // sleeping: the anchor scroll may still be in flight on a loaded runner.
-        await expect(card).toHaveCSS('translate', 'none', { timeout: 15_000 });
-        // The initial hash scroll can end mid-reveal (a late IntersectionObserver start shifts the
-        // card by the in-flight translate), so re-apply the anchor once the card is settled. This
-        // still exercises the scroll-margin that must clear both bars.
+        // Re-apply the anchor once the page has settled, then poll the position: the first
+        // hash scroll may still be in flight on a loaded runner.
         await card.evaluate((e) => e.scrollIntoView());
         await expect
           .poll(() => card.evaluate((e) => e.getBoundingClientRect().top), { timeout: 15_000 })
@@ -376,7 +468,7 @@ test.describe('STAR', () => {
     page,
   }) => {
     await page.goto('/experiences/datum-security-bank-data-engineer/');
-    const link = page.getByRole('link', { name: 'Read the STAR story' });
+    const link = page.getByRole('link', { name: 'Read the story', exact: true });
     await expect(link).toHaveAttribute('href', '/star/emr-cost-optimization/');
     await page.goto('/experiences/#datum-security-bank-data-engineer');
     await expect(page.locator('#datum-security-bank-data-engineer')).toBeInViewport();
@@ -403,11 +495,11 @@ test.describe('STAR language switch', () => {
 
 test.describe('STAR without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
-  test('shows every card, no paddles, no filter', async ({ page }) => {
+  test('shows both cards, no filter, and both role anchors', async ({ page }) => {
     await page.goto('/star/');
     await expect(page.locator('[data-story]:visible')).toHaveCount(2);
-    await expect(page.locator('#stories .paddles')).toBeHidden();
-    await expect(page.locator('[data-competency-filter]')).toBeHidden();
+    await expect(page.locator('[data-competency-filter]')).toHaveCount(0);
     await expect(page.locator('#datum-security-bank-data-engineer')).toHaveCount(1);
+    await expect(page.locator('#fpt-software-senior-data-engineer')).toHaveCount(1);
   });
 });

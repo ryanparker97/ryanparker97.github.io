@@ -84,25 +84,7 @@ export function singleNav(title: string, link: NavLink, titleHref?: string): Loc
   return { title, titleHref, links: [link] };
 }
 
-/** Home: Overview · Experiences · Skills, plus the Download CV pill (spec §4.0). */
-export function homeNav(lang: Lang): LocalNavProps {
-  const t = useT(lang);
-  return {
-    title: t('meta.siteName'),
-    links: [
-      { href: localePath('/', lang), label: t('home.nav.overview'), current: true },
-      { href: localePath('/experiences/', lang), label: t('nav.cv') },
-      { href: localePath('/skills/', lang), label: t('skills.title') },
-    ],
-    pill: {
-      href: localePath('/cv.pdf', lang),
-      label: t('common.download'),
-      download: 'Ryan-Parker-CV.pdf',
-    },
-  };
-}
-
-/** Experiences role pages: one link per role (the open one current), plus the Download CV pill (spec §4.0). */
+/** Experiences and role pages: one link per role (the open one current), then Tech stack, plus the Download CV pill (spec §4.0). */
 export function experiencesNav(
   lang: Lang,
   roles: {
@@ -116,11 +98,15 @@ export function experiencesNav(
   return {
     title: t('cv.title'),
     titleHref: localePath('/experiences/', lang),
-    links: roles.map((r, i) => ({
-      href: localePath(`/experiences/${r.slug}/`, lang),
-      label: labels[i],
-      current: r.slug === current,
-    })),
+    links: [
+      ...roles.map((r, i) => ({
+        href: localePath(`/experiences/${r.slug}/`, lang),
+        label: labels[i],
+        current: r.slug === current,
+      })),
+      // Owner, techstack: the Tech stack group of /experiences/ (also from the role pages).
+      { href: `${localePath('/experiences/', lang)}#stack`, label: t('exp.techStack') },
+    ],
     pill: {
       href: localePath('/cv.pdf', lang),
       label: t('common.download'),

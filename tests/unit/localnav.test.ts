@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { blogNav, experiencesNav, homeNav, projectsNav, singleNav } from '../../src/lib/localnav';
+import * as localnav from '../../src/lib/localnav';
+import { blogNav, experiencesNav, projectsNav, singleNav } from '../../src/lib/localnav';
 
 describe('local nav definitions (spec §4.0)', () => {
   it('blog: All posts, Topics, Series and an RSS pill', () => {
@@ -45,14 +46,8 @@ describe('local nav definitions (spec §4.0)', () => {
     expect(nav.pill).toBeUndefined();
   });
 
-  it('home: Overview, Experiences, Skills and the PDF pill', () => {
-    const nav = homeNav('en');
-    expect(nav.links.map((l) => l.label)).toEqual(['Overview', 'Experiences', 'Skills']);
-    expect(nav.links.map((l) => !!l.current)).toEqual([true, false, false]);
-    expect(nav.pill?.href).toBe('/cv.pdf');
-    const vi = homeNav('vi');
-    expect(vi.links.map((l) => l.href)).toEqual(['/vi/', '/vi/experiences/', '/vi/skills/']);
-    expect(vi.pill?.href).toBe('/vi/cv.pdf');
+  it('Home has no local nav definition', () => {
+    expect('homeNav' in localnav).toBe(false);
   });
 
   it('experiences: one role-page link per role, the open one current, plus the PDF pill', () => {
@@ -63,8 +58,13 @@ describe('local nav definitions (spec §4.0)', () => {
     const nav = experiencesNav('en', roles, 'c');
     expect(nav.title).toBe('Experiences');
     expect(nav.titleHref).toBe('/experiences/');
-    expect(nav.links.map((l) => l.href)).toEqual(roles.map((r) => `/experiences/${r.slug}/`));
-    expect(nav.links.map((l) => !!l.current)).toEqual([false, false, true, false, false]);
+    // owner, techstack: old = the role links only -> + the Tech stack link last.
+    expect(nav.links.map((l) => l.href)).toEqual([
+      ...roles.map((r) => `/experiences/${r.slug}/`),
+      '/experiences/#stack',
+    ]);
+    expect(nav.links.map((l) => !!l.current)).toEqual([false, false, true, false, false, false]);
+    expect(experiencesNav('vi', roles).links.at(-1)?.href).toBe('/vi/experiences/#stack');
     expect(nav.pill?.href).toBe('/cv.pdf');
     expect(experiencesNav('vi', roles).links[0].href).toBe('/vi/experiences/a/');
   });

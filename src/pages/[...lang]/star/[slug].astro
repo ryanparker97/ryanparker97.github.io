@@ -1,17 +1,19 @@
 ---
+import '~/styles/prose.css';
 import type { GetStaticPaths } from 'astro';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import StepStage from '~/components/star/StepStage.astro';
-import StarPanels from '~/components/star/StarPanels.astro';
-import Quote from '~/components/blog/Quote.astro';
-import Hero from '~/components/tile/Hero.astro';
-import Section from '~/components/tile/Section.astro';
+import MoreFrom from '~/components/blog/MoreFrom.astro';
+import Footnotes from '~/components/tile/Footnotes.astro';
+import GraphBars from '~/components/tile/GraphBars.astro';
 import Stat from '~/components/tile/Stat.astro';
 import ChevronLink from '~/components/ui/ChevronLink.astro';
+import DotList from '~/components/ui/DotList.astro';
+import { competencies } from '~/content/competencies';
 import { getLocalized, render } from '~/lib/content';
 import { isFallback } from '~/lib/localize';
-import { companyLabel } from '~/lib/cv';
-import { actionSteps, headlineStat, splitStarHtml, storyImage, stripFirstList } from '~/lib/star';
+import { companyLabel, formatCvDate } from '~/lib/cv';
+import { numberNotes } from '~/lib/footnotes';
+import { byNewest, splitStarHtml, storyImage } from '~/lib/star';
 import { singleNav } from '~/lib/localnav';
 import { getLang, langStaticPaths, localePath, switchTarget } from '~/i18n/routes';
 import { useT } from '~/i18n';
@@ -36,13 +38,24 @@ const { items: roles } = await getLocalized('experience', lang);
 const role = roles.find((r) => r.slug === d.role);
 if (d.role && !role)
   throw new Error(`STAR story "${story.slug}" references unknown role "${d.role}".`);
-const steps = actionSteps(story.body ?? '');
-const stat = headlineStat(d.metrics);
+const { items: metrics, notes } = numberNotes(d.metrics, (n) => t('fn.ref', { n }));
 const img = storyImage(d);
 const Figure = img?.Svg;
-const eyebrow = role
+const month = d.date.toISOString().slice(0, 7);
+const { items: all } = await getLocalized('star', lang);
+const more = byNewest(all)
+  .filter((s) => s.slug !== story.slug)
+  .slice(0, 2)
+  .map((s) => ({ href: localePath(`/star/${s.slug}/`, lang), title: s.data.title }));
+const category = role
   ? `${role.data.role} · ${companyLabel(role.data.company, role.data.client)}`
   : t('star.other');
+const sections = [
+  { id: 'situation', label: t('star.situation') },
+  { id: 'task', label: t('star.task') },
+  { id: 'action', label: t('star.action') },
+  { id: 'result', label: t('star.result') },
+] as const;
 ---
 
 <BaseLayout
@@ -58,94 +71,147 @@ const eyebrow = role
     label: t('star.all'),
   })}
 >
-  <Hero tight {eyebrow} title={d.title}>
-    <div class="story-lead">
-      <Quote reduced by={t('star.question')}>
-        {d.question}
-      </Quote>
-      {d.sample && (
-        <p>
-          <span class="chip">{t('star.sample')}</span>
-        </p>
-      )}
-      {stat && (
-        <div class="stat-wrap">
-          <Stat super above={stat.prefix} value={stat.value} below={stat.label} />
-        </div>
-      )}
-    </div>
-  </Hero>
-  <Section tone="surface" labelledby="story-steps-title" class="story-steps">
-    <h2 id="story-steps-title" class="sr-only">
-      {t('star.steps')}
-    </h2>
+  <article class="story">
+    <header class="head">
+      <p class="t-news-cat">
+        {category}
+        {d.sample && <span class="chip">{t('star.sample')}</span>}
+      </p>
+      <p class="date">
+        <time datetime={month}>{formatCvDate(month, lang)}</time>
+      </p>
+      <h1 class="t-article-title">{d.title}</h1>
+      <p class="q-label">{t('star.question')}</p>
+      <p class="t-article-sub sub">{d.question}</p>
+      <p class="meta-line">
+        <DotList items={d.competencies.map((c) => competencies[c][lang])} />
+      </p>
+      <hr class="keyline" />
+    </header>
+
     {Figure && img && (
-      <div class="story-figure">
+      <figure class="story-figure">
         <Figure role="img" aria-label={img.alt} />
-      </div>
+      </figure>
     )}
     {lead && <div class="lead" set:html={lead} />}
-    {steps.length >= 2 ? (
-      <StarPanels {html} metrics={d.metrics} {lang} level={3} only={['s', 't']} />
-    ) : (
-      <StarPanels {html} metrics={d.metrics} {lang} level={3} />
-    )}
-  </Section>
-  {steps.length >= 2 && (
-    <>
-      <StepStage
-        eyebrow={t('star.action')}
-        title={t('star.stepByStep')}
-        subline={d.question}
-        intro={stripFirstList(html[2])}
-        {steps}
-      />
-      <Section tone="surface" labelledby="story-result-title">
-        <h2 id="story-result-title" class="sr-only">
-          {t('star.metrics')}
+
+    {sections.map((sec, i) => (
+      <section id={sec.id} class="part" aria-labelledby={`${sec.id}-title`}>
+        <h2 id={`${sec.id}-title`} class="t-article-section">
+          {sec.label}
         </h2>
-        <StarPanels {html} metrics={d.metrics} {lang} level={3} only={['r']} />
-      </Section>
-    </>
-  )}
-  <Section id="more" tone="bg" tight labelledby="story-more-title">
-    <h2 id="story-more-title" class="sr-only">
-      {t('star.more')}
-    </h2>
-    <div class="closing">
-      <ChevronLink href={localePath('/star/', lang)}>{t('star.all')}</ChevronLink>
-      <ChevronLink href={localePath(role ? `/experiences/${role.slug}/` : '/experiences/', lang)}>
-        {t('star.readRole')}
-      </ChevronLink>
-    </div>
-  </Section>
+        <div class="prose t-article-body" set:html={html[i]} />
+        {sec.id === 'result' && metrics.length > 0 && (
+          <ul class="result-stats" aria-label={t('star.metrics')}>
+            {metrics.map((m) => (
+              <li class:list={['result-stat', { 'stat-graph': !!m.compare }]}>
+                <Stat
+                  card
+                  above={m.prefix}
+                  value={m.value}
+                  below={m.label}
+                  nocap={!m.prefix && metrics.some((x) => x.prefix)}
+                  ref={m.ref}
+                />
+                {m.compare && <GraphBars compare={m.compare} {lang} />}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    ))}
+
+    <footer class="foot">
+      <MoreFrom {lang} heading={t('star.moreFrom')} items={more} />
+      <div class="closing">
+        <ChevronLink href={localePath('/star/', lang)}>{t('star.all')}</ChevronLink>
+        <ChevronLink href={localePath(role ? `/experiences/${role.slug}/` : '/experiences/', lang)}>
+          {t('star.readRole')}
+        </ChevronLink>
+      </div>
+    </footer>
+  </article>
+  <Footnotes {notes} title={t('fn.title')} back={(n) => t('fn.back', { n })} />
 </BaseLayout>
 
 <style>
-  /* Peek rule (§5.10.2): at L the next band shows at least 64px at 1440 x 900. */
+  .story {
+    display: grid;
+    grid-template-columns: 1fr minmax(0, var(--article)) 1fr;
+    padding-bottom: 64px;
+  }
+  .story > * {
+    grid-column: 2;
+    min-width: 0;
+  }
+  .head {
+    padding-top: var(--section-pad-tight);
+  }
+  .head p {
+    margin: 0;
+  }
+  .head .chip {
+    margin-inline-start: 8px;
+  }
+  .date {
+    margin-top: 4px !important;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1.4286;
+  }
+  .head h1 {
+    margin-top: 20px;
+    overflow-wrap: anywhere;
+  }
+  .q-label {
+    margin-top: 20px !important;
+    color: var(--text-2);
+    font-size: 0.75rem;
+    font-weight: 700;
+    line-height: 1.2858;
+    text-transform: uppercase;
+  }
+  .sub {
+    margin-top: 4px !important;
+    color: var(--text);
+    font-weight: 500;
+  }
   @media (min-width: 1069px) {
-    :global(.hero.hero--tight) {
-      padding-bottom: 56px;
+    .sub {
+      line-height: 28px;
     }
   }
-  /* Story titles run to two lines: they keep Apple's 80 / 64 so the stepper band still peeks (m13 M4). */
-  @media (min-width: 735px) {
-    :global(.hero .t-hero) {
-      font-size: 4rem;
+  .meta-line {
+    margin: 4px 0 -12px !important;
+    color: var(--text-2);
+    font-size: 0.875rem;
+    line-height: 44px;
+  }
+  .keyline {
+    width: 100%;
+    max-width: 653px;
+    margin: 44px 0 0;
+    border: 0;
+    border-top: 1px solid var(--border);
+  }
+  @media (max-width: 1068px) {
+    .keyline {
+      margin-top: 36px;
     }
   }
-  @media (min-width: 1069px) {
-    :global(.hero .t-hero) {
-      font-size: 5rem;
+  @media (max-width: 734px) {
+    .keyline {
+      margin-top: 32px;
     }
   }
   .story-figure {
-    max-inline-size: 640px;
-    margin: 0 auto 32px;
+    margin: 44px 0 0;
   }
   @media (max-width: 734px) {
     .story-figure {
-      margin-bottom: 24px;
+      margin-top: 32px;
     }
   }
   .story-figure :global(svg) {
@@ -154,31 +220,56 @@ const eyebrow = role
     block-size: auto;
     aspect-ratio: 2 / 1;
   }
-  .story-lead {
-    margin-top: 28px;
-    text-align: center;
-  }
-  .story-lead :global(.quote blockquote) {
-    text-wrap: balance;
-  }
-  /* Trimmed 48 -> 40px so the +2px type scale keeps the peek (hero band <= 836 at 1440 x 900). */
-  .stat-wrap {
-    margin-top: 40px;
-  }
-  :global(.story-steps .section-inner) {
-    max-width: 760px;
-  }
   .lead {
-    margin-bottom: 12px;
+    margin-top: 24px;
     padding: 10px 14px;
     border-radius: 12px;
-    background: var(--bg);
+    background: var(--surface-2);
     font-size: 0.9375rem;
+  }
+  .part {
+    margin-top: 44px;
+  }
+  .part .t-article-section {
+    margin: 0 0 12px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .part .prose ul {
+    padding-inline-start: 1.25em;
+    list-style: disc;
+  }
+  .part .prose li + li {
+    margin-top: 0.4em;
+  }
+  .result-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px 48px;
+    margin: 28px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .result-stat :global(.stat) {
+    align-items: flex-start;
+  }
+  .result-stat.stat-graph {
+    display: grid;
+    flex-basis: 100%;
+    grid-template-columns: auto minmax(0, 1fr);
+    column-gap: 48px;
+    align-items: center;
+  }
+  .result-stat :global(.graph-bars) {
+    margin: 0;
+  }
+  .foot {
+    margin-top: 64px;
   }
   .closing {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
     gap: 0 24px;
+    margin-top: 32px;
   }
 </style>

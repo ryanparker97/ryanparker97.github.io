@@ -5,7 +5,7 @@ import { useT, type Lang } from '~/i18n';
 interface Props {
   lang: Lang;
   heading: string;
-  items: { href: string; title: string }[];
+  items: { href: string; title: string; id?: string }[];
 }
 const { lang, heading, items } = Astro.props;
 useT(lang);
@@ -16,7 +16,7 @@ useT(lang);
     <h2 class="mf-title">{heading}</h2>
     <ul>
       {items.map((i) => (
-        <li>
+        <li id={i.id}>
           <a href={i.href}>{i.title}</a>
         </li>
       ))}

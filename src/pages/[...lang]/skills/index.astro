@@ -7,6 +7,7 @@ import ChevronLink from '~/components/ui/ChevronLink.astro';
 import { getLocalized, getProfile } from '~/lib/content';
 import { iconPlate, toolChildIcon, toolIcon } from '~/lib/tool-icons';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
+import { certWhenParts, sortCerts } from '~/lib/certs';
 import { useT } from '~/i18n';
 
 export const getStaticPaths = (() => langStaticPaths()) satisfies GetStaticPaths;
@@ -17,7 +18,8 @@ const { items: skillItems, fallback: f1 } = await getLocalized('skills', lang);
 const { items: certItems, fallback: f2 } = await getLocalized('certifications', lang);
 const { data: profile, fallback: f3 } = await getProfile(lang);
 const groups = [...skillItems].sort((a, b) => a.data.order - b.data.order);
-const certs = [...certItems].sort((a, b) => b.data.year.localeCompare(a.data.year));
+const certs = sortCerts(certItems);
+const certLogos = certs.some((c) => c.data.logo);
 const fallback = f1 || f2 || f3;
 ---
 
@@ -114,10 +116,11 @@ const fallback = f1 || f2 || f3;
           {t('home.certs.eyebrow')}
         </h2>
         <div class="spec-body">
-          <ul class="spec-items" data-spec-items>
+          <ul class:list={['spec-items', certLogos && 'cert-items--marked']} data-spec-items>
             {certs.map((c) => (
-              <li>
+              <li class="cert-row" data-planned={c.data.planned ? '' : undefined}>
                 <span class="spec-item cert-name">
+                  {!c.data.logo && certLogos && <span class="tool-slot" aria-hidden="true" />}
                   {c.data.logo && (
                     <Icon
                       name={c.data.logo}
@@ -128,7 +131,15 @@ const fallback = f1 || f2 || f3;
                   )}
                   {c.data.name}
                 </span>
-                <span class="spec-sub">{`${c.data.issuer} · ${c.data.year}`}</span>
+                <span class="spec-sub">
+                  {c.data.issuer} ·{' '}
+                  {certWhenParts(c.data, lang).status && (
+                    <>
+                      <span class="cert-status">{certWhenParts(c.data, lang).status}</span> ·{' '}
+                    </>
+                  )}
+                  {certWhenParts(c.data, lang).date}
+                </span>
                 {c.data.credentialUrl && (
                   <ChevronLink
                     href={c.data.credentialUrl}
@@ -164,10 +175,6 @@ const fallback = f1 || f2 || f3;
 </BaseLayout>
 
 <style>
-  /* Always-white plate for marks that fail contrast on the dark surface (never recoloured). */
-  .section--surface {
-    --mark-plate: #fff;
-  }
   .spec-note {
     width: var(--content);
     margin: 16px auto 0;
@@ -175,19 +182,9 @@ const fallback = f1 || f2 || f3;
     font-size: 0.75rem;
     line-height: 1.3333;
   }
-  .cert-name {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .cert-logo {
-    flex: none;
-    /* Same 2px plate box as .tool-icon; the negative margin keeps the old 20px footprint, so the
-       dark plate shifts nothing. */
-    box-sizing: content-box;
-    padding: 2px;
-    margin: -2px;
-    border-radius: 6px;
+  .cert-status {
+    font-weight: 600;
+    color: var(--text);
   }
   .spec-sheet {
     width: var(--content);
@@ -239,19 +236,50 @@ const fallback = f1 || f2 || f3;
     font-size: 0.875rem;
     line-height: 1.4286;
   }
-  .tool-name {
-    /* A long word (200% text, wide fallback font) may break rather than push the page sideways. */
-    overflow-wrap: anywhere;
+  /* Mark box (spec §4.8; owner, photo-logos: one box per row type, centred, aligned with its label).
+     A mark beside a label is an svg whose border box is the square B = M + 2p (content-box, equal
+     padding p, no negative margin): the dark plate IS the box, so it shifts nothing. The glyph is
+     contained and centred in its M x M; the box starts on the row's start edge, the label starts
+     B + g later, and the box centre is the label's first-line centre. The cert name must be flex here
+     too: `.spec-item { display: block }` above would otherwise win over any inline-flex. A long word
+     (200% text, wide fallback font) may break rather than push the page sideways. */
+  .tool-name,
+  .spec-item.cert-name {
     display: flex;
     align-items: flex-start;
     gap: 8px;
+    overflow-wrap: anywhere;
   }
-  /* 20px mark in a 24px slot in both themes, so the dark plate causes no shift. */
-  .tool-icon {
+  .tool-icon,
+  .cert-logo {
+    --box: 24px; /* B = 20 + 2 x 2 */
     flex: none;
     box-sizing: content-box;
     padding: 2px;
     border-radius: 6px;
+    /* 1lh resolves against the svg's inherited line-height, i.e. the label's first line. */
+    margin-block-start: calc((1lh - var(--box)) / 2);
+  }
+  .tool-icon--child {
+    --box: 20px; /* B = 16 + 2 x 2 */
+    border-radius: 5px;
+  }
+  /* Optical centring (glyph centred in its box): the Java and Terraform artwork sits off-centre inside
+     its own viewBox (ink 0.8px right, and 0.7px low, of the box centre, read by logo-box.spec's ink
+     test). Shifted in viewBox units (14 of 346 = 0.8px at 20px; 12 of 291 = 0.7px at 16px); the mark
+     itself is untouched, never recoloured. */
+  .tool-icon[data-icon='logos:java'] :global(use) {
+    transform: translateX(-14px);
+  }
+  .tool-icon[data-icon='logos:terraform-icon'] :global(use) {
+    transform: translateY(-12px);
+  }
+  /* The lines under a marked certification and its credential link start where the name does (B + g). */
+  .cert-items--marked .spec-sub {
+    padding-inline-start: 32px;
+  }
+  .cert-items--marked :global(.link-chevron) {
+    margin-inline-start: 32px;
   }
   /* No real brand mark: an empty slot of the same width keeps the names aligned. */
   .spec-items--plain .tool-name {
@@ -283,10 +311,6 @@ const fallback = f1 || f2 || f3;
     gap: 6px;
     min-width: 0;
     overflow-wrap: anywhere;
-  }
-  .tool-icon--child {
-    padding: 2px;
-    border-radius: 5px;
   }
   @media screen {
     :global(:root[data-theme='dark']) .tool-icon--plate,

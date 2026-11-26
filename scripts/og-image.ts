@@ -10,6 +10,7 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { chromium } from 'playwright';
 import { readEntry } from './lib/frontmatter';
+import { imageChunksOnly } from './lib/png';
 import { loadSharp } from './lib/sharp';
 
 const AVATAR = 'src/assets/profile/avatar.jpg';
@@ -19,18 +20,6 @@ const PHOTO = 440;
 
 const esc = (s: string) =>
   s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
-
-/** Keeps only the chunks that hold the image (libvips adds pHYs). Chunks are copied whole. */
-const KEEP = new Set(['IHDR', 'PLTE', 'tRNS', 'IDAT', 'IEND']);
-function imageChunksOnly(png: Buffer): Buffer {
-  const parts = [png.subarray(0, 8)];
-  for (let i = 8; i < png.length;) {
-    const end = i + 12 + png.readUInt32BE(i);
-    if (KEEP.has(png.toString('latin1', i + 4, i + 8))) parts.push(png.subarray(i, end));
-    i = end;
-  }
-  return Buffer.concat(parts);
-}
 
 async function main() {
   const profile = await readEntry('src/content/profile/en/index.md');

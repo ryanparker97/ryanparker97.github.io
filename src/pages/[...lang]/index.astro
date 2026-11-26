@@ -1,17 +1,18 @@
 ---
+/**
+ * Home (spec §4.1): the Wall. One global nav row, no local nav. `#top` is `HomeWall` (a wall of twelve
+ * real page captures fading into one row: the cut-out photo, the name as the page's one H1, the line,
+ * four links, Download CV and Email me), then "Next." and "Let's talk.". Each optional link renders
+ * only with its content.
+ */
 import type { GetStaticPaths } from 'astro';
-import type { ComponentProps } from 'astro/types';
 import BaseLayout from '~/layouts/BaseLayout.astro';
-import HomeBento from '~/components/home/HomeBento.astro';
-import HomeIdentity from '~/components/home/HomeIdentity.astro';
-import Footnotes from '~/components/tile/Footnotes.astro';
+import HomeWall from '~/components/home/HomeWall.astro';
+import HomeNext from '~/components/home/HomeNext.astro';
+import LetsTalk from '~/components/home/LetsTalk.astro';
 import { getLocalized, getProfile } from '~/lib/content';
 import { getPostRows } from '~/lib/blog-content';
-import { hasDigit } from '~/lib/home';
-import { numberNotes } from '~/lib/footnotes';
-import { brandTools } from '~/lib/tool-icons';
-import { homeNav } from '~/lib/localnav';
-import { sortProjects, sortRoles } from '~/lib/cv';
+import { sortProjects } from '~/lib/cv';
 import { personLd } from '~/lib/jsonld';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
 import { useT } from '~/i18n';
@@ -22,104 +23,38 @@ const lang = getLang(Astro.params.lang);
 const t = useT(lang);
 const { data: p, fallback: f1 } = await getProfile(lang);
 const { items: allStories } = await getLocalized('star', lang);
-
 const { rows, fallback: f5 } = await getPostRows(lang);
-const hasStories = allStories.length > 0;
-const { items: allRoles, fallback: f4 } = await getLocalized('experience', lang);
-const sortedRoles = sortRoles(
-  allRoles.map((r) => ({ ...r, start: r.data.start, end: r.data.end })),
-);
-const roles = sortedRoles;
-const cur = roles[0];
-const { items: skillGroups, fallback: f6 } = await getLocalized('skills', lang);
-const tools = brandTools(
-  [...skillGroups]
-    .sort((a, b) => a.data.order - b.data.order)
-    .flatMap((g) => g.data.items.map((i) => i.name)),
-);
 const { items: allProjects } = await getLocalized('projects', lang);
 const project = sortProjects(
   allProjects
     .filter((x) => x.data.featured)
     .map((x) => ({ ...x, start: x.data.start, end: x.data.end, featured: true })),
 )[0];
-type NumberTile = ComponentProps<typeof HomeBento>['numbers'][number] & { note?: string };
-// Number tiles (spec §4.1.2): a source that is empty or has no digit is left out. Footnote
-// numbering follows tile order (years, team).
-const numbers: NumberTile[] = [
-  ...(hasDigit(p.yearsOfExperience)
-    ? [
-        {
-          id: 'years' as const,
-          title: t('exp.hl.years', { years: p.yearsOfExperience }),
-          href: localePath('/experiences/', lang),
-          value: p.yearsOfExperience,
-          below: t('home.years'),
-          note: p.yearsOfExperienceNote,
-        },
-      ]
-    : []),
-  ...(p.headlineMetric && cur && hasDigit(p.headlineMetric.value)
-    ? [
-        {
-          id: 'team' as const,
-          title: t('exp.hl.team', { n: p.headlineMetric.value, label: p.headlineMetric.label }),
-          href: localePath(`/experiences/${cur.slug}/`, lang),
-          above: p.headlineMetricPrefix,
-          value: p.headlineMetric.value,
-          below: p.headlineMetric.label,
-          note: p.headlineMetric.note,
-        },
-      ]
-    : []),
-];
-const { items: numberTiles, notes } = numberNotes(numbers, (n) => t('fn.ref', { n }));
 // Banner only when something shown on the page is really untranslated.
-const fallback = f1 || f4 || (rows.length > 0 && f5) || (tools.length > 0 && f6);
+const fallback = f1 || (rows.length > 0 && f5);
 const jsonLd = personLd(p, new URL(localePath('/', lang), Astro.site).href, lang);
 ---
 
-<BaseLayout
-  title={t('home.title')}
-  description={t('home.description')}
-  {lang}
-  {fallback}
-  localNav={homeNav(lang)}
-  {jsonLd}
->
-  <div class="home-split">
-    <HomeIdentity {lang} profile={p} />
-    <HomeBento
-      {lang}
-      profile={p}
-      numbers={numberTiles}
-      {project}
-      {hasStories}
-      roles={sortedRoles}
-      {rows}
-      {tools}
-    />
-  </div>
-  <Footnotes {notes} title={t('fn.title')} back={(n) => t('fn.back', { n })} />
+<BaseLayout title={t('home.title')} description={t('home.description')} {lang} {fallback} {jsonLd}>
+  <HomeWall
+    {lang}
+    name={p.name}
+    headline={p.headline}
+    email={p.email}
+    projectSlug={project?.slug}
+    stories={allStories.length > 0}
+    posts={rows.length > 0}
+  />
+  <HomeNext {lang} />
+  <LetsTalk {lang} profile={p} />
 </BaseLayout>
 
 <style>
-  /* Buy-page split (spec §4.1): the identity column beside the board at L, above it below L. The
-     two children are placed by auto-placement; the column's pinning lives in HomeIdentity. */
-  .home-split {
-    width: var(--content-wide);
-    margin-inline: auto;
-    padding-top: var(--section-pad-tight);
-    /* The board's bottom padding lives here, not on #board, so the pinned column releases with a gap
-       once the board ends instead of sitting flush on the footnotes band. */
-    padding-bottom: var(--section-pad);
-  }
-  @media screen and (min-width: 1069px) {
-    .home-split {
-      display: grid;
-      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-      column-gap: 40px;
-      align-items: start;
+  /* Home has no footer breadcrumbs, so the footer directory would sit on the grey band's top edge.
+     Home-only room above it (the compact footer below 834px is an accordion and needs none). */
+  @media (min-width: 834px) {
+    :global(html:has(main > #top.wall) .site-footer) {
+      padding-top: 24px;
     }
   }
 </style>
