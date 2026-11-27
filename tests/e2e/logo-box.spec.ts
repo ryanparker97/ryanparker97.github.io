@@ -385,8 +385,8 @@ test.describe('ink is centred in every mark box (3x pixels)', () => {
 // FPT image's. A mark BESIDE a label (the Next. step) follows the same box rule as /skills/ (24 =
 // 20 + 2 x 2, gap 8, centred on the name's first line) with its box on the date line's start edge.
 
-// owner, next-card: the Next. group's planned Claude card is a card mark too (old: Certifications only).
-const CARD = '#certifications svg.group-card__logo, #next svg.group-card__logo';
+// experiences-no-next: the card marks are the Certifications cards' only (the Next. group is gone).
+const CARD = '#certifications svg.group-card__logo';
 const STEP = '#next [data-next-step] svg.next-step__logo';
 
 interface CardFacts {
@@ -450,9 +450,8 @@ for (const [lang, path, widths] of [
       const run = async (p: Page, theme: Theme) => {
         await gotoThemed(p, path, theme, { width });
         const marks = await boxes(p, CARD);
-        // owner, claude-card: old 2 -> 3, the planned Claude card has its mark (unplated) too.
-        // owner, next-card: Certifications back to 2, plus the Next. group's Claude card = 3.
-        expect(marks, `${where} ${theme}: card marks`).toHaveLength(3);
+        // experiences-no-next: the 2 earned Certifications cards; the planned Claude card is not here.
+        expect(marks, `${where} ${theme}: card marks`).toHaveLength(2);
         for (const m of marks) {
           near(m.border.width, 32, 0.25, `${where} ${theme} ${m.label} width`);
           near(m.border.height, 32, 0.25, `${where} ${theme} ${m.label} height`);
@@ -484,7 +483,7 @@ for (const [lang, path, widths] of [
   }
 }
 
-// owner, next-card: the step line is Home only now (on /experiences/ it is a card, checked above).
+// experiences-no-next: the step line is Home only (/experiences/ has no Next. group).
 for (const [lang, path, widths] of [
   ['EN', '/', WIDTHS],
   ['VI', '/vi/', VI_WIDTHS],
@@ -542,9 +541,8 @@ test.describe('ink is centred in the card marks and the step mark (3x pixels)', 
     }) => {
       await gotoThemed(page, '/experiences/', theme, { width: 1440 });
       const count = await page.locator(CARD).count();
-      // owner, claude-card: old 2 -> 3 (the unplated Claude mark is the third).
-      // owner, next-card: 3 -> 2 earned in Certifications + the Next. Claude card = 3 (the Claude card is last).
-      expect(count).toBe(3);
+      // experiences-no-next: the 2 earned Certifications cards only.
+      expect(count).toBe(2);
       for (let i = 0; i < count; i++) {
         const id = await page.locator(CARD).nth(i).getAttribute('data-icon');
         const ink = await inkOfClone(page, CARD, i);

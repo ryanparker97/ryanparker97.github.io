@@ -113,15 +113,15 @@ for (const L of LOCALES) {
   });
 
   test.describe(`Planned certification elsewhere ${L.exp}`, () => {
-    // owner, next-card: old (claude-card) "is the third, last Certifications card" (count 3, last card
-    // = the Claude cert) -> back to the 2 earned cards only; the planned cert is the Next. card.
+    // experiences-no-next: the 2 earned cards only; the planned cert is nowhere on /experiences/.
     test('is not a Certifications card on /experiences/ (the 2 earned only)', async ({ page }) => {
       await page.goto(L.exp);
       const cards = page.locator('#certifications .group-card');
       await expect(cards).toHaveCount(2);
       await expect(cards.locator('h3')).not.toHaveText([NAME, NAME]);
       await expect(page.locator('#certifications')).not.toContainText(NAME);
-      await expect(page.locator('#next-cert h3')).toHaveText(NAME);
+      await expect(page.locator('#next-cert')).toHaveCount(0);
+      await expect(page.locator('main')).not.toContainText(NAME);
     });
 
     test('is on the CV print page as "Name (when)" with no link', async ({ page }) => {

@@ -4,7 +4,6 @@ import { expect, test } from '@playwright/test';
 test.use({ reducedMotion: 'reduce' });
 
 const CASES = [
-  { path: '/experiences/#next', id: 'next', bar: 52 },
   { path: '/experiences/#education', id: 'education', bar: 52 },
   // owner, techstack: the Tech stack local-nav link's target.
   { path: '/experiences/#stack', id: 'stack', bar: 52 },

@@ -1,13 +1,6 @@
 import { readFileSync } from 'node:fs';
-import AxeBuilder from '@axe-core/playwright';
-import { expect, test, type Page } from '@playwright/test';
-import {
-  NEXT_FORBIDDEN,
-  norm,
-  withoutAllowed,
-  withoutStepAllowed,
-  withoutTitleSuffix,
-} from './next-words';
+import { expect, test } from '@playwright/test';
+import { NEXT_FORBIDDEN, norm, withoutStepAllowed } from './next-words';
 
 test.use({ reducedMotion: 'reduce' });
 
@@ -42,115 +35,20 @@ const LOCALES = [
   },
 ];
 
-const nbsp = (s: string) => s.replace(/ /g, ' ');
-
-async function gotoThemed(page: Page, path: string, theme: 'light' | 'dark') {
-  await page.addInitScript((t) => localStorage.setItem('theme', t), theme);
-  await page.goto(path);
-  await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
-}
-
+// experiences-no-next: /experiences/ has no "Next." group any more; Education is followed by contact.
 for (const L of LOCALES) {
-  test.describe(`Next group ${L.path}`, () => {
-    test('sits between Education and contact, the Claude card then two goal cards in order', async ({
+  test.describe(`No Next group ${L.path}`, () => {
+    test('#next and #next-cert are absent and Education is followed by contact', async ({
       page,
     }) => {
       await page.goto(L.path);
+      await expect(page.locator('#next')).toHaveCount(0);
+      await expect(page.locator('#next-cert')).toHaveCount(0);
       const h2 = (await page.locator('main h2').allInnerTexts()).map((s) => s.trim());
       const i = h2.indexOf(L.edu);
       expect(i).toBeGreaterThan(-1);
-      expect(h2.slice(i, i + 3)).toEqual([L.edu, L.next, L.contact]);
-      const order = await page.evaluate(() => {
-        const a = document.querySelector('#education')!;
-        const n = document.querySelector('#next')!;
-        const c = document.querySelector('#contact')!;
-        return [
-          Boolean(a.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING),
-          Boolean(n.compareDocumentPosition(c) & Node.DOCUMENT_POSITION_FOLLOWING),
-          Boolean(document.querySelector('#roles #next')),
-        ];
-      });
-      expect(order).toEqual([true, true, true]);
-      const cards = page.locator('#next .group-card');
-      // owner, next-card: old 2 cards -> 3; the planned Claude cert is a card first, then the two goals.
-      await expect(cards).toHaveCount(3);
-      await expect(page.locator('#next .group-card h3')).toHaveText([L.step.name, ...L.titles]);
-      const eyebrows = await page.locator('#next .group-card__eyebrow').allInnerTexts();
-      expect(eyebrows.map(nbsp)).toEqual([`Anthropic · ${L.step.when}`, ...L.eyebrows]);
-    });
-
-    test('each goal card has one link that resolves; the Claude card has none', async ({
-      page,
-    }) => {
-      await page.goto(L.path);
-      const cards = page.locator('#next .group-card');
-      await expect(cards.first().locator('a')).toHaveCount(0);
-      for (let i = 0; i < 2; i++) {
-        const links = cards.nth(i + 1).locator('a');
-        await expect(links).toHaveCount(1);
-        const href = await links.first().getAttribute('href');
-        expect(href).toBe(L.hrefs[i]);
-        expect((await page.request.get(href!)).ok()).toBe(true);
-      }
-    });
-
-    test('no forbidden words in the text or link names', async ({ page }) => {
-      await page.goto(L.path);
-      // owner, next-card: the Claude card (#next-cert) names its issuer and shows its own date; it is
-      // checked by the step allow-list below, the goal cards by the full rule.
-      const cards = page.locator('#next .group-card:not(#next-cert)');
-      // Only the card title and eyebrow may carry the allowed title and year; everything else is raw.
-      const fields = [
-        ...(await cards.locator('.group-card__eyebrow').allInnerTexts()).map(withoutAllowed),
-        ...(await cards.locator('h3').allInnerTexts()).map(withoutAllowed),
-        ...(await cards.locator('.group-card__text').allInnerTexts()).map(norm),
-        ...(await page.locator('#next h2').allInnerTexts()).map(norm),
-        ...(await page.locator('#next a:not(h3 a)').allInnerTexts()).map(norm),
-        ...(
-          await page
-            .locator('#next a')
-            .evaluateAll((els) => els.map((e) => e.getAttribute('aria-label') ?? ''))
-        ).map(withoutTitleSuffix),
-      ];
-      for (const s of fields) for (const re of NEXT_FORBIDDEN) expect(s).not.toMatch(re);
-      // The Claude card: only its name, date and issuer are left out of the rule; nothing else is.
-      const claude = norm(await page.locator('#next-cert').innerText());
-      const rest = withoutStepAllowed(claude).replace(/Anthropic|·/g, ' ');
-      for (const re of NEXT_FORBIDDEN) expect(rest).not.toMatch(re);
-      expect(rest.trim()).toBe('');
-    });
-
-    for (const theme of ['light', 'dark'] as const)
-      test(`axe finds no violations in #next (${theme})`, async ({ page }) => {
-        await gotoThemed(page, L.path, theme);
-        const { violations } = await new AxeBuilder({ page }).include('#next').analyze();
-        expect(violations.map((v) => v.id)).toEqual([]);
-      });
-
-    for (const [w, h] of [
-      [390, 844],
-      [320, 700],
-    ])
-      test(`stacks without horizontal scroll at ${w}`, async ({ page }) => {
-        await page.setViewportSize({ width: w, height: h });
-        await page.goto(L.path);
-        const over = await page.evaluate(
-          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        );
-        expect(over).toBeLessThanOrEqual(0);
-        const tops = await page
-          .locator('#next .group-card')
-          .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
-        expect(new Set(tops).size).toBe(tops.length);
-      });
-
-    test('cards share a row at 1440', async ({ page }) => {
-      await page.setViewportSize({ width: 1440, height: 900 });
-      await page.goto(L.path);
-      const tops = await page
-        .locator('#next .group-card')
-        .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
-      expect(new Set(tops).size).toBe(1);
+      expect(h2.slice(i, i + 2)).toEqual([L.edu, L.contact]);
+      expect(h2).not.toContain(L.next);
     });
   });
 }
@@ -176,7 +74,7 @@ test.describe('Next group stays off print', () => {
 });
 
 // On Home the planned certification is one plain-text dated line above the goals: no card, link or
-// heading. owner, next-card: on /experiences/ it is a card in the group instead (tests above).
+// heading. experiences-no-next: /experiences/ no longer shows it at all (tests above).
 const STEP_CASES = LOCALES.map((L) => ({
   label: L.home,
   path: L.home,
@@ -260,15 +158,19 @@ for (const C of LOGO_NOTE_CASES) {
   });
 }
 
-test('the Home step text matches the /experiences/ Claude card (EN + VI)', async ({ page }) => {
+test('the Home step text matches the Claude certification entry (EN + VI)', async ({ page }) => {
   for (const L of LOCALES) {
+    const lang = L.home === '/' ? 'en' : 'vi';
+    const entry = readFileSync(
+      `src/content/certifications/${lang}/claude-certified-architect.md`,
+      'utf8',
+    );
+    const name = /^name:\s*'(.+)'$/m.exec(entry)?.[1];
+    expect(name).toBe(L.step.name);
     await page.goto(L.home);
     const flat = (x: string) => norm(x).replace(/\s+/g, ' ').trim();
     const step = flat(await page.locator('#next [data-next-step]').innerText());
-    await page.goto(L.path);
-    const card = flat(await page.locator('#next-cert').innerText());
-    // The card adds the issuer in front of the same date, then the same name.
-    expect(card).toBe(`Anthropic · ${step}`);
+    expect(step).toBe(flat(`${L.step.when} ${name}`));
   }
 });
 
