@@ -14,7 +14,7 @@ export interface NextStep {
   link: TKey;
 }
 
-/** The "Next." cards on /experiences/, in display order. Copy lives in i18n; evidence is an existing page. */
+/** The "Next." goal cards on Home (HomeNext), in display order. Copy lives in i18n; evidence is an existing page. */
 export const NEXT_STEPS: readonly NextStep[] = [
   {
     id: 'architecture',
@@ -50,7 +50,7 @@ export interface NextMilestone {
   title: TKey;
 }
 
-/** The dated step shown above the "Next." goal cards: a certification still to be earned. Copy lives in i18n and is pinned to the certification entry by a test. */
+/** The dated step shown above the Home "Next." goal cards: a certification still to be earned. Copy lives in i18n and is pinned to the certification entry by a test. */
 export const NEXT_MILESTONE: NextMilestone = {
   id: 'cert',
   cert: 'claude-certified-architect',

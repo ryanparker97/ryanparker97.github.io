@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { NEXT_STEPS, nextHref } from '../../src/lib/career-next';
 import { WALL_SHOTS, wallHref } from '../../src/lib/wall';
 import { colAt } from './geometry';
 import { NEXT_FORBIDDEN, norm, withoutAllowed, withoutTitleSuffix } from './next-words';
@@ -1652,12 +1653,11 @@ test.describe('Home blocks', () => {
   test('main links to exactly the Wall destinations, in English and Vietnamese', async ({
     page,
   }) => {
-    // The goals link to their evidence pages (as on /experiences/), so `/experiences/#next` left
+    // The goals link to their evidence pages (NEXT_STEPS), so `/experiences/#next` left
     // Home; the second goal's evidence is the featured project, so its href appears once in the set.
     for (const { path, prefix, lang } of LANGS) {
       const p = profile(lang);
-      await page.goto(`${prefix}/experiences/`);
-      const goal1 = (await page.locator('#next .group-card a').first().getAttribute('href'))!;
+      const goal1 = nextHref(NEXT_STEPS[0], lang);
       const want = [
         ...new Set([
           ...[
@@ -2399,23 +2399,17 @@ test.describe('Home identity row order', () => {
 });
 
 test.describe('Home next cell', () => {
-  // The "So far" link keys of NEXT_STEPS (src/lib/career-next.ts), in display order.
-  const LINK_KEYS = ['exp.next.architecture.link', 'exp.next.deployed.link'];
-  for (const { path, prefix, lang } of LANGS) {
-    const exp = `${prefix}/experiences/`;
-    test(`${lang}: the two goals of ${exp}#next, each linking to its evidence page`, async ({
+  for (const { path, lang } of LANGS) {
+    test(`${lang}: the two goals of NEXT_STEPS, each linking to its evidence page`, async ({
       page,
     }) => {
       const dict = ALT(lang);
-      await page.goto(exp);
-      // owner, next-card: old `#next .group-card` (2 goals); /experiences/ now also has the Claude card first.
-      const cards = page.locator('#next .group-card:not(#next-cert)');
-      const eyebrows = (await cards.locator('.group-card__eyebrow').allTextContents()).map(nbsp);
-      const titles = (await cards.locator('h3').allTextContents()).map(nbsp);
-      const texts = (await cards.locator('.group-card__text').allTextContents()).map(nbsp);
-      const hrefs = await cards
-        .locator('a')
-        .evaluateAll((els) => els.map((e) => e.getAttribute('href')!));
+      // experiences-no-next: /experiences/ no longer shows the goals; the source is NEXT_STEPS + i18n.
+      const eyebrows = NEXT_STEPS.map((s) => nbsp(dict[s.eyebrow]));
+      const titles = NEXT_STEPS.map((s) => nbsp(dict[s.title]));
+      const texts = NEXT_STEPS.map((s) => nbsp(dict[s.text]));
+      const hrefs = NEXT_STEPS.map((s) => nextHref(s, lang));
+      const LINK_KEYS = NEXT_STEPS.map((s) => s.link);
       expect(titles).toHaveLength(2);
       expect(hrefs).toHaveLength(2);
       await page.goto(path);

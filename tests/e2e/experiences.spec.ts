@@ -44,7 +44,6 @@ test.describe('Experiences index (Leadership cards)', () => {
       'Tech stack.', // lead, techstack: new group after Experience.
       'Certifications.',
       'Education.',
-      'Next.',
       'Get in touch.',
     ]);
     const cards = await page.locator('.group-card').count();
@@ -98,12 +97,11 @@ test.describe('Experiences index (Leadership cards)', () => {
     // owner, techstack-trim: old 22 -> 16 (six tools dropped).
     await expect(page.locator('#stack svg')).toHaveCount(16);
     await expect(page.locator('#stack svg:not(.group-card__tool-mark)')).toHaveCount(0);
-    // owner, next-card: old = the certification cards' marks; now + the Next. group's Claude card mark.
+    // experiences-no-next: the certification cards' marks are the only logo svgs outside roles/education.
+    await expect(page.locator('#next')).toHaveCount(0);
     await expect(page.locator('.group-card svg.group-card__logo')).toHaveCount(
-      (await page.locator('#certifications .group-card svg').count()) +
-        (await page.locator('#next .group-card svg').count()),
+      await page.locator('#certifications .group-card svg').count(),
     );
-    await expect(page.locator('#next .group-card svg')).toHaveCount(1);
   });
 
   test('every role has a logo, EN and VI', () => {
@@ -206,7 +204,7 @@ test.describe('Experiences index (Leadership cards)', () => {
             }),
           );
         const where = `${prefix || 'en'} ${theme}`;
-        // owner, claude-card: old 2 -> 3; owner, next-card: back to 2 (earned only), the Claude card is in Next.
+        // owner, claude-card: old 2 -> 3; owner, next-card: back to 2 (earned only); experiences-no-next: the planned card is not on this page.
         expect(marks.length, where).toBe(2);
         expect(
           marks.filter((m) => m.plate).map((m) => m.icon),
@@ -242,36 +240,17 @@ test.describe('Experiences index (Leadership cards)', () => {
     expect(at('Claude Certified Architect')).toBe(-1);
   });
 
-  // owner, next-card: new. The Next. group shows the planned cert as a card (first, where its step
-  // line was), not as a line: same wording and mark as the Certifications card, never earned, no
-  // link. Restoring the `[data-next-step]` line on this page turns it red.
-  test('next: the planned Claude cert is a card, not a step line, and never reads as earned', async ({
-    page,
-  }) => {
-    for (const [path, eyebrow] of [
-      ['/experiences/', 'Anthropic · Planned · Apr 2027'],
-      ['/vi/experiences/', 'Anthropic · Dự kiến · 04/2027'],
-    ]) {
+  // experiences-no-next: the page has no "Next." group and the planned Claude cert is nowhere on it
+  // (Home still shows it). Restoring the group turns this red.
+  test('no Next. group and no planned Claude cert on the page', async ({ page }) => {
+    for (const path of ['/experiences/', '/vi/experiences/']) {
       await page.goto(path);
+      await expect(page.locator('#next')).toHaveCount(0);
+      await expect(page.locator('#next-cert')).toHaveCount(0);
       await expect(page.locator('[data-next-step]')).toHaveCount(0);
-      const cards = page.locator('#next .group-card');
-      await expect(cards).toHaveCount(3);
-      const claude = cards.first();
-      await expect(claude.locator('h3')).toHaveText('Claude Certified Architect');
-      await expect(claude.locator('.group-card__eyebrow')).toHaveText(eyebrow.replace(/ /g, ' '), {
-        useInnerText: true,
-      });
-      await expect(
-        claude.locator('svg.group-card__logo[data-icon="logos:claude-icon"][aria-hidden="true"]'),
-      ).toHaveCount(1);
-      await expect(claude.locator('svg.group-card__logo--plate')).toHaveCount(0);
-      await expect(claude.locator('a')).toHaveCount(0);
-      const text = await claude.innerText();
-      expect(text).not.toMatch(/earned|đạt|\bID\b|verify|xác minh/i);
-      expect(text.match(/20\d\d/g)).toEqual(['2027']);
-      // owner, next-card: and only here, not under Certifications (2 earned cards).
+      await expect(page.locator('#education')).toHaveCount(1);
       await expect(page.locator('#certifications .group-card')).toHaveCount(2);
-      await expect(page.locator('#certifications')).not.toContainText('Claude');
+      await expect(page.locator('main')).not.toContainText('Claude Certified Architect');
     }
   });
 
@@ -438,7 +417,6 @@ test('Vietnamese hero and translated group headings', async ({ page }) => {
     'Công nghệ sử dụng.', // lead, techstack: new group after Kinh nghiệm.
     'Chứng chỉ.',
     'Học vấn.',
-    'Tiếp theo.',
     'Liên hệ với tôi.',
   ]);
 });

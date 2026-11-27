@@ -196,7 +196,8 @@ async function checkPage(page: Page, kind: string, width: number, where: string)
       const cards = await boxes(page, '.group-card');
       // lead, techstack: old >= 10 group cards -> + the 4 Tech stack cards (>= 14).
       // owner, techstack-trim: old 4 -> 6 Tech stack cards (>= 16).
-      expect(cards.length, `${where} group cards`).toBeGreaterThanOrEqual(16);
+      // experiences-no-next: the 3 Next. cards left -> 14.
+      expect(cards.length, `${where} group cards`).toBeGreaterThanOrEqual(14);
       expectFourSides(cards, `${where} group-card`, {
         pad: width >= 735 ? 28 : 24,
         bottom: 'free',
@@ -204,7 +205,8 @@ async function checkPage(page: Page, kind: string, width: number, where: string)
       if (width >= 735) expectEqualHeights(cards, `${where} group-card`, { min: 180 });
       const grids = await boxes(page, '.group-cards');
       // lead, techstack: old 4 -> 5 grids (Experience, Tech stack, Certifications, Education, Next).
-      expect(grids, `${where} group-cards grids`).toHaveLength(5);
+      // experiences-no-next: Next left -> 4.
+      expect(grids, `${where} group-cards grids`).toHaveLength(4);
       expectOnColumn(grids, width, `${where} group-cards`, { use: 'border' });
       // Tech stack: 2 cards per row from 735, 1 below; the first tool starts on the card's content
       // edge; the first tools of a row's cards share a top; no tool passes the content's right edge.

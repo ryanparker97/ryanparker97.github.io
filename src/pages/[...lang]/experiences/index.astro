@@ -10,7 +10,6 @@ import { companyLabel, sortRoles, startYear } from '~/lib/cv';
 import { getLang, langStaticPaths, localePath } from '~/i18n/routes';
 import { personLd } from '~/lib/jsonld';
 import { experiencesNav } from '~/lib/localnav';
-import { NEXT_MILESTONE, NEXT_STEPS, nextHref } from '~/lib/career-next';
 import { certWhen, isPlanned, sortCerts } from '~/lib/certs';
 import { techStack } from '~/lib/tech-stack';
 import { useT } from '~/i18n';
@@ -24,12 +23,8 @@ const { items: allRoles, fallback: rolesFallback } = await getLocalized('experie
 const roles = sortRoles(allRoles.map((r) => ({ ...r, start: r.data.start, end: r.data.end })));
 const { items: allCerts, fallback: certsFallback } = await getLocalized('certifications', lang);
 const { items: education, fallback: eduFallback } = await getLocalized('education', lang);
-// Earned only, newest year first. Owner, next-card: the planned cert is not a Certifications card
-// here (it was, owner claude-card); it is the first card of "Next." instead, never with a year or link.
+// Earned only, newest year first; the planned cert is not shown on this page.
 const certs = sortCerts(allCerts).filter((c) => !isPlanned(c.data));
-// Owner, next-card: the planned cert is a card in "Next." too (the same card as under Certifications:
-// issuer · planned wording, Claude mark, name; no link), first in the group where its step line was.
-const plannedCert = allCerts.find((c) => c.slug === NEXT_MILESTONE.cert);
 
 // Owner, techstack-trim: the /skills/ marked tools less six, grouped by skill role (one tool source).
 const { items: skillItems, fallback: skillsFallback } = await getLocalized('skills', lang);
@@ -122,30 +117,6 @@ const jsonLd = personLd(profile, new URL(localePath('/experiences/', lang), Astr
         }))}
       />
     )}
-    <CardGroup
-      id="next"
-      rule
-      title={t('exp.next.title')}
-      items={[
-        ...(plannedCert
-          ? [
-              {
-                id: `next-${NEXT_MILESTONE.id}`,
-                eyebrow: `${plannedCert.data.issuer} · ${certWhen(plannedCert.data, lang)}`,
-                logo: plannedCert.data.logo,
-                title: plannedCert.data.name,
-              },
-            ]
-          : []),
-        ...NEXT_STEPS.map((s) => ({
-          id: `next-${s.id}`,
-          eyebrow: t(s.eyebrow),
-          title: t(s.title),
-          text: t(s.text),
-          link: { href: nextHref(s, lang), label: t(s.link), name: `${t(s.link)} (${t(s.title)})` },
-        })),
-      ]}
-    />
     <p class="logos-note">{t('skills.logosNote')}</p>
   </Section>
   <Section id="contact" labelledby="contact-title">
